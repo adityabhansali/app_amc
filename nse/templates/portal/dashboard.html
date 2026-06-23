@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge %}
+{% block title %}My Portal — {{ COMPANY_NAME }}{% endblock %}
+{% block content %}
+<section class="max-w-6xl mx-auto px-4 py-10">
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <div>
+      <h1 class="text-2xl font-extrabold text-navy-800">Welcome, {{ current_user.name }}</h1>
+      <p class="text-slate-600 text-sm">{{ current_user.phone }}{% if current_user.area %} · {{ current_user.area }}{% endif %}</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="{{ url_for('public.apply') }}" class="bg-navy-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-navy-700">+ New AMC</a>
+      <a href="{{ url_for('public.emergency') }}" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-500">🚨 Emergency</a>
+    </div>
+  </div>
+
+  {% if pending_quotes %}
+  <div class="mt-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
+    <h3 class="font-semibold text-amber-800">⏳ {{ pending_quotes|length }} quotation(s) need your approval</h3>
+    <div class="mt-2 flex flex-wrap gap-2">
+      {% for q in pending_quotes %}
+      <a href="{{ url_for('portal.quotation', quote_id=q.id) }}" class="bg-white border border-amber-300 rounded-lg px-3 py-1.5 text-sm hover:bg-amber-100">
+        {{ q.reference }} — {{ q.total|rupees }} →
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Contracts -->
+  <h2 class="text-lg font-bold text-navy-800 mt-8 mb-3">My AMC contracts</h2>
+  {% if contracts %}
+  <div class="grid md:grid-cols-2 gap-5">
+    {% for c in contracts %}
+    <a href="{{ url_for('portal.contract', contract_id=c.id) }}" class="block bg-white rounded-2xl border border-slate-200 shadow-sm p-5 hover:border-star-400">
+      <div class="flex items-center justify-between">
+        <span class="font-bold text-navy-800">{{ c.reference }}</span>
+        {{ status_badge(c.status) }}
+      </div>
+      <p class="text-sm text-slate-600 mt-1">{{ c.plan.name if c.plan else 'Custom plan' }}{% if c.site_name %} · {{ c.site_name }}{% endif %}</p>
+      {% if c.status == 'active' %}
+      <div class="mt-4">
+        <div class="flex justify-between text-xs text-slate-500 mb-1">
+          <span>Visits completed</span><span>{{ c.completed_visits }}/{{ c.total_visits }}</span>
+        </div>
+        <div class="w-full bg-slate-100 rounded-full h-2">
+          <div class="bg-green-500 h-2 rounded-full" style="width: {{ (c.completed_visits / c.total_visits * 100) if c.total_visits else 0 }}%"></div>
+        </div>
+        {% if c.next_visit %}
+        <p class="text-xs text-slate-500 mt-2">Next visit: <span class="font-medium text-navy-700">{{ c.next_visit.scheduled_date|datefmt }}</span></p>
+        {% endif %}
+      </div>
+      {% elif c.status == 'pending' %}
+      <p class="text-xs text-amber-700 mt-3">Application under review — we'll call you to confirm.</p>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="bg-white border border-dashed border-slate-300 rounded-2xl p-8 text-center text-slate-500">
+    No AMC yet. <a href="{{ url_for('public.apply') }}" class="text-navy-700 font-semibold underline">Apply for one →</a>
+  </div>
+  {% endif %}
+
+  <!-- Service requests -->
+  {% if requests %}
+  <h2 class="text-lg font-bold text-navy-800 mt-10 mb-3">Emergency / NOC requests</h2>
+  <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-50 text-slate-500 text-left text-xs uppercase">
+        <tr><th class="px-4 py-2">Ref</th><th class="px-4 py-2">Type</th><th class="px-4 py-2">Status</th><th class="px-4 py-2">ETA</th><th class="px-4 py-2">Raised</th></tr>
+      </thead>
+      <tbody>
+      {% for r in requests %}
+        <tr class="border-t border-slate-100">
+          <td class="px-4 py-2 font-medium">{{ r.reference }}</td>
+          <td class="px-4 py-2">{{ 'NOC' if r.request_type=='noc' else 'Emergency' }}</td>
+          <td class="px-4 py-2">{{ status_badge(r.status) }}</td>
+          <td class="px-4 py-2 text-slate-600">{{ r.team_eta or '—' }}</td>
+          <td class="px-4 py-2 text-slate-500">{{ r.created_at|datefmt }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- Notifications -->
+  {% if notes %}
+  <div class="flex items-center justify-between mt-10 mb-3">
+    <h2 class="text-lg font-bold text-navy-800">Updates</h2>
+    <a href="{{ url_for('portal.mark_read') }}" class="text-sm text-slate-500 hover:text-navy-700">Mark all read</a>
+  </div>
+  <div class="space-y-2">
+    {% for n in notes %}
+    <div class="bg-white border {{ 'border-star-300' if not n.read else 'border-slate-200' }} rounded-xl px-4 py-3">
+      <div class="flex justify-between">
+        <span class="font-medium text-navy-800 text-sm">{{ n.title }}</span>
+        <span class="text-xs text-slate-400">{{ n.created_at|datefmt }}</span>
+      </div>
+      {% if n.body %}<p class="text-sm text-slate-600 mt-0.5">{{ n.body }}</p>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

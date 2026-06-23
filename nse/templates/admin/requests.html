@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge %}
+{% block title %}Service requests — Ops{% endblock %}
+{% block content %}
+<section class="max-w-6xl mx-auto px-4 py-10">
+  <a href="{{ url_for('admin.dashboard') }}" class="text-sm text-slate-500 hover:text-navy-700">← Ops Console</a>
+  <h1 class="text-2xl font-extrabold text-navy-800 mt-2">Emergency &amp; NOC requests</h1>
+
+  <div class="flex gap-2 mt-4 text-sm">
+    {% for s,label in [('','All'),('emergency','Emergency'),('noc','NOC')] %}
+    <a href="{{ url_for('admin.requests_list', type=s or none) }}"
+       class="px-3 py-1.5 rounded-lg border {{ 'bg-navy-800 text-white border-navy-800' if rtype==s or (not rtype and not s) else 'bg-white text-slate-600 border-slate-300' }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  <div class="bg-white rounded-2xl border border-slate-200 overflow-x-auto mt-4">
+    <table class="w-full text-sm min-w-[720px]">
+      <thead class="bg-slate-50 text-slate-500 text-left text-xs uppercase">
+        <tr><th class="px-4 py-2">Ref</th><th class="px-4 py-2">Type</th><th class="px-4 py-2">Contact</th><th class="px-4 py-2">Area</th><th class="px-4 py-2">Status</th><th class="px-4 py-2">Raised</th></tr>
+      </thead>
+      <tbody>
+      {% for r in requests %}
+        <tr class="border-t border-slate-100 hover:bg-slate-50 cursor-pointer" onclick="location.href='{{ url_for('admin.service_request', req_id=r.id) }}'">
+          <td class="px-4 py-2 font-medium text-navy-800">{{ r.reference }}</td>
+          <td class="px-4 py-2">{% if r.request_type=='emergency' %}<span class="text-red-600 font-medium">Emergency</span>{% else %}NOC{% endif %}</td>
+          <td class="px-4 py-2">{{ r.name }}<div class="text-xs text-slate-400">{{ r.phone }}</div></td>
+          <td class="px-4 py-2 text-slate-600">{{ r.area or '—' }}</td>
+          <td class="px-4 py-2">{{ status_badge(r.status) }}</td>
+          <td class="px-4 py-2 text-slate-500">{{ r.created_at|datefmt }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">No requests.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, refill_badge %}
+{% block title %}{{ c.reference }} — {{ COMPANY_NAME }}{% endblock %}
+{% block content %}
+<section class="max-w-5xl mx-auto px-4 py-10">
+  <a href="{{ url_for('portal.dashboard') }}" class="text-sm text-slate-500 hover:text-navy-700">← Back to portal</a>
+
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mt-3">
+    <div class="flex items-start justify-between flex-wrap gap-3">
+      <div>
+        <h1 class="text-2xl font-extrabold text-navy-800">{{ c.reference }}</h1>
+        <p class="text-slate-600">{{ c.plan.name if c.plan else 'Custom plan' }}{% if c.site_name %} · {{ c.site_name }}{% endif %}</p>
+        {% if c.site_address %}<p class="text-sm text-slate-500">{{ c.site_address }}</p>{% endif %}
+      </div>
+      <div class="text-right">
+        {{ status_badge(c.status) }}
+        <p class="text-sm text-slate-500 mt-2">{{ c.price|rupees }}/year</p>
+        <p class="text-xs text-slate-400">Payment: {{ c.payment_mode|title }} · {{ c.payment_status|title }}</p>
+      </div>
+    </div>
+    {% if c.start_date %}
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 text-center">
+      <div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500">Start</div><div class="font-semibold text-navy-800 text-sm">{{ c.start_date|datefmt }}</div></div>
+      <div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500">End</div><div class="font-semibold text-navy-800 text-sm">{{ c.end_date|datefmt }}</div></div>
+      <div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500">Visits</div><div class="font-semibold text-navy-800 text-sm">{{ c.completed_visits }}/{{ c.total_visits }}</div></div>
+      <div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500">Next visit</div><div class="font-semibold text-navy-800 text-sm">{{ c.next_visit.scheduled_date|datefmt if c.next_visit else '—' }}</div></div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Visits timeline -->
+  <h2 class="text-lg font-bold text-navy-800 mt-8 mb-3">Service visits</h2>
+  {% if c.visits %}
+  <div class="space-y-3">
+    {% for v in c.visits %}
+    <a href="{{ url_for('portal.visit', visit_id=v.id) }}" class="block bg-white rounded-xl border border-slate-200 p-4 hover:border-star-400">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full grid place-items-center font-bold {{ 'bg-green-100 text-green-700' if v.status=='completed' else 'bg-slate-100 text-slate-500' }}">{{ v.visit_number }}</div>
+          <div>
+            <div class="font-semibold text-navy-800">{{ v.label }}</div>
+            <div class="text-xs text-slate-500">{{ v.scheduled_date|datefmt }}{% if v.technician %} · {{ v.technician.name }}{% endif %}</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          {% if v.photos %}<span class="text-xs text-slate-500">📷 {{ v.photos|length }}</span>{% endif %}
+          {% if v.service_report_path %}<span class="text-xs text-green-600">📄 Report</span>{% endif %}
+          {{ status_badge(v.status) }}
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-slate-500 text-sm bg-white border border-dashed border-slate-300 rounded-xl p-5">Visits will appear here once your contract is activated.</p>
+  {% endif %}
+
+  <!-- Equipment & refills -->
+  <h2 class="text-lg font-bold text-navy-800 mt-8 mb-3">Equipment &amp; refill register</h2>
+  {% if c.equipment %}
+  <div class="bg-white rounded-2xl border border-slate-200 overflow-x-auto">
+    <table class="w-full text-sm min-w-[640px]">
+      <thead class="bg-slate-50 text-slate-500 text-left text-xs uppercase">
+        <tr><th class="px-4 py-2">Equipment</th><th class="px-4 py-2">Location</th><th class="px-4 py-2">Last refill</th><th class="px-4 py-2">Next due</th><th class="px-4 py-2">Status</th></tr>
+      </thead>
+      <tbody>
+      {% for e in c.equipment %}
+        <tr class="border-t border-slate-100">
+          <td class="px-4 py-2"><div class="font-medium text-navy-800">{{ e.name }}</div><div class="text-xs text-slate-400">{{ e.equip_type or '' }}{% if e.serial_no %} · {{ e.serial_no }}{% endif %}</div></td>
+          <td class="px-4 py-2 text-slate-600">{{ e.location or '—' }}</td>
+          <td class="px-4 py-2 text-slate-600">{{ e.last_refill_date|datefmt }}</td>
+          <td class="px-4 py-2">
+            <span class="text-slate-700">{{ e.next_refill_date|datefmt }}</span>
+            {% if e.days_to_refill is not none %}<div class="text-xs text-slate-400">{% if e.days_to_refill < 0 %}{{ -e.days_to_refill }} days overdue{% else %}in {{ e.days_to_refill }} days{% endif %}</div>{% endif %}
+          </td>
+          <td class="px-4 py-2">{{ refill_badge(e) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-slate-500 text-sm bg-white border border-dashed border-slate-300 rounded-xl p-5">Your equipment list will appear here after the first visit.</p>
+  {% endif %}
+
+  <!-- Quotations -->
+  {% if c.quotations %}
+  <h2 class="text-lg font-bold text-navy-800 mt-8 mb-3">Material quotations</h2>
+  <div class="space-y-2">
+    {% for q in c.quotations %}
+    <a href="{{ url_for('portal.quotation', quote_id=q.id) }}" class="flex items-center justify-between bg-white rounded-xl border border-slate-200 px-4 py-3 hover:border-star-400">
+      <div><span class="font-semibold text-navy-800">{{ q.reference }}</span> <span class="text-sm text-slate-500">· {{ q.items|length }} item(s)</span></div>
+      <div class="flex items-center gap-3"><span class="font-semibold text-navy-800">{{ q.total|rupees }}</span>{{ status_badge(q.status) }}</div>
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

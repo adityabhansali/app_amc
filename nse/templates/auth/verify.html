@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Verify OTP — {{ COMPANY_NAME }}{% endblock %}
+{% block content %}
+<section class="max-w-md mx-auto px-4 py-14">
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-7">
+    <h1 class="text-2xl font-extrabold text-navy-800">Enter OTP</h1>
+    <p class="text-slate-600 text-sm mt-1">We sent a 6-digit code to <span class="font-semibold">{{ phone }}</span>.</p>
+
+    {% if dev_code %}
+    <div class="mt-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-4 py-2 text-sm">
+      <strong>Dev mode:</strong> your OTP is <span class="font-mono font-bold tracking-widest">{{ dev_code }}</span><br>
+      <span class="text-xs">(In production this is sent by SMS instead of shown here.)</span>
+    </div>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('auth.otp_verify') }}" class="mt-5 space-y-4">
+      <input type="hidden" name="phone" value="{{ phone }}">
+      <label class="block">
+        <span class="text-sm font-medium text-slate-700">Your name <span class="text-slate-400">(first time only)</span></span>
+        <input type="text" name="name" placeholder="Full name"
+               class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-star-400">
+      </label>
+      <label class="block">
+        <span class="text-sm font-medium text-slate-700">6-digit OTP</span>
+        <input type="text" name="code" required maxlength="6" inputmode="numeric"
+               class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 text-center text-2xl tracking-[0.5em] font-mono focus:outline-none focus:ring-2 focus:ring-star-400">
+      </label>
+      <button class="w-full bg-star-500 text-navy-900 font-semibold py-3 rounded-xl hover:bg-star-400">Verify &amp; login</button>
+    </form>
+    <a href="{{ url_for('auth.login') }}" class="block text-center text-sm text-slate-500 mt-4">← Use a different number</a>
+  </div>
+</section>
+{% endblock %}

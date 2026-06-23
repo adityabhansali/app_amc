@@ -1,0 +1,70 @@
+<div id="nseChat" class="fixed bottom-5 right-5 z-50">
+  <button id="chatToggle" class="star-badge w-14 h-14 rounded-full shadow-lg grid place-items-center text-navy-900 text-2xl hover:scale-105 transition" aria-label="Ask Northern Star">
+    💬
+  </button>
+  <div id="chatPanel" class="hidden absolute bottom-16 right-0 w-[22rem] max-w-[calc(100vw-2.5rem)] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+    <div class="bg-navy-800 text-white px-4 py-3 flex items-center gap-2">
+      <img src="{{ url_for('static', filename='img/logo-emblem.svg') }}" alt="" class="w-7 h-7">
+      <div class="leading-tight">
+        <div class="font-semibold text-sm">Ask Northern Star</div>
+        <div class="text-[11px] text-star-400">AMC &amp; fire-safety assistant</div>
+      </div>
+    </div>
+    <div id="chatLog" class="h-72 overflow-y-auto px-3 py-3 space-y-2 text-sm bg-slate-50">
+      <div class="bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-700">
+        Hi! 👋 Ask me anything about AMC plans, visits, refills, emergency service or NOCs.
+      </div>
+    </div>
+    <form id="chatForm" class="flex items-center gap-2 border-t border-slate-200 p-2">
+      <input id="chatInput" type="text" placeholder="Type your question…" autocomplete="off"
+             class="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-star-400">
+      <button class="bg-primary text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary-hover transition">Send</button>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  const toggle = document.getElementById('chatToggle');
+  const panel = document.getElementById('chatPanel');
+  const form = document.getElementById('chatForm');
+  const input = document.getElementById('chatInput');
+  const log = document.getElementById('chatLog');
+  const history = [];
+
+  toggle.addEventListener('click', () => panel.classList.toggle('hidden'));
+
+  function bubble(text, who) {
+    const div = document.createElement('div');
+    div.className = who === 'user'
+      ? 'bg-primary text-white rounded-xl px-3 py-2 ml-8'
+      : 'bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-700 mr-4';
+    div.textContent = text;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+    return div;
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const q = input.value.trim();
+    if (!q) return;
+    bubble(q, 'user');
+    history.push({ role: 'user', content: q });
+    input.value = '';
+    const thinking = bubble('…', 'bot');
+    try {
+      const res = await fetch('{{ url_for("chat.ask") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: history.slice(-10) })
+      });
+      const data = await res.json();
+      thinking.textContent = data.reply || 'Sorry, something went wrong.';
+      history.push({ role: 'assistant', content: thinking.textContent });
+    } catch (err) {
+      thinking.textContent = 'Network error. Please try again.';
+    }
+  });
+})();
+</script>

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}Emergency Visit — {{ COMPANY_NAME }}{% endblock %}
+{% block content %}
+<section class="max-w-3xl mx-auto px-4 py-12">
+  <div class="bg-red-600 text-white rounded-2xl p-6 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-extrabold">🚨 Fire Emergency Response</h1>
+      <p class="text-red-100 mt-1">24×7 team across {{ COMPANY_CITY }}. No AMC needed.</p>
+    </div>
+    <a href="tel:{{ EMERGENCY_HOTLINE }}" class="bg-white text-red-700 font-bold px-6 py-3 rounded-xl text-lg whitespace-nowrap">📞 {{ EMERGENCY_HOTLINE }}</a>
+  </div>
+
+  <h2 class="text-xl font-bold text-navy-800">Request an emergency / per-visit service</h2>
+  <p class="text-slate-600 mt-1 text-sm">Tell us what happened and where. We'll dispatch the team and share an ETA. For an immediate response, please call the hotline too.</p>
+
+  <form method="post" class="mt-6 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+    <div class="grid sm:grid-cols-2 gap-4">
+      {{ field('Your name', 'name', required=true) }}
+      {{ field('Phone number', 'phone', type='tel', required=true) }}
+      {{ field('Email (optional)', 'email', type='email') }}
+      {{ field('Area', 'area', required=true, placeholder='e.g. Adajan, Vesu…') }}
+    </div>
+    {{ field('Exact location / address', 'location', required=true, placeholder='Building, floor, landmark') }}
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">What has happened? <span class="text-red-500">*</span></span>
+      <textarea name="description" rows="4" required class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-400" placeholder="Describe the situation — fire, smoke, gas leak, faulty system, extinguisher discharge, etc."></textarea>
+    </label>
+    <div>
+      <span class="text-sm font-medium text-slate-700">Preferred payment</span>
+      <div class="mt-2 flex gap-4">
+        <label class="flex items-center gap-2 border border-slate-300 rounded-lg px-4 py-2 cursor-pointer"><input type="radio" name="payment_mode" value="cash" checked> 💵 Cash</label>
+        <label class="flex items-center gap-2 border border-slate-300 rounded-lg px-4 py-2 cursor-pointer"><input type="radio" name="payment_mode" value="online"> 💳 Online</label>
+      </div>
+    </div>
+    <button class="w-full bg-red-600 text-white font-semibold py-3 rounded-xl hover:bg-red-500">Request emergency team</button>
+  </form>
+</section>
+{% endblock %}

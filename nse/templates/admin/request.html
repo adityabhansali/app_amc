@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge %}
+{% block title %}{{ sr.reference }} — Ops{% endblock %}
+{% block content %}
+<section class="max-w-3xl mx-auto px-4 py-10">
+  <a href="{{ url_for('admin.requests_list') }}" class="text-sm text-slate-500 hover:text-navy-700">← Requests</a>
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mt-3">
+    <div class="flex items-start justify-between">
+      <div>
+        <h1 class="text-2xl font-extrabold text-navy-800">{{ sr.reference }}</h1>
+        <p class="text-slate-600">{{ 'NOC request' if sr.request_type=='noc' else 'Emergency visit' }} · {{ sr.created_at.strftime('%d %b %Y, %I:%M %p') }}</p>
+      </div>
+      {{ status_badge(sr.status) }}
+    </div>
+    <div class="grid sm:grid-cols-2 gap-3 mt-4 text-sm">
+      <div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500">Name</div><div class="font-medium text-navy-800">{{ sr.name }}</div></div>
+      <div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500">Phone</div><div class="font-medium text-navy-800"><a href="tel:{{ sr.phone }}" class="text-navy-700">{{ sr.phone }}</a></div></div>
+      <div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500">Area</div><div class="font-medium text-navy-800">{{ sr.area or '—' }}</div></div>
+      <div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500">Location</div><div class="font-medium text-navy-800">{{ sr.location or '—' }}</div></div>
+    </div>
+    {% if sr.description %}<div class="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-slate-700"><strong>Reported:</strong> {{ sr.description }}</div>{% endif %}
+  </div>
+
+  <form method="post" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mt-5 space-y-4">
+    <h2 class="font-bold text-navy-800">Dispatch &amp; update</h2>
+    <div class="grid sm:grid-cols-2 gap-3">
+      <label class="block"><span class="text-sm font-medium text-slate-700">Status</span>
+        <select name="status" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300">
+          {% for s in ['new','scheduled','dispatched','in_progress','completed','cancelled'] %}
+          <option value="{{ s }}" {{ 'selected' if sr.status==s }}>{{ s.replace('_',' ')|title }}</option>{% endfor %}
+        </select></label>
+      <label class="block"><span class="text-sm font-medium text-slate-700">Assign technician</span>
+        <select name="assigned_technician_id" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300">
+          <option value="">— Unassigned —</option>
+          {% for t in techs %}<option value="{{ t.id }}" {{ 'selected' if sr.assigned_technician_id==t.id }}>{{ t.name }}</option>{% endfor %}
+        </select></label>
+      <label class="block"><span class="text-sm font-medium text-slate-700">Scheduled date/time</span>
+        <input type="datetime-local" name="scheduled_date" value="{{ sr.scheduled_date.strftime('%Y-%m-%dT%H:%M') if sr.scheduled_date }}" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300"></label>
+      <label class="block"><span class="text-sm font-medium text-slate-700">Team ETA (text)</span>
+        <input name="team_eta" value="{{ sr.team_eta or '' }}" placeholder="e.g. 45 minutes" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300"></label>
+      <label class="block"><span class="text-sm font-medium text-slate-700">Amount (₹)</span>
+        <input type="number" name="amount" value="{{ sr.amount }}" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300"></label>
+      <div class="grid grid-cols-2 gap-2">
+        <label class="block"><span class="text-sm font-medium text-slate-700">Pay mode</span>
+          <select name="payment_mode" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300">
+            <option value="cash" {{ 'selected' if sr.payment_mode=='cash' }}>Cash</option>
+            <option value="online" {{ 'selected' if sr.payment_mode=='online' }}>Online</option>
+          </select></label>
+        <label class="block"><span class="text-sm font-medium text-slate-700">Pay status</span>
+          <select name="payment_status" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300">
+            <option value="pending" {{ 'selected' if sr.payment_status=='pending' }}>Pending</option>
+            <option value="paid" {{ 'selected' if sr.payment_status=='paid' }}>Paid</option>
+          </select></label>
+      </div>
+    </div>
+    <button class="w-full bg-navy-800 text-white font-semibold py-3 rounded-xl hover:bg-navy-700">Update request</button>
+    {% if sr.customer_id %}<p class="text-xs text-slate-500 text-center">The customer will be notified of status &amp; ETA updates in their portal.</p>{% endif %}
+  </form>
+</section>
+{% endblock %}

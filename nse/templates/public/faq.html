@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}FAQ — {{ COMPANY_NAME }}{% endblock %}
+{% block content %}
+<section class="max-w-3xl mx-auto px-4 py-12">
+  <h1 class="text-3xl font-extrabold text-navy-800">Frequently asked questions</h1>
+  <div class="mt-8 space-y-3">
+    {% set faqs = [
+      ('What is an AMC and what does it cover?', 'An Annual Maintenance Contract keeps your fire-safety systems serviced and compliant for a year. It includes a fixed number of scheduled visits, inspection and servicing of extinguishers and equipment, a documented service report with site photos for every visit, and refill tracking.'),
+      ('How much does an AMC cost?', 'Residential plans start at ₹25,000/year. Commercial complex plans go up to ₹50,000/year depending on the premises and equipment. See the Plans & Pricing page for details.'),
+      ('How many visits will I get?', 'Most plans include 4 scheduled visits per year, spaced across the year. The exact number is shown on each plan and on your contract once activated.'),
+      ('Can I see what was done in each visit?', 'Yes. Log in to your portal to see the status of every visit, the site photos taken, the work done, the assigned technician, and a downloadable service report.'),
+      ('How do extinguisher refills work?', 'Every piece of equipment in your contract shows its last refill date and next due date with a status badge (On track / Due soon / Overdue), so you always know what needs refilling and when.'),
+      ('What if materials need to be replaced?', 'After a visit, our technician lists any materials to be replaced as a quotation. You review and approve it in your portal (cash or online). Once approved, a technician returns to install the parts.'),
+      ('Do I need an AMC for an emergency visit?', 'No. Anyone in Surat can request an emergency per-visit service or call our 24×7 hotline. Fill in the emergency form with your location and what happened, and we will dispatch the team with an ETA.'),
+      ('Can you help with a fire NOC?', 'Yes. We provide 360° fire-safety solutions including NOC assistance — from design to final clearance. Raise an NOC request and our team will guide you.'),
+      ('How can I pay?', 'You can pay by cash or online. You choose your preferred mode when applying or requesting a service.')
+    ] %}
+    {% for q, a in faqs %}
+    <details class="bg-white border border-slate-200 rounded-xl p-4 group">
+      <summary class="font-semibold text-navy-800 cursor-pointer list-none flex justify-between items-center">
+        {{ q }}<span class="text-star-500 group-open:rotate-45 transition">＋</span>
+      </summary>
+      <p class="text-slate-600 text-sm mt-3">{{ a }}</p>
+    </details>
+    {% endfor %}
+  </div>
+  <div class="mt-8 text-center text-slate-600">
+    Still have questions? <a href="{{ url_for('public.enquiry') }}" class="text-navy-700 font-semibold underline">Ask us →</a>
+  </div>
+</section>
+{% endblock %}

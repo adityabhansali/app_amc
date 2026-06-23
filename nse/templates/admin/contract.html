@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, refill_badge %}
+{% block title %}{{ c.reference }} — Ops Console{% endblock %}
+{% block content %}
+<section class="max-w-5xl mx-auto px-4 py-10">
+  <a href="{{ url_for('admin.contracts') }}" class="text-sm text-slate-500 hover:text-navy-700">← Contracts</a>
+
+  <!-- Header -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mt-3">
+    <div class="flex items-start justify-between flex-wrap gap-3">
+      <div>
+        <h1 class="text-2xl font-extrabold text-navy-800">{{ c.reference }} {{ status_badge(c.status) }}</h1>
+        <p class="text-slate-600 mt-1">{{ c.applicant_name or (c.customer.name if c.customer) }} · {{ c.applicant_phone }}{% if c.applicant_email %} · {{ c.applicant_email }}{% endif %}</p>
+        <p class="text-sm text-slate-500">{{ c.plan.name if c.plan else 'Custom plan' }} · {{ c.property_type or '' }}</p>
+        {% if c.site_address %}<p class="text-sm text-slate-500">📍 {{ c.site_address }}{% if c.area %}, {{ c.area }}{% endif %}</p>{% endif %}
+        {% if c.application_notes %}<p class="text-sm text-slate-600 mt-2 bg-slate-50 rounded-lg p-3">{{ c.application_notes }}</p>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Activation (pending) -->
+  {% if c.status == 'pending' %}
+  <div class="bg-amber-50 border border-amber-200 rounded-2xl p-6 mt-5">
+    <h2 class="font-bold text-amber-800">Activate contract</h2>
+    <p class="text-sm text-amber-700 mt-1">Set start date, price and number of visits. This creates the customer account (by phone) and auto-generates scheduled visits.</p>
+    <form method="post" action="{{ url_for('admin.activate_contract', contract_id=c.id) }}" class="grid sm:grid-cols-3 gap-3 mt-4">
+      <label class="block"><span class="text-sm font-medium text-slate-700">Start date</span>
+        <input type="date" name="start_date" value="{{ today.isoformat() }}" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300"></label>
+      <label class="block"><span class="text-sm font-medium text-slate-700">Total visits</span>
+        <input type="number" name="total_visits" value="{{ c.total_visits }}" min="1" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300"></label>
+      <label class="block"><span class="text-sm font-medium text-slate-700">Price (₹)</span>
+        <input type="number" name="price" value="{{ c.price }}" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300"></label>
+      <button class="sm:col-span-3 bg-green-600 text-white font-semibold py-2.5 rounded-xl hover:bg-green-500">✓ Activate &amp; generate visits</button>
+    </form>
+  </div>
+  {% else %}
+  <!-- Payment status -->
+  <form method="post" action="{{ url_for('admin.contract_payment', contract_id=c.id) }}" class="bg-white rounded-2xl border border-slate-200 p-4 mt-5 flex flex-wrap items-end gap-3">
+    <div><span class="text-xs text-slate-500">Payment mode</span>
+      <select name="payment_mode" class="block mt-1 px-3 py-2 rounded-lg border border-slate-300 text-sm">
+        <option value="cash" {{ 'selected' if c.payment_mode=='cash' }}>Cash</option>
+        <option value="online" {{ 'selected' if c.payment_mode=='online' }}>Online</option>
+      </select></div>
+    <div><span class="text-xs text-slate-500">Payment status</span>
+      <select name="payment_status" class="block mt-1 px-3 py-2 rounded-lg border border-slate-300 text-sm">
+        <option value="pending" {{ 'selected' if c.payment_status=='pending' }}>Pending</option>
+        <option value="paid" {{ 'selected' if c.payment_status=='paid' }}>Paid</option>
+      </select></div>
+    <button class="bg-navy-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-navy-700">Update payment</button>
+    <span class="text-sm text-slate-500 ml-auto">{{ c.start_date|datefmt }} → {{ c.end_date|datefmt }}</span>
+  </form>
+
+  <!-- Visits -->
+  <h2 class="text-lg font-bold text-navy-800 mt-8 mb-3">Visits</h2>
+  <div class="space-y-2">
+    {% for v in c.visits %}
+    <a href="{{ url_for('admin.visit', visit_id=v.id) }}" class="flex items-center justify-between bg-white rounded-xl border border-slate-200 p-3 hover:border-star-400">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full grid place-items-center font-bold text-sm {{ 'bg-green-100 text-green-700' if v.status=='completed' else 'bg-slate-100 text-slate-500' }}">{{ v.visit_number }}</div>
+        <div><div class="font-medium text-navy-800">{{ v.label }}</div><div class="text-xs text-slate-500">{{ v.scheduled_date|datefmt }}{% if v.technician %} · {{ v.technician.name }}{% endif %}</div></div>
+      </div>
+      <div class="flex items-center gap-3">{% if v.photos %}<span class="text-xs text-slate-400">📷{{ v.photos|length }}</span>{% endif %}{% if v.service_report_path %}<span class="text-xs text-green-600">📄</span>{% endif %}{{ status_badge(v.status) }}</div>
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- Equipment -->
+  <div class="flex items-center justify-between mt-8 mb-3">
+    <h2 class="text-lg font-bold text-navy-800">Equipment &amp; refills</h2>
+    <button onclick="document.getElementById('addEquip').classList.toggle('hidden')" class="text-sm bg-navy-800 text-white px-3 py-1.5 rounded-lg hover:bg-navy-700">+ Add equipment</button>
+  </div>
+
+  <form id="addEquip" method="post" action="{{ url_for('admin.add_equipment', contract_id=c.id) }}" class="hidden bg-white rounded-2xl border border-slate-200 p-4 mb-3 grid sm:grid-cols-3 gap-3">
+    <input name="name" required placeholder="Name e.g. ABC 6kg" class="px-3 py-2 rounded-lg border border-slate-300 text-sm">
+    <input name="equip_type" placeholder="Type e.g. extinguisher" class="px-3 py-2 rounded-lg border border-slate-300 text-sm">
+    <input name="location" placeholder="Location" class="px-3 py-2 rounded-lg border border-slate-300 text-sm">
+    <input name="serial_no" placeholder="Serial no" class="px-3 py-2 rounded-lg border border-slate-300 text-sm">
+    <label class="text-xs text-slate-500">Last refill<input type="date" name="last_refill_date" class="block w-full px-3 py-1.5 rounded-lg border border-slate-300 text-sm"></label>
+    <label class="text-xs text-slate-500">Interval (months)<input type="number" name="refill_interval_months" value="12" class="block w-full px-3 py-1.5 rounded-lg border border-slate-300 text-sm"></label>
+    <button class="sm:col-span-3 bg-green-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-500">Save equipment</button>
+  </form>
+
+  {% if c.equipment %}
+  <div class="bg-white rounded-2xl border border-slate-200 overflow-x-auto">
+    <table class="w-full text-sm min-w-[680px]">
+      <thead class="bg-slate-50 text-slate-500 text-left text-xs uppercase">
+        <tr><th class="px-4 py-2">Equipment</th><th class="px-4 py-2">Last refill</th><th class="px-4 py-2">Next due</th><th class="px-4 py-2">Status</th><th class="px-4 py-2">Record refill</th></tr>
+      </thead>
+      <tbody>
+      {% for e in c.equipment %}
+        <tr class="border-t border-slate-100">
+          <td class="px-4 py-2"><div class="font-medium text-navy-800">{{ e.name }}</div><div class="text-xs text-slate-400">{{ e.location or '' }}</div></td>
+          <td class="px-4 py-2 text-slate-600">{{ e.last_refill_date|datefmt }}</td>
+          <td class="px-4 py-2 text-slate-600">{{ e.next_refill_date|datefmt }}</td>
+          <td class="px-4 py-2">{{ refill_badge(e) }}</td>
+          <td class="px-4 py-2">
+            <form method="post" action="{{ url_for('admin.add_refill', equip_id=e.id) }}" class="flex gap-1">
+              <input type="date" name="refill_date" value="{{ today.isoformat() }}" class="px-2 py-1 rounded border border-slate-300 text-xs">
+              <button class="bg-navy-800 text-white px-2 py-1 rounded text-xs hover:bg-navy-700">Refill</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<p class="text-slate-500 text-sm">No equipment added yet.</p>{% endif %}
+
+  <!-- Quotations -->
+  <div class="flex items-center justify-between mt-8 mb-3">
+    <h2 class="text-lg font-bold text-navy-800">Quotations</h2>
+    <a href="{{ url_for('admin.new_quotation', contract_id=c.id) }}" class="text-sm bg-navy-800 text-white px-3 py-1.5 rounded-lg hover:bg-navy-700">+ New quotation</a>
+  </div>
+  {% if c.quotations %}
+  <div class="space-y-2">
+    {% for q in c.quotations %}
+    <div class="flex items-center justify-between bg-white rounded-xl border border-slate-200 px-4 py-3">
+      <div><span class="font-semibold text-navy-800">{{ q.reference }}</span> <span class="text-sm text-slate-500">· {{ q.items|length }} item(s) · {{ q.created_at|datefmt }}</span></div>
+      <div class="flex items-center gap-3"><span class="font-semibold">{{ q.total|rupees }}</span>{{ status_badge(q.status) }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}<p class="text-slate-500 text-sm">No quotations yet.</p>{% endif %}
+  {% endif %}
+</section>
+{% endblock %}

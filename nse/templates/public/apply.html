@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}Apply for AMC — {{ COMPANY_NAME }}{% endblock %}
+{% block content %}
+<section class="max-w-3xl mx-auto px-4 py-12">
+  <h1 class="text-3xl font-extrabold text-navy-800">Apply for an AMC</h1>
+  <p class="text-slate-600 mt-2">Fill in your details and choose a plan. Our maintenance team will call to confirm and activate your contract.</p>
+
+  <form method="post" class="mt-8 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+    <div>
+      <h2 class="font-semibold text-navy-800 mb-3">Choose a plan</h2>
+      <select name="plan_id" required class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-star-400">
+        <option value="">— Select a plan —</option>
+        {% for p in plans %}
+        <option value="{{ p.id }}" {{ 'selected' if selected==p.id }}>{{ p.category|title }} · {{ p.name }} — {{ p.price|rupees }}/yr ({{ p.visits_per_year }} visits)</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="grid sm:grid-cols-2 gap-4">
+      {{ field('Your name', 'name', required=true) }}
+      {{ field('Phone number', 'phone', type='tel', required=true, placeholder='10-digit mobile') }}
+      {{ field('Email', 'email', type='email') }}
+      <label class="block">
+        <span class="text-sm font-medium text-slate-700">Property type</span>
+        <select name="property_type" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-star-400">
+          <option>Residential apartment</option>
+          <option>Independent house / villa</option>
+          <option>Housing society</option>
+          <option>Shop / showroom</option>
+          <option>Office</option>
+          <option>Commercial complex</option>
+          <option>Industrial unit</option>
+          <option>Other</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="grid sm:grid-cols-2 gap-4">
+      {{ field('Site / building name', 'site_name') }}
+      {{ field('Area', 'area', placeholder='e.g. Adajan, Vesu, Katargam…') }}
+    </div>
+    {{ field('Full site address', 'site_address', placeholder='Building, street, landmark, Surat') }}
+
+    <label class="block">
+      <span class="text-sm font-medium text-slate-700">Anything we should know?</span>
+      <textarea name="notes" rows="3" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-star-400" placeholder="Number of extinguishers, existing systems, preferred visit timing…"></textarea>
+    </label>
+
+    <div>
+      <span class="text-sm font-medium text-slate-700">Preferred payment</span>
+      <div class="mt-2 flex gap-4">
+        <label class="flex items-center gap-2 border border-slate-300 rounded-lg px-4 py-2 cursor-pointer">
+          <input type="radio" name="payment_mode" value="cash" checked> 💵 Cash on visit
+        </label>
+        <label class="flex items-center gap-2 border border-slate-300 rounded-lg px-4 py-2 cursor-pointer">
+          <input type="radio" name="payment_mode" value="online"> 💳 Pay online
+        </label>
+      </div>
+      <p class="text-xs text-slate-500 mt-1">Online payment link will be shared by our team after confirmation.</p>
+    </div>
+
+    <button class="w-full bg-star-500 text-navy-900 font-semibold py-3 rounded-xl hover:bg-star-400">Submit application</button>
+  </form>
+</section>
+{% endblock %}

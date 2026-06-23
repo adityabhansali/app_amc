@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}{{ COMPANY_NAME }} — Fire Safety AMC in {{ COMPANY_CITY }}{% endblock %}
+{% block content %}
+
+<!-- Hero -->
+<section class="bg-navy-800 text-white">
+  <div class="max-w-6xl mx-auto px-4 py-16 md:py-24 grid md:grid-cols-2 gap-10 items-center">
+    <div>
+      <span class="inline-block bg-navy-700 text-star-400 text-xs font-semibold px-3 py-1 rounded-full mb-4">
+        ★ {{ COMPANY_TAGLINE }}
+      </span>
+      <h1 class="text-4xl md:text-5xl font-extrabold leading-tight">
+        Annual Maintenance Contracts, made <span class="text-star-400">transparent.</span>
+      </h1>
+      <p class="mt-5 text-slate-300 text-lg">
+        From design to NOC, {{ COMPANY_NAME }} keeps your fire-safety systems alive.
+        Apply for an AMC, track every visit, see your service reports &amp; photos, and
+        watch your extinguisher refills — all in one place.
+      </p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a href="{{ url_for('public.apply') }}" class="bg-star-500 text-navy-900 font-semibold px-6 py-3 rounded-xl hover:bg-star-400">Apply for AMC</a>
+        <a href="{{ url_for('public.plans') }}" class="bg-navy-700 text-white px-6 py-3 rounded-xl hover:bg-navy-600">View Plans &amp; Pricing</a>
+        <a href="{{ url_for('public.emergency') }}" class="bg-red-600 text-white px-6 py-3 rounded-xl hover:bg-red-500">🚨 Emergency Visit</a>
+      </div>
+    </div>
+    <div class="bg-surface-1 rounded-2xl p-6 border border-hairline">
+      <h3 class="font-semibold text-primary-hover mb-4">Why customers choose us</h3>
+      <ul class="space-y-3 text-slate-200 text-sm">
+        <li class="flex gap-3"><span>✅</span> Fixed scheduled visits with documented reports &amp; site photos</li>
+        <li class="flex gap-3"><span>✅</span> Live extinguisher &amp; equipment refill tracking — never miss a due date</li>
+        <li class="flex gap-3"><span>✅</span> Transparent material quotations you approve before any work</li>
+        <li class="flex gap-3"><span>✅</span> 24×7 Fire Emergency Response team across Surat</li>
+        <li class="flex gap-3"><span>✅</span> Pay by cash or online — your choice</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- Trust stats -->
+<section class="border-b border-hairline">
+  <div class="max-w-6xl mx-auto px-4 py-10 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+    {% set stats = [('7+','Years of experience'),('700+','Projects completed'),('600+','Satisfied clients'),('99%','Client retention')] %}
+    {% for big, label in stats %}
+    <div>
+      <div class="text-3xl md:text-4xl font-extrabold text-ink">{{ big }}</div>
+      <div class="text-sm text-ink-subtle mt-1">{{ label }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- Full-service scope -->
+<section class="max-w-6xl mx-auto px-4 py-14">
+  <div class="text-center mb-10">
+    <span class="text-[11px] font-semibold tracking-[0.12em] uppercase text-primary-hover">360° Fire &amp; Safety</span>
+    <h2 class="text-3xl font-extrabold text-navy-800 mt-2">From design to NOC — and maintenance for life</h2>
+    <p class="text-slate-600 mt-2 max-w-2xl mx-auto">End-to-end fire protection engineered to NBC, BIS, IS &amp; NFPA codes. This portal is the maintenance arm that keeps it all alive after handover.</p>
+  </div>
+  <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+    {% set services = [
+      ('📐','Design &amp; Consultation','Industry &amp; space-wise system design by qualified engineers.'),
+      ('🏗️','Projects &amp; Installation','Execution by trained staff under engineer supervision.'),
+      ('🛠️','Service &amp; Maintenance','AMC plans &amp; 24-hour emergency response.'),
+      ('🎓','Training &amp; Audit','Fire-safety training &amp; Fire NOC liaison.'),
+      ('🧪','Testing &amp; Commissioning','Verified handover with daily progress reports.')
+    ] %}
+    {% for icon, t, d in services %}
+    <div class="bg-white rounded-xl border border-slate-200 p-5">
+      <div class="text-2xl">{{ icon|safe }}</div>
+      <h3 class="font-semibold text-navy-800 mt-3 text-[15px]">{{ t|safe }}</h3>
+      <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">{{ d|safe }}</p>
+    </div>
+    {% endfor %}
+  </div>
+  <p class="text-center text-xs text-ink-subtle mt-6">Trusted across 16 sectors — residential, commercial, healthcare, retail, government, education, manufacturing &amp; more.</p>
+</section>
+
+<!-- Pricing snapshot -->
+<section class="max-w-6xl mx-auto px-4 py-14">
+  <div class="text-center mb-10">
+    <h2 class="text-3xl font-extrabold text-navy-800">Simple, honest pricing</h2>
+    <p class="text-slate-600 mt-2">Plans for homes and commercial complexes. Pick what fits your premises.</p>
+  </div>
+  <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for p in plans %}
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col">
+      <span class="text-xs font-semibold uppercase tracking-wide {{ 'text-blue-600' if p.category=='residential' else 'text-star-600' }}">{{ p.category }}</span>
+      <h3 class="text-xl font-bold text-navy-800 mt-1">{{ p.name }}</h3>
+      <div class="mt-3"><span class="text-3xl font-extrabold text-navy-800">{{ p.price|rupees }}</span><span class="text-slate-500 text-sm">/year</span></div>
+      <p class="text-sm text-slate-600 mt-2">{{ p.visits_per_year }} visits/year · {{ p.response_time }} response</p>
+      <ul class="mt-4 space-y-1.5 text-sm text-slate-700 flex-1">
+        {% for f in p.feature_list[:4] %}<li class="flex gap-2"><span class="text-green-600">✓</span> {{ f }}</li>{% endfor %}
+      </ul>
+      <a href="{{ url_for('public.apply', plan_id=p.id) }}" class="mt-5 text-center bg-navy-800 text-white py-2.5 rounded-xl font-medium hover:bg-navy-700">Choose plan</a>
+    </div>
+    {% else %}
+    <p class="text-slate-500">Plans are being set up. Please check back soon.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- How it works -->
+<section class="bg-white border-y border-slate-200">
+  <div class="max-w-6xl mx-auto px-4 py-14">
+    <h2 class="text-3xl font-extrabold text-navy-800 text-center mb-10">How your AMC works</h2>
+    <div class="grid md:grid-cols-4 gap-6 text-center">
+      {% set steps = [
+        ('1','Apply','Choose a plan and submit your premises details. Pay by cash or online.'),
+        ('2','We schedule','Your visits are scheduled across the year and a technician is assigned.'),
+        ('3','Service & report','Each visit gets photos, work done and a downloadable service report.'),
+        ('4','Stay covered','Track refills, approve material quotations, and call us anytime for emergencies.')
+      ] %}
+      {% for n, t, d in steps %}
+      <div class="p-5">
+        <div class="star-badge w-12 h-12 rounded-xl grid place-items-center text-navy-900 font-black text-lg mx-auto">{{ n }}</div>
+        <h3 class="font-bold text-navy-800 mt-4">{{ t }}</h3>
+        <p class="text-sm text-slate-600 mt-1">{{ d }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Services band -->
+<section class="max-w-6xl mx-auto px-4 py-14 grid md:grid-cols-3 gap-6">
+  <div class="bg-red-50 border border-red-200 rounded-2xl p-6">
+    <h3 class="font-bold text-red-700 text-lg">🚨 Emergency, even without an AMC</h3>
+    <p class="text-sm text-slate-700 mt-2">Fire or safety emergency? Our response team is ready 24×7. Request a per-visit service and get a team ETA.</p>
+    <a href="{{ url_for('public.emergency') }}" class="inline-block mt-4 text-red-700 font-semibold">Request emergency visit →</a>
+  </div>
+  <div class="bg-navy-50 border border-navy-100 rounded-2xl p-6">
+    <h3 class="font-bold text-navy-800 text-lg">📄 NOC assistance</h3>
+    <p class="text-sm text-slate-700 mt-2">Need a fire NOC for your premises? We handle design to final clearance. Raise a request and we'll guide you.</p>
+    <a href="{{ url_for('public.noc') }}" class="inline-block mt-4 text-navy-700 font-semibold">Request NOC →</a>
+  </div>
+  <div class="bg-surface-1 border border-hairline rounded-2xl p-6">
+    <h3 class="font-bold text-primary-hover text-lg">💬 Have a question?</h3>
+    <p class="text-sm text-slate-700 mt-2">Ask our AI assistant anything about AMC, or send an enquiry to our team. We're here to help.</p>
+    <a href="{{ url_for('public.enquiry') }}" class="inline-block mt-4 text-star-600 font-semibold">Ask Northern Star →</a>
+  </div>
+</section>
+
+{% endblock %}

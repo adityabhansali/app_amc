@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, refill_badge %}
+{% block title %}Ops Console — {{ COMPANY_NAME }}{% endblock %}
+{% block content %}
+<section class="max-w-6xl mx-auto px-4 py-10">
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <h1 class="text-2xl font-extrabold text-navy-800">Ops Console</h1>
+    <div class="flex gap-2 text-sm">
+      <a href="{{ url_for('admin.contracts') }}" class="bg-navy-800 text-white px-4 py-2 rounded-lg hover:bg-navy-700">Contracts</a>
+      <a href="{{ url_for('admin.requests_list') }}" class="bg-navy-800 text-white px-4 py-2 rounded-lg hover:bg-navy-700">Requests</a>
+      <a href="{{ url_for('admin.enquiries') }}" class="bg-navy-800 text-white px-4 py-2 rounded-lg hover:bg-navy-700">Enquiries</a>
+    </div>
+  </div>
+
+  <!-- KPI cards -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+    <div class="bg-white rounded-2xl border border-slate-200 p-5"><div class="text-3xl font-extrabold text-navy-800">{{ pending_apps|length }}</div><div class="text-sm text-slate-500">Pending applications</div></div>
+    <div class="bg-white rounded-2xl border border-slate-200 p-5"><div class="text-3xl font-extrabold text-green-600">{{ active }}</div><div class="text-sm text-slate-500">Active contracts</div></div>
+    <div class="bg-white rounded-2xl border border-slate-200 p-5"><div class="text-3xl font-extrabold text-red-600">{{ open_emergencies|length }}</div><div class="text-sm text-slate-500">Open emergencies</div></div>
+    <div class="bg-white rounded-2xl border border-slate-200 p-5"><div class="text-3xl font-extrabold text-star-600">{{ new_enquiries }}</div><div class="text-sm text-slate-500">New enquiries</div></div>
+  </div>
+
+  <div class="grid lg:grid-cols-2 gap-6 mt-8">
+    <!-- Pending applications -->
+    <div>
+      <h2 class="text-lg font-bold text-navy-800 mb-3">📝 Applications to review</h2>
+      {% if pending_apps %}
+      <div class="space-y-2">
+        {% for c in pending_apps %}
+        <a href="{{ url_for('admin.contract', contract_id=c.id) }}" class="block bg-white rounded-xl border border-slate-200 p-4 hover:border-star-400">
+          <div class="flex justify-between"><span class="font-semibold text-navy-800">{{ c.reference }}</span><span class="text-sm text-slate-500">{{ c.created_at|datefmt }}</span></div>
+          <div class="text-sm text-slate-600">{{ c.applicant_name }} · {{ c.applicant_phone }}{% if c.area %} · {{ c.area }}{% endif %}</div>
+          <div class="text-xs text-slate-500 mt-1">{{ c.plan.name if c.plan else 'Custom' }} · {{ c.price|rupees }}</div>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}<p class="text-slate-500 text-sm">No pending applications. 🎉</p>{% endif %}
+    </div>
+
+    <!-- Open emergencies / NOC -->
+    <div>
+      <h2 class="text-lg font-bold text-navy-800 mb-3">🚨 Open emergency / NOC requests</h2>
+      {% set open_reqs = open_emergencies + open_noc %}
+      {% if open_reqs %}
+      <div class="space-y-2">
+        {% for r in open_reqs %}
+        <a href="{{ url_for('admin.service_request', req_id=r.id) }}" class="block bg-white rounded-xl border {{ 'border-red-200' if r.request_type=='emergency' else 'border-slate-200' }} p-4 hover:border-star-400">
+          <div class="flex justify-between"><span class="font-semibold text-navy-800">{{ r.reference }}</span>{{ status_badge(r.status) }}</div>
+          <div class="text-sm text-slate-600">{{ r.name }} · {{ r.phone }}{% if r.area %} · {{ r.area }}{% endif %}</div>
+          {% if r.description %}<div class="text-xs text-slate-500 mt-1 line-clamp-1">{{ r.description[:90] }}</div>{% endif %}
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}<p class="text-slate-500 text-sm">No open requests.</p>{% endif %}
+    </div>
+
+    <!-- Upcoming visits -->
+    <div>
+      <h2 class="text-lg font-bold text-navy-800 mb-3">🗓 Upcoming visits</h2>
+      {% if upcoming %}
+      <div class="space-y-2">
+        {% for v in upcoming %}
+        <a href="{{ url_for('admin.visit', visit_id=v.id) }}" class="flex justify-between items-center bg-white rounded-xl border border-slate-200 p-3 hover:border-star-400">
+          <div><span class="font-medium text-navy-800">{{ v.contract.reference }}</span> <span class="text-sm text-slate-500">· {{ v.label }}</span></div>
+          <div class="text-sm text-slate-600">{{ v.scheduled_date|datefmt }}{% if v.technician %} · {{ v.technician.name }}{% endif %}</div>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}<p class="text-slate-500 text-sm">No upcoming visits scheduled.</p>{% endif %}
+    </div>
+
+    <!-- Refills due -->
+    <div>
+      <h2 class="text-lg font-bold text-navy-800 mb-3">🧯 Refills due / overdue</h2>
+      {% if due_refills %}
+      <div class="space-y-2">
+        {% for e in due_refills %}
+        <a href="{{ url_for('admin.contract', contract_id=e.contract_id) }}" class="flex justify-between items-center bg-white rounded-xl border border-slate-200 p-3 hover:border-star-400">
+          <div><span class="font-medium text-navy-800">{{ e.name }}</span> <span class="text-xs text-slate-500">· {{ e.contract.reference }}</span></div>
+          <div class="flex items-center gap-2"><span class="text-xs text-slate-500">{{ e.next_refill_date|datefmt }}</span>{{ refill_badge(e) }}</div>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}<p class="text-slate-500 text-sm">All refills on track. ✅</p>{% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

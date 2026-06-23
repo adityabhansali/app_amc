@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge %}
+{% block title %}My requests — {{ COMPANY_NAME }}{% endblock %}
+{% block content %}
+<section class="max-w-4xl mx-auto px-4 py-10">
+  <a href="{{ url_for('portal.dashboard') }}" class="text-sm text-slate-500 hover:text-navy-700">← Back to portal</a>
+  <h1 class="text-2xl font-extrabold text-navy-800 mt-2">Emergency / NOC requests</h1>
+  {% if requests %}
+  <div class="mt-5 space-y-3">
+    {% for r in requests %}
+    <div class="bg-white rounded-xl border border-slate-200 p-4">
+      <div class="flex items-center justify-between">
+        <div><span class="font-semibold text-navy-800">{{ r.reference }}</span> <span class="text-sm text-slate-500">· {{ 'NOC' if r.request_type=='noc' else 'Emergency' }}</span></div>
+        {{ status_badge(r.status) }}
+      </div>
+      {% if r.description %}<p class="text-sm text-slate-600 mt-2">{{ r.description }}</p>{% endif %}
+      <div class="text-xs text-slate-500 mt-2 flex flex-wrap gap-4">
+        <span>📍 {{ r.location or r.area or '—' }}</span>
+        {% if r.team_eta %}<span>🚑 ETA: {{ r.team_eta }}</span>{% endif %}
+        {% if r.scheduled_date %}<span>🗓 {{ r.scheduled_date.strftime('%d %b %Y, %I:%M %p') }}</span>{% endif %}
+        <span>Raised {{ r.created_at|datefmt }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-slate-500 mt-5">No requests yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

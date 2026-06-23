@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge %}
+{% block title %}{{ v.label }} — {{ v.contract.reference }} — Ops{% endblock %}
+{% block content %}
+<section class="max-w-3xl mx-auto px-4 py-10">
+  <a href="{{ url_for('admin.contract', contract_id=v.contract_id) }}" class="text-sm text-slate-500 hover:text-navy-700">← {{ v.contract.reference }}</a>
+  <h1 class="text-2xl font-extrabold text-navy-800 mt-2">{{ v.label }} {{ status_badge(v.status) }}</h1>
+
+  <form method="post" enctype="multipart/form-data" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mt-4 space-y-5">
+    <div class="grid sm:grid-cols-3 gap-3">
+      <label class="block"><span class="text-sm font-medium text-slate-700">Status</span>
+        <select name="status" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300">
+          {% for s in ['scheduled','in_progress','completed','cancelled'] %}
+          <option value="{{ s }}" {{ 'selected' if v.status==s }}>{{ s.replace('_',' ')|title }}</option>{% endfor %}
+        </select></label>
+      <label class="block"><span class="text-sm font-medium text-slate-700">Scheduled date</span>
+        <input type="date" name="scheduled_date" value="{{ v.scheduled_date.isoformat() if v.scheduled_date }}" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300"></label>
+      <label class="block"><span class="text-sm font-medium text-slate-700">Technician</span>
+        <select name="technician_id" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300">
+          <option value="">— Unassigned —</option>
+          {% for t in techs %}<option value="{{ t.id }}" {{ 'selected' if v.technician_id==t.id }}>{{ t.name }}</option>{% endfor %}
+        </select></label>
+    </div>
+
+    <label class="block"><span class="text-sm font-medium text-slate-700">Work done</span>
+      <textarea name="work_done" rows="3" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300">{{ v.work_done or '' }}</textarea></label>
+    <label class="block"><span class="text-sm font-medium text-slate-700">Internal notes</span>
+      <textarea name="notes" rows="2" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300">{{ v.notes or '' }}</textarea></label>
+
+    <div class="grid sm:grid-cols-2 gap-4 border-t border-slate-100 pt-4">
+      <label class="block"><span class="text-sm font-medium text-slate-700">Service report (PDF/image)</span>
+        <input type="file" name="report" accept=".pdf,.png,.jpg,.jpeg" class="mt-1 w-full text-sm">
+        {% if v.service_report_path %}<span class="text-xs text-green-600">Current report uploaded ✓</span>{% endif %}</label>
+      <label class="block"><span class="text-sm font-medium text-slate-700">Site photos (multiple)</span>
+        <input type="file" name="photos" accept="image/*" multiple class="mt-1 w-full text-sm">
+        <input name="photo_caption" placeholder="Optional caption" class="mt-2 w-full px-3 py-1.5 rounded-lg border border-slate-300 text-sm"></label>
+    </div>
+
+    <button class="w-full bg-green-600 text-white font-semibold py-3 rounded-xl hover:bg-green-500">Save visit</button>
+    <p class="text-xs text-slate-500 text-center">Marking as <strong>completed</strong> notifies the customer and publishes the report &amp; photos to their portal.</p>
+  </form>
+
+  {% if v.photos %}
+  <h2 class="font-bold text-navy-800 mt-8 mb-3">Uploaded photos</h2>
+  <div class="grid grid-cols-3 gap-3">
+    {% for p in v.photos %}
+    <a href="{{ p.file_path|upload_url }}" target="_blank"><img src="{{ p.file_path|upload_url }}" class="w-full h-28 object-cover rounded-lg border border-slate-200"></a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

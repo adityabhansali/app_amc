@@ -1,0 +1,30 @@
+{% macro status_badge(status) %}
+  {% set map = {
+    'pending':'bg-amber-100 text-amber-800','active':'bg-green-100 text-green-800',
+    'expired':'bg-slate-200 text-slate-700','cancelled':'bg-slate-200 text-slate-600',
+    'scheduled':'bg-blue-100 text-blue-800','in_progress':'bg-indigo-100 text-indigo-800',
+    'completed':'bg-green-100 text-green-800','new':'bg-amber-100 text-amber-800',
+    'dispatched':'bg-indigo-100 text-indigo-800','approved':'bg-green-100 text-green-800',
+    'rejected':'bg-red-100 text-red-700','responded':'bg-green-100 text-green-800',
+    'paid':'bg-green-100 text-green-800',
+  } %}
+  <span class="inline-block text-xs font-semibold px-2.5 py-1 rounded-full {{ map.get(status,'bg-slate-100 text-slate-700') }}">
+    {{ status.replace('_',' ')|title }}
+  </span>
+{% endmacro %}
+
+{% macro refill_badge(e) %}
+  {% set s = e.refill_status %}
+  {% set map = {'ok':'bg-green-100 text-green-800','due_soon':'bg-amber-100 text-amber-800','overdue':'bg-red-100 text-red-700','unknown':'bg-slate-100 text-slate-600'} %}
+  {% set label = {'ok':'On track','due_soon':'Due soon','overdue':'Overdue','unknown':'No data'} %}
+  <span class="inline-block text-xs font-semibold px-2.5 py-1 rounded-full {{ map[s] }}">{{ label[s] }}</span>
+{% endmacro %}
+
+{% macro field(label, name, type='text', value='', required=false, placeholder='') %}
+  <label class="block">
+    <span class="text-sm font-medium text-slate-700">{{ label }}{% if required %} <span class="text-red-500">*</span>{% endif %}</span>
+    <input type="{{ type }}" name="{{ name }}" value="{{ value }}" {% if required %}required{% endif %}
+           placeholder="{{ placeholder }}"
+           class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-star-400">
+  </label>
+{% endmacro %}
