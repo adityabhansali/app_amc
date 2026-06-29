@@ -47,7 +47,27 @@ class Config:
     # instead of the local, ephemeral filesystem. Unset locally => disk uploads.
     BLOB_READ_WRITE_TOKEN = os.getenv("BLOB_READ_WRITE_TOKEN", "")
 
-    # Company branding / contact (surfaced across templates)
+    # ── Email (Flask-Mail via Microsoft Outlook / Office 365) ──────────────────
+    # Add MAIL_PASSWORD=<your-password> to .env to enable sending.
+    # All other values are set to the correct Outlook SMTP defaults below.
+    MAIL_SERVER   = os.getenv("MAIL_SERVER",   "smtp.office365.com")
+    MAIL_PORT     = int(os.getenv("MAIL_PORT", "587"))
+    MAIL_USE_TLS  = True
+    MAIL_USE_SSL  = False
+    MAIL_USERNAME = os.getenv("MAIL_USERNAME", "assistantoperations@northernstarengineering.com")
+    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "")
+    MAIL_DEFAULT_SENDER = (
+        os.getenv("MAIL_SENDER_NAME", "Northern Star Engineering"),
+        os.getenv("MAIL_USERNAME", "assistantoperations@northernstarengineering.com"),
+    )
+    # Set to False to suppress actual sends during development (log to console instead)
+    MAIL_SUPPRESS_SEND = os.getenv("MAIL_SUPPRESS_SEND", "true").lower() == "true"
+
+    # Business-specific constants (used in quotation PDFs and emails)
+    COMPANY_GST = os.getenv("COMPANY_GST", "24ALQPD0899P1ZD")
+    SALES_MANAGER_PHONE = os.getenv("SALES_MANAGER_PHONE", "+919687266625")
+
+    # ── Company branding / contact (surfaced across templates) ──────────────────
     COMPANY_NAME = os.getenv("COMPANY_NAME", "Northern Star Engineering")
     COMPANY_CITY = os.getenv("COMPANY_CITY", "Surat, Gujarat")
     COMPANY_TAGLINE = os.getenv(

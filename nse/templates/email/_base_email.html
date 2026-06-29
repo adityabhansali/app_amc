@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  body{margin:0;padding:0;background:#f4f6f8;font-family:Arial,Helvetica,sans-serif;color:#1a1a2e}
+  .wrapper{max-width:600px;margin:32px auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.1)}
+  .header{background:#16235b;padding:28px 32px;text-align:center}
+  .header img{height:48px;vertical-align:middle;margin-right:12px}
+  .header h1{color:#fff;margin:12px 0 4px;font-size:20px;letter-spacing:-.01em}
+  .header p{color:rgba(255,255,255,.65);margin:0;font-size:13px}
+  .body{padding:32px}
+  .body h2{color:#16235b;margin:0 0 16px;font-size:18px}
+  .body p{line-height:1.65;color:#444;margin:0 0 14px}
+  .btn{display:inline-block;padding:13px 28px;background:#16235b;color:#fff !important;text-decoration:none;border-radius:8px;font-weight:700;font-size:15px;margin:8px 0}
+  .btn-red{background:#dc2626}
+  .info-box{background:#f0f4ff;border-left:4px solid #16235b;border-radius:6px;padding:14px 18px;margin:18px 0}
+  .info-box p{margin:4px 0;font-size:14px}
+  .info-box strong{color:#16235b}
+  .footer{background:#f0f4ff;padding:18px 32px;text-align:center;font-size:12px;color:#666;border-top:1px solid #e5e9f2}
+  .footer a{color:#16235b}
+  .divider{height:1px;background:#e5e9f2;margin:24px 0}
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="header">
+    <h1>Northern Star Engineering</h1>
+    <p>Enlightening Safety · Surat, Gujarat</p>
+  </div>
+  <div class="body">
+    {% block content %}{% endblock %}
+  </div>
+  <div class="footer">
+    <p>Northern Star Engineering · 522-523, Western Business Park, Vesu, Surat-395 007</p>
+    <p>📞 <a href="tel:+919687266625">+91 96872 66625</a> &nbsp;|&nbsp; Emergency: <a href="tel:18008918565">1800-891-8565</a> &nbsp;|&nbsp; <a href="https://northernstarengineering.com">northernstarengineering.com</a></p>
+    <p style="margin-top:10px;color:#999;font-size:11px">This is an automated message from Northern Star Engineering. Please do not reply to this email.</p>
+  </div>
+</div>
+</body>
+</html>

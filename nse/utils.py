@@ -13,6 +13,15 @@ from .extensions import db
 from .models import OtpCode, Notification
 
 
+# Liability waiver a client must accept when rejecting a recommended material
+# quotation raised during an AMC visit (Wave 6).
+WAIVER_TEXT = (
+    "I do not wish to replace the mentioned spare parts/equipments/tools as mentioned "
+    "by the company and hereby, I take full responsibility if any fire incident happens "
+    "after this AMC visit, and Northern Star Engineering is not responsible."
+)
+
+
 def staff_required(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
@@ -144,10 +153,24 @@ def upload_url(path):
 # --------------------------------------------------------------------------- #
 # Notifications
 # --------------------------------------------------------------------------- #
-def notify(user_id, title, body=None):
+def notify(user_id, title, body=None, link=None):
     if not user_id:
         return
-    db.session.add(Notification(user_id=user_id, title=title, body=body))
+    db.session.add(Notification(user_id=user_id, title=title, body=body, link=link))
+    db.session.commit()
+
+
+def notify_staff(title, body=None, link=None):
+    """Fan a notification out to every staff member (admin + technician).
+
+    Used for events the Ops Console must surface — e.g. a customer accepting or
+    requesting negotiation on a quotation. Each staff user gets their own
+    Notification row so the unread badge / bell works per-account.
+    """
+    from .models import User
+    staff = User.query.filter(User.role.in_(["admin", "technician"])).all()
+    for u in staff:
+        db.session.add(Notification(user_id=u.id, title=title, body=body, link=link))
     db.session.commit()
 
 

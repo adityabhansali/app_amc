@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import status_badge, refill_badge %}
+{% from "_macros.html" import status_badge, refill_badge, workflow_track %}
 {% block title %}{{ c.reference }} — {{ COMPANY_NAME }}{% endblock %}
 {% block content %}
 <section class="max-w-5xl mx-auto px-4 py-10">
@@ -28,12 +28,15 @@
     {% endif %}
   </div>
 
+  <!-- Service roadmap -->
+  <div class="mt-6">{{ workflow_track(c) }}</div>
+
   <!-- Visits timeline -->
   <h2 class="text-lg font-bold text-navy-800 mt-8 mb-3">Service visits</h2>
   {% if c.visits %}
   <div class="space-y-3">
     {% for v in c.visits %}
-    <a href="{{ url_for('portal.visit', visit_id=v.id) }}" class="block bg-white rounded-xl border border-slate-200 p-4 hover:border-star-400">
+    <a href="{{ url_for('portal.visit', visit_id=v.id) }}" class="block bg-white rounded-xl border border-slate-200 p-4 hover:border-primary">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-full grid place-items-center font-bold {{ 'bg-green-100 text-green-700' if v.status=='completed' else 'bg-slate-100 text-slate-500' }}">{{ v.visit_number }}</div>
@@ -43,8 +46,8 @@
           </div>
         </div>
         <div class="flex items-center gap-3">
-          {% if v.photos %}<span class="text-xs text-slate-500">📷 {{ v.photos|length }}</span>{% endif %}
-          {% if v.service_report_path %}<span class="text-xs text-green-600">📄 Report</span>{% endif %}
+          {% if v.photos %}<span class="text-xs text-slate-500">{{ v.photos|length }} photos</span>{% endif %}
+          {% if v.service_report_path %}<span class="text-xs text-green-700 font-medium">Report ✓</span>{% endif %}
           {{ status_badge(v.status) }}
         </div>
       </div>
@@ -66,7 +69,10 @@
       <tbody>
       {% for e in c.equipment %}
         <tr class="border-t border-slate-100">
-          <td class="px-4 py-2"><div class="font-medium text-navy-800">{{ e.name }}</div><div class="text-xs text-slate-400">{{ e.equip_type or '' }}{% if e.serial_no %} · {{ e.serial_no }}{% endif %}</div></td>
+          <td class="px-4 py-2">
+            <a href="{{ url_for('portal.equipment_detail', equipment_id=e.id) }}" class="font-medium text-primary hover:underline">{{ e.name }}</a>
+            <div class="text-xs text-slate-400">{{ e.equip_type or '' }}{% if e.serial_no %} · {{ e.serial_no }}{% endif %}</div>
+          </td>
           <td class="px-4 py-2 text-slate-600">{{ e.location or '—' }}</td>
           <td class="px-4 py-2 text-slate-600">{{ e.last_refill_date|datefmt }}</td>
           <td class="px-4 py-2">
@@ -83,12 +89,25 @@
   <p class="text-slate-500 text-sm bg-white border border-dashed border-slate-300 rounded-xl p-5">Your equipment list will appear here after the first visit.</p>
   {% endif %}
 
+  <!-- Fire health checkup reports -->
+  {% if health_reports %}
+  <h2 class="text-lg font-bold text-navy-800 mt-8 mb-3">Fire health checkup reports</h2>
+  <div class="space-y-2">
+    {% for hr in health_reports %}
+    <div class="flex items-center justify-between bg-white rounded-xl border border-slate-200 px-4 py-3">
+      <div><span class="font-semibold text-navy-800">{{ hr.reference }}</span> <span class="text-sm text-slate-500">· {{ hr.report_date|datefmt }}{% if hr.property_name %} · {{ hr.property_name }}{% endif %}</span></div>
+      <a href="{{ url_for('portal.health_report_pdf', report_id=hr.id) }}" class="text-sm bg-green-600 text-white px-4 py-1.5 rounded-lg hover:bg-green-500">Download PDF</a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   <!-- Quotations -->
   {% if c.quotations %}
   <h2 class="text-lg font-bold text-navy-800 mt-8 mb-3">Material quotations</h2>
   <div class="space-y-2">
     {% for q in c.quotations %}
-    <a href="{{ url_for('portal.quotation', quote_id=q.id) }}" class="flex items-center justify-between bg-white rounded-xl border border-slate-200 px-4 py-3 hover:border-star-400">
+    <a href="{{ url_for('portal.quotation', quote_id=q.id) }}" class="flex items-center justify-between bg-white rounded-xl border border-slate-200 px-4 py-3 hover:border-primary">
       <div><span class="font-semibold text-navy-800">{{ q.reference }}</span> <span class="text-sm text-slate-500">· {{ q.items|length }} item(s)</span></div>
       <div class="flex items-center gap-3"><span class="font-semibold text-navy-800">{{ q.total|rupees }}</span>{{ status_badge(q.status) }}</div>
     </a>

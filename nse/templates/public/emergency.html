@@ -2,19 +2,24 @@
 {% from "_macros.html" import field %}
 {% block title %}Emergency Visit — {{ COMPANY_NAME }}{% endblock %}
 {% block content %}
-<section class="max-w-3xl mx-auto px-4 py-12">
-  <div class="bg-red-600 text-white rounded-2xl p-6 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-    <div>
-      <h1 class="text-2xl font-extrabold">🚨 Fire Emergency Response</h1>
-      <p class="text-red-100 mt-1">24×7 team across {{ COMPANY_CITY }}. No AMC needed.</p>
+<section class="max-w-3xl mx-auto px-4 py-16">
+  <div class="bg-danger text-white rounded-2xl p-7 mb-9 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg" style="box-shadow:0 18px 40px -16px rgba(220,38,38,.5)">
+    <div class="flex items-center gap-4">
+      <span class="inline-grid place-items-center w-12 h-12 rounded-xl bg-white/15">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+      </span>
+      <div>
+        <h1 class="text-2xl font-extrabold">Fire Emergency Response</h1>
+        <p class="text-red-100 mt-1">24×7 team across {{ COMPANY_CITY }}. No AMC needed.</p>
+      </div>
     </div>
-    <a href="tel:{{ EMERGENCY_HOTLINE }}" class="bg-white text-red-700 font-bold px-6 py-3 rounded-xl text-lg whitespace-nowrap">📞 {{ EMERGENCY_HOTLINE }}</a>
+    <a href="tel:{{ EMERGENCY_HOTLINE }}" class="bg-white text-danger font-bold px-6 py-3 rounded-xl text-lg whitespace-nowrap hover:bg-red-50 transition">{{ EMERGENCY_HOTLINE }}</a>
   </div>
 
-  <h2 class="text-xl font-bold text-navy-800">Request an emergency / per-visit service</h2>
-  <p class="text-slate-600 mt-1 text-sm">Tell us what happened and where. We'll dispatch the team and share an ETA. For an immediate response, please call the hotline too.</p>
+  <h2 class="text-xl font-bold text-ink">Request an emergency / per-visit service</h2>
+  <p class="text-ink-subtle mt-2 text-sm">Tell us what happened and where. We will dispatch the team and share an ETA. For an immediate response, please call the hotline too.</p>
 
-  <form method="post" class="mt-6 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+  <form method="post" class="mt-6 card p-7 space-y-5">
     <div class="grid sm:grid-cols-2 gap-4">
       {{ field('Your name', 'name', required=true) }}
       {{ field('Phone number', 'phone', type='tel', required=true) }}
@@ -23,17 +28,17 @@
     </div>
     {{ field('Exact location / address', 'location', required=true, placeholder='Building, floor, landmark') }}
     <label class="block">
-      <span class="text-sm font-medium text-slate-700">What has happened? <span class="text-red-500">*</span></span>
-      <textarea name="description" rows="4" required class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-400" placeholder="Describe the situation — fire, smoke, gas leak, faulty system, extinguisher discharge, etc."></textarea>
+      <span class="text-sm font-medium text-ink-muted">What has happened? <span class="text-danger">*</span></span>
+      <textarea name="description" rows="4" required class="mt-1.5 w-full px-3 py-2.5" placeholder="Describe the situation — fire, smoke, gas leak, faulty system, extinguisher discharge, etc."></textarea>
     </label>
     <div>
-      <span class="text-sm font-medium text-slate-700">Preferred payment</span>
-      <div class="mt-2 flex gap-4">
-        <label class="flex items-center gap-2 border border-slate-300 rounded-lg px-4 py-2 cursor-pointer"><input type="radio" name="payment_mode" value="cash" checked> 💵 Cash</label>
-        <label class="flex items-center gap-2 border border-slate-300 rounded-lg px-4 py-2 cursor-pointer"><input type="radio" name="payment_mode" value="online"> 💳 Online</label>
+      <span class="text-sm font-medium text-ink-muted">Preferred payment</span>
+      <div class="mt-2 flex flex-wrap gap-3">
+        <label class="flex items-center gap-2.5 border border-hairline-strong rounded-lg px-4 py-2.5 cursor-pointer hover:border-primary transition"><input type="radio" name="payment_mode" value="cash" checked> Cash</label>
+        <label class="flex items-center gap-2.5 border border-hairline-strong rounded-lg px-4 py-2.5 cursor-pointer hover:border-primary transition"><input type="radio" name="payment_mode" value="online"> Online</label>
       </div>
     </div>
-    <button class="w-full bg-red-600 text-white font-semibold py-3 rounded-xl hover:bg-red-500">Request emergency team</button>
+    <button class="btn btn-emergency w-full">Request emergency team</button>
   </form>
 </section>
 {% endblock %}

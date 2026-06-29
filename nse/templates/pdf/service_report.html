@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page { size: A4; margin: 14mm 14mm 16mm 14mm; }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 9.5pt; color: #111; margin: 0; }
+  .co-header { text-align: center; border-bottom: 2px solid #16235b; padding-bottom: 6px; margin-bottom: 8px; }
+  .co-header img { height: 48px; }
+  .co-name { font-size: 16pt; font-weight: bold; color: #16235b; margin: 2px 0 0; }
+  .co-address { background: #16235b; color: #fff; text-align: center; font-size: 8pt; padding: 3px 8px; margin: 4px 0; }
+  .doc-title { text-align: center; font-size: 13pt; font-weight: bold; color: #16235b; margin: 6px 0; text-decoration: underline; }
+  table { width: 100%; border-collapse: collapse; }
+  .meta td { padding: 3px 5px; font-size: 9pt; border: 1px solid #ccc; }
+  .meta .lbl { color: #555; font-weight: bold; width: 20%; background: #f5f7fc; }
+  .section-title { background: #dce4f4; color: #16235b; font-weight: bold; padding: 4px 6px; margin: 10px 0 4px; font-size: 9pt; }
+  .work { border: 1px solid #ccc; padding: 8px; min-height: 40px; white-space: pre-line; }
+  .chk th, .chk td { border: 1px solid #ccc; padding: 4px 6px; font-size: 8.5pt; text-align: left; }
+  .chk th { background: #16235b; color: #fff; }
+  .ok { color: #15803d; font-weight: bold; }
+  .issue { color: #b91c1c; font-weight: bold; }
+  .na { color: #666; }
+  .photos img { height: 90px; margin: 3px; border: 1px solid #ccc; }
+  .sign-tbl td { padding: 18px 6px 4px; font-size: 9pt; }
+</style>
+</head>
+<body>
+
+<div class="co-header">
+  {% if logo_url %}<img src="{{ logo_url }}" alt="{{ company_name }}">{% endif %}
+  <div class="co-name">{{ company_name.upper() }}</div>
+  <div class="co-address">{{ company_address }} &nbsp;|&nbsp; {{ company_email }} &nbsp;|&nbsp; GST: {{ company_gst }}</div>
+</div>
+
+<div class="doc-title">AMC SERVICE REPORT</div>
+
+<table class="meta">
+  <tr>
+    <td class="lbl">Contract</td><td>{{ v.contract.reference }}</td>
+    <td class="lbl">Visit</td><td>{{ v.label }}</td>
+  </tr>
+  <tr>
+    <td class="lbl">Site</td><td>{{ v.contract.site_name or v.contract.applicant_name or '' }}</td>
+    <td class="lbl">Service date</td><td>{{ (v.completed_date or v.scheduled_date).strftime('%d-%m-%Y') if (v.completed_date or v.scheduled_date) else '' }}</td>
+  </tr>
+  <tr>
+    <td class="lbl">Address</td><td>{{ v.contract.site_address or '' }}</td>
+    <td class="lbl">Technician</td><td>{{ v.technician.name if v.technician else '' }}</td>
+  </tr>
+</table>
+
+<div class="section-title">WORK CARRIED OUT</div>
+<div class="work">{{ v.work_done or 'Routine maintenance and inspection completed.' }}</div>
+
+{% if v.checklist_items %}
+<div class="section-title">MAINTENANCE CHECKLIST</div>
+<table class="chk">
+  <thead><tr><th style="width:50%">Item</th><th style="width:15%">Status</th><th>Note</th></tr></thead>
+  <tbody>
+    {% for it in v.checklist_items %}
+    <tr>
+      <td>{{ it.item }}</td>
+      <td class="{{ it.status }}">{{ {'ok':'OK','issue':'ISSUE','na':'N/A'}.get(it.status, it.status)|upper }}</td>
+      <td>{{ it.note or '' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if v.photos %}
+<div class="section-title">SITE PHOTOS</div>
+<div class="photos">
+  {% for p in v.photos %}
+  {% set src = p.file_path if p.file_path.startswith('http') else '/static/' + p.file_path %}
+  <img src="{{ src }}" alt="site photo">
+  {% endfor %}
+</div>
+{% endif %}
+
+<table class="sign-tbl">
+  <tr>
+    <td style="border-top:1px solid #333;width:45%">Customer Sign</td>
+    <td style="width:10%"></td>
+    <td style="border-top:1px solid #333;width:45%">For {{ company_name }}</td>
+  </tr>
+</table>
+
+<p style="font-size:8pt;color:#666;margin-top:10px;font-style:italic">Thank you for choosing {{ company_name }} — Enlightening Safety.</p>
+
+</body>
+</html>

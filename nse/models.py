@@ -109,6 +109,7 @@ class Contract(db.Model):
     applicant_email = db.Column(db.String(120))
     property_type = db.Column(db.String(60))
     application_notes = db.Column(db.Text)
+    voice_note = db.Column(db.Text)          # speech-to-text transcript from the apply form
 
     start_date = db.Column(db.Date)
     end_date = db.Column(db.Date)
@@ -116,6 +117,7 @@ class Contract(db.Model):
     price = db.Column(db.Integer, default=0)
     payment_mode = db.Column(db.String(20), default="cash")    # cash/online
     payment_status = db.Column(db.String(20), default="pending")
+    payment_date = db.Column(db.Date)                          # when contract fee received
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     plan = db.relationship("AMCPlan")
@@ -125,6 +127,9 @@ class Contract(db.Model):
                                 cascade="all, delete-orphan")
     quotations = db.relationship("Quotation", backref="contract", lazy=True,
                                  cascade="all, delete-orphan")
+    service_quotations = db.relationship(
+        "ServiceQuotation", backref="contract", lazy=True,
+        foreign_keys="ServiceQuotation.contract_id")
 
     @property
     def reference(self):
@@ -138,6 +143,81 @@ class Contract(db.Model):
     def next_visit(self):
         upcoming = [v for v in self.visits if v.status in ("scheduled", "in_progress")]
         return min(upcoming, key=lambda v: v.scheduled_date or date.max) if upcoming else None
+
+    # ----- Quotation ↔ contract interlink (gates activation) ----------------
+    @property
+    def amc_quote(self):
+        """The most recent AMC sales quotation linked to this contract (or None).
+
+        The apply flow auto-creates a ServiceQuotation per AMC application, so a
+        pending contract normally has exactly one. Activation is gated on the
+        customer accepting it.
+        """
+        qs = [q for q in self.service_quotations if q.service_type == "amc"]
+        if not qs:
+            return None
+        return max(qs, key=lambda q: q.created_at or datetime.min)
+
+    @property
+    def can_activate(self):
+        """True when there is no linked AMC quote, or the client has accepted it.
+
+        Blocks `Activate & generate visits` while a quote is still sent / viewed
+        / under negotiation / rejected — staff must wait for the client's accept.
+        """
+        q = self.amc_quote
+        return (q is None) or (q.status == "accepted")
+
+    @property
+    def quote_locked_price(self):
+        """Annual price locked from an accepted quote (pre-GST subtotal), else None.
+
+        When set, the contract activation price field is read-only — the figure
+        was already agreed in the quotation, so it cannot be changed again here.
+        """
+        q = self.amc_quote
+        if q and q.status == "accepted":
+            # GST-inclusive grand total — the full amount the client agreed to pay.
+            return int(round(q.grand_total))
+        return None
+
+    # ----- Wave 6: workflow roadmap (customer portal progress track) ---------
+    @property
+    def workflow_steps(self):
+        """Ordered roadmap steps with done/active flags, shown as a filling track:
+        Quote accepted → Contract started → Visit 1 … → Visit N.
+        The first not-yet-done step is marked `active`.
+        """
+        steps = []
+        q = self.amc_quote
+        # Step 1 — quotation confirmed (or no quote needed)
+        steps.append({
+            "label": "Quote confirmed",
+            "done": (q is None) or (q.status == "accepted"),
+        })
+        # Step 2 — contract started
+        steps.append({
+            "label": "Contract started",
+            "done": self.status in ("active", "expired"),
+        })
+        # Steps 3..N — each visit
+        ordered = sorted(self.visits, key=lambda v: v.visit_number)
+        for v in ordered:
+            steps.append({
+                "label": v.label,
+                "done": v.status == "completed",
+            })
+        # Mark the first incomplete step as active
+        for s in steps:
+            if not s["done"]:
+                s["active"] = True
+                break
+        return steps
+
+    @property
+    def visit_material_quotes(self):
+        """All material quotations raised against this contract's visits."""
+        return [q for q in self.quotations if q.visit_id]
 
 
 class Visit(db.Model):
@@ -153,15 +233,61 @@ class Visit(db.Model):
     work_done = db.Column(db.Text)
     notes = db.Column(db.Text)
     service_report_path = db.Column(db.String(255))
+    # Wave 6 — customer sign-off on a completed visit (gates the rating prompt)
+    customer_approved = db.Column(db.Boolean, default=False)
+    approved_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     technician = db.relationship("User", foreign_keys=[technician_id])
     photos = db.relationship("VisitPhoto", backref="visit", lazy=True,
                              cascade="all, delete-orphan")
+    checklist_items = db.relationship("VisitChecklistItem", backref="visit", lazy=True,
+                                      cascade="all, delete-orphan",
+                                      order_by="VisitChecklistItem.sort_order")
 
     @property
     def label(self):
         return f"Visit {self.visit_number}"
+
+    @property
+    def material_quote(self):
+        """The most recent material quotation raised against this visit (or None)."""
+        qs = sorted(self.material_quotes, key=lambda q: q.created_at or datetime.min)
+        return qs[-1] if qs else None
+
+    @property
+    def feedback(self):
+        """The customer's feedback/rating for this visit, if submitted (or None)."""
+        return VisitFeedback.query.filter_by(visit_id=self.id).first()
+
+    @property
+    def checklist_summary(self):
+        items = list(self.checklist_items)
+        if not items:
+            return None
+        ok = sum(1 for i in items if i.status == "ok")
+        issues = sum(1 for i in items if i.status == "issue")
+        return {"total": len(items), "ok": ok, "issues": issues}
+
+
+class VisitChecklistItem(db.Model):
+    """Wave 2 — maintenance checklist items ticked off during a visit."""
+    __tablename__ = "visit_checklist_items"
+
+    id         = db.Column(db.Integer, primary_key=True)
+    visit_id   = db.Column(db.Integer, db.ForeignKey("visits.id"), nullable=False)
+    item       = db.Column(db.String(120), nullable=False)   # e.g. "Smoke Detectors"
+    status     = db.Column(db.String(20),  default="ok")     # ok / issue / na
+    note       = db.Column(db.String(255))
+    sort_order = db.Column(db.Integer, default=0)
+
+    STANDARD_ITEMS = [
+        "Smoke Detectors", "Heat Detectors", "Manual Call Points",
+        "Fire Alarm Control Panel", "Fire Extinguishers (ABC)",
+        "Fire Extinguishers (CO₂)", "Hydrant System", "Hose Reels",
+        "Sprinkler Heads", "Emergency Lighting", "Exit Signage",
+        "PA / Evacuation System",
+    ]
 
 
 class VisitPhoto(db.Model):
@@ -243,11 +369,19 @@ class Quotation(db.Model):
     status = db.Column(db.String(20), default="pending")  # pending/approved/rejected
     notes = db.Column(db.Text)
     payment_mode = db.Column(db.String(20))               # chosen on approval
+    # Wave 6 — payment tracking for a visit-linked material quote
+    payment_status = db.Column(db.String(20), default="pending")  # pending/paid
+    payment_date = db.Column(db.Date)
+    # Wave 6 — liability waiver acknowledged when the client rejects a quote
+    rejection_acknowledged = db.Column(db.Boolean, default=False)
+    waiver_text = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     decided_at = db.Column(db.DateTime)
 
     items = db.relationship("QuotationItem", backref="quotation", lazy=True,
                             cascade="all, delete-orphan")
+    visit = db.relationship("Visit", backref="material_quotes",
+                            foreign_keys=[visit_id])
 
     @property
     def reference(self):
@@ -256,6 +390,61 @@ class Quotation(db.Model):
     @property
     def total(self):
         return sum(i.amount for i in self.items)
+
+    @property
+    def is_paid(self):
+        return self.payment_status == "paid"
+
+    # ── PDF-compatible properties (mirrors ServiceQuotation interface) ────────
+    @property
+    def customer_name(self):
+        c = self.contract
+        return (c.customer.name if c and c.customer else c.applicant_name if c else "")
+
+    @property
+    def customer_phone(self):
+        c = self.contract
+        return (c.customer.phone if c and c.customer else c.applicant_phone if c else "")
+
+    @property
+    def customer_email(self):
+        c = self.contract
+        return (c.customer.email if c and c.customer else c.applicant_email if c else "")
+
+    @property
+    def customer_address(self):
+        c = self.contract
+        return c.site_address if c else ""
+
+    @property
+    def project_name(self):
+        c = self.contract
+        return c.site_name if c else ""
+
+    @property
+    def valid_days(self):
+        return 30
+
+    @property
+    def gst_percent(self):
+        return 18
+
+    @property
+    def subtotal(self):
+        return self.total
+
+    @property
+    def gst_amount(self):
+        return round(self.total * 0.18)
+
+    @property
+    def grand_total(self):
+        return self.total + self.gst_amount
+
+    @property
+    def items_by_category(self):
+        """Group items under a single 'Materials' category for the PDF template."""
+        return {"Materials / Spare Parts": self.items}
 
 
 class QuotationItem(db.Model):
@@ -270,6 +459,24 @@ class QuotationItem(db.Model):
     @property
     def amount(self):
         return (self.quantity or 0) * (self.unit_price or 0)
+
+    # Aliases so the shared PDF template (pdf/quotation.html) can render
+    # both ServiceQuotationItem and QuotationItem without branching.
+    @property
+    def rate(self):
+        return float(self.unit_price or 0)
+
+    @property
+    def unit(self):
+        return "Nos"
+
+    @property
+    def total(self):
+        return float(self.amount)
+
+    @property
+    def hsn_code(self):
+        return ""
 
 
 # --------------------------------------------------------------------------- #
@@ -287,7 +494,9 @@ class ServiceRequest(db.Model):
     email = db.Column(db.String(120))
     area = db.Column(db.String(120))
     location = db.Column(db.String(255))
-    description = db.Column(db.Text)        # what happened
+    description = db.Column(db.Text)        # what happened / NOC requirement
+    voice_note = db.Column(db.Text)         # speech-to-text transcript from the form
+    noc_document_path = db.Column(db.String(255))  # uploaded old NOC for renewal
 
     status = db.Column(db.String(20), default="new")  # new/scheduled/dispatched/in_progress/completed/cancelled
     scheduled_date = db.Column(db.DateTime)
@@ -305,6 +514,83 @@ class ServiceRequest(db.Model):
     def reference(self):
         prefix = "NOC" if self.request_type == "noc" else "EMG"
         return f"{prefix}-{self.id:05d}"
+
+
+# --------------------------------------------------------------------------- #
+# Extinguisher refilling (on-demand, no AMC needed)
+# --------------------------------------------------------------------------- #
+class RefillOrder(db.Model):
+    __tablename__ = "refill_orders"
+
+    id = db.Column(db.Integer, primary_key=True)
+    customer_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+
+    name = db.Column(db.String(120), nullable=False)
+    phone = db.Column(db.String(20), nullable=False)
+    email = db.Column(db.String(120))
+    area = db.Column(db.String(120))
+    address = db.Column(db.String(255))
+
+    # How the refill is handled: we pick up the units, or service on-site.
+    service_mode = db.Column(db.String(20), default="onsite")  # onsite/pickup
+    status = db.Column(db.String(20), default="new")
+    # new/scheduled/picked_up/in_progress/completed/cancelled
+    scheduled_date = db.Column(db.DateTime)
+    team_eta = db.Column(db.String(80))
+    notes = db.Column(db.Text)
+
+    payment_mode = db.Column(db.String(20), default="cash")  # cash/online
+    amount = db.Column(db.Integer, default=0)                # final, set by ops
+    payment_status = db.Column(db.String(20), default="pending")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    items = db.relationship("RefillItem", backref="order", lazy=True,
+                            cascade="all, delete-orphan")
+
+    @property
+    def reference(self):
+        return f"RF-{self.id:05d}"
+
+    @property
+    def total_units(self):
+        return sum(i.quantity or 0 for i in self.items)
+
+    @property
+    def summary(self):
+        return ", ".join(
+            f"{i.quantity}× {i.ext_type}{(' ' + i.capacity) if i.capacity else ''}"
+            for i in self.items)
+
+
+class RefillItem(db.Model):
+    __tablename__ = "refill_items"
+
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey("refill_orders.id"))
+    ext_type = db.Column(db.String(40), nullable=False)  # ABC/CO2/K-class/Modular
+    capacity = db.Column(db.String(40))                  # e.g. "6 kg", "4.5 kg"
+    quantity = db.Column(db.Integer, default=1)
+    notes = db.Column(db.String(255))
+
+
+# --------------------------------------------------------------------------- #
+# Form attachments (photos uploaded on AMC apply / NOC / refill forms)
+# --------------------------------------------------------------------------- #
+class FormAttachment(db.Model):
+    """Photos or documents attached at form-submission time (public forms).
+
+    ref_type: 'contract' | 'service_request' | 'refill_order'
+    ref_id:   the id of the referenced row.
+    """
+    __tablename__ = "form_attachments"
+
+    id = db.Column(db.Integer, primary_key=True)
+    ref_type = db.Column(db.String(30), nullable=False, index=True)
+    ref_id = db.Column(db.Integer, nullable=False, index=True)
+    file_path = db.Column(db.String(255), nullable=False)  # relative or absolute URL
+    attachment_type = db.Column(db.String(20), default="photo")  # photo / document
+    caption = db.Column(db.String(255))
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 # --------------------------------------------------------------------------- #
@@ -345,5 +631,380 @@ class Notification(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     title = db.Column(db.String(160), nullable=False)
     body = db.Column(db.String(255))
+    link = db.Column(db.String(255))   # where clicking the notification navigates
     read = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+# --------------------------------------------------------------------------- #
+# Service Quotations (sales proposals — AMC / NOC / Refilling / Emergency)
+# Separate from Quotation which handles material replacements during AMC visits.
+# --------------------------------------------------------------------------- #
+class ServiceQuotation(db.Model):
+    __tablename__ = "service_quotations"
+
+    id = db.Column(db.Integer, primary_key=True)
+    quotation_number = db.Column(db.String(30), unique=True)  # QUO-26-27-00001
+    service_type = db.Column(db.String(20), default="amc")    # amc/noc/refilling/emergency
+
+    # Customer info (may or may not have a linked User account yet)
+    customer_name    = db.Column(db.String(200), nullable=False)
+    customer_phone   = db.Column(db.String(20))
+    customer_email   = db.Column(db.String(200))
+    project_name     = db.Column(db.String(200))   # e.g. "Rajshree City Centre"
+    customer_address = db.Column(db.Text)
+
+    # Status flow: draft -> sent -> viewed -> negotiation_requested -> accepted / rejected
+    status             = db.Column(db.String(30), default="draft")
+    negotiation_note   = db.Column(db.Text)   # customer counter-offer / message
+    staff_response     = db.Column(db.Text)   # staff reply to negotiation
+
+    # Financial
+    gst_percent = db.Column(db.Float, default=18.0)
+    valid_days  = db.Column(db.Integer, default=7)
+    notes       = db.Column(db.Text)          # internal / footer notes
+
+    # Optional links to existing records
+    contract_id        = db.Column(db.Integer, db.ForeignKey("contracts.id"),       nullable=True)
+    refill_order_id    = db.Column(db.Integer, db.ForeignKey("refill_orders.id"),   nullable=True)
+    service_request_id = db.Column(db.Integer, db.ForeignKey("service_requests.id"),nullable=True)
+    customer_id        = db.Column(db.Integer, db.ForeignKey("users.id"),           nullable=True)
+    created_by_id      = db.Column(db.Integer, db.ForeignKey("users.id"),           nullable=True)
+
+    # Timestamps
+    created_at   = db.Column(db.DateTime, default=datetime.utcnow)
+    sent_at      = db.Column(db.DateTime, nullable=True)
+    viewed_at    = db.Column(db.DateTime, nullable=True)
+    responded_at = db.Column(db.DateTime, nullable=True)
+
+    items      = db.relationship("ServiceQuotationItem", backref="quotation",
+                                 lazy=True, cascade="all, delete-orphan",
+                                 order_by="ServiceQuotationItem.sort_order, ServiceQuotationItem.id")
+    created_by = db.relationship("User", foreign_keys=[created_by_id])
+    customer   = db.relationship("User", foreign_keys=[customer_id])
+
+    # ------------------------------------------------------------------ helpers
+    @property
+    def subtotal(self):
+        return sum(i.total for i in self.items)
+
+    @property
+    def gst_amount(self):
+        return round(self.subtotal * (self.gst_percent or 0) / 100, 2)
+
+    @property
+    def grand_total(self):
+        return self.subtotal + self.gst_amount
+
+    @property
+    def reference(self):
+        return self.quotation_number or f"SQ-{self.id:05d}"
+
+    def generate_number(self):
+        """Assign QUO-YY-YY-NNNNN number (Indian financial year Apr-Mar)."""
+        today = date.today()
+        fy_start = today.year if today.month >= 4 else today.year - 1
+        fy_end   = fy_start + 1
+        prefix   = f"QUO-{str(fy_start)[-2:]}-{str(fy_end)[-2:]}-"
+        last = (ServiceQuotation.query
+                .filter(ServiceQuotation.quotation_number.like(prefix + "%"))
+                .order_by(ServiceQuotation.id.desc())
+                .first())
+        try:
+            last_num = int(last.quotation_number.split("-")[-1]) if last else 0
+        except Exception:
+            last_num = 0
+        self.quotation_number = f"{prefix}{last_num + 1:05d}"
+
+    # items grouped by category — used in PDF and display templates
+    @property
+    def items_by_category(self):
+        cats = {}
+        for item in self.items:
+            cats.setdefault(item.category or "General", []).append(item)
+        return cats
+
+    @property
+    def status_label(self):
+        return {
+            "draft":                  "Draft",
+            "sent":                   "Sent to client",
+            "viewed":                 "Viewed by client",
+            "negotiation_requested":  "Negotiation requested",
+            "accepted":               "Accepted",
+            "rejected":               "Rejected",
+        }.get(self.status, self.status.replace("_", " ").title())
+
+    @property
+    def is_editable(self):
+        # Editable while drafting, and again when the client asks to negotiate
+        # so staff can revise rates and re-send a fresh quote for acceptance.
+        return self.status in ("draft", "negotiation_requested")
+
+
+class ServiceQuotationItem(db.Model):
+    __tablename__ = "service_quotation_items"
+
+    id         = db.Column(db.Integer, primary_key=True)
+    quotation_id = db.Column(db.Integer, db.ForeignKey("service_quotations.id"), nullable=False)
+    category   = db.Column(db.String(100))  # e.g. "Maintenance", "Phase-8 (NOC & Consulting)"
+    description = db.Column(db.Text, nullable=False)
+    unit       = db.Column(db.String(20), default="Job")   # Job / No. / Mtr / Set
+    quantity   = db.Column(db.Float, default=1.0)
+    rate       = db.Column(db.Float, default=0.0)
+    sort_order = db.Column(db.Integer, default=0)
+
+    @property
+    def total(self):
+        return round((self.quantity or 0) * (self.rate or 0), 2)
+
+
+# --------------------------------------------------------------------------- #
+# Post-visit customer feedback (drives technician performance dashboard)
+# --------------------------------------------------------------------------- #
+class VisitFeedback(db.Model):
+    __tablename__ = "visit_feedback"
+
+    id            = db.Column(db.Integer, primary_key=True)
+    visit_id      = db.Column(db.Integer, db.ForeignKey("visits.id"), unique=True)
+    customer_id   = db.Column(db.Integer, db.ForeignKey("users.id"))
+    technician_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
+    # Five dimensions, each rated 1-5
+    rating_behaviour     = db.Column(db.Integer)  # Technician attitude & behaviour
+    rating_quality       = db.Column(db.Integer)  # Quality of work completed
+    rating_punctuality   = db.Column(db.Integer)  # On-time arrival
+    rating_communication = db.Column(db.Integer)  # Explanation & communication
+    rating_overall       = db.Column(db.Integer)  # Overall satisfaction
+
+    comment    = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # Unique token embedded in feedback email link — no login required to submit
+    token      = db.Column(db.String(64), unique=True)
+
+    visit      = db.relationship("Visit",      foreign_keys=[visit_id])
+    customer   = db.relationship("User",       foreign_keys=[customer_id])
+    technician = db.relationship("User",       foreign_keys=[technician_id])
+
+    @property
+    def avg_rating(self):
+        vals = [r for r in [self.rating_behaviour, self.rating_quality,
+                             self.rating_punctuality, self.rating_communication,
+                             self.rating_overall] if r is not None]
+        return round(sum(vals) / len(vals), 1) if vals else None
+
+    @property
+    def is_submitted(self):
+        return self.rating_overall is not None
+
+
+# --------------------------------------------------------------------------- #
+# Customer journey event log (timeline in customer profile)
+# --------------------------------------------------------------------------- #
+class CustomerJourneyEvent(db.Model):
+    __tablename__ = "customer_journey_events"
+
+    id          = db.Column(db.Integer, primary_key=True)
+    customer_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    event_type  = db.Column(db.String(50), nullable=False)
+    # quote_requested / quote_sent / quote_viewed / negotiation_requested /
+    # quote_accepted / quote_rejected / contract_activated / visit_scheduled /
+    # visit_completed / payment_received / feedback_given
+    description    = db.Column(db.String(500))
+    ref_type       = db.Column(db.String(30), nullable=True)   # service_quotation/contract/visit
+    ref_id         = db.Column(db.Integer,    nullable=True)
+    created_at     = db.Column(db.DateTime, default=datetime.utcnow)
+    created_by_id  = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
+    customer   = db.relationship("User", foreign_keys=[customer_id])
+    created_by = db.relationship("User", foreign_keys=[created_by_id])
+
+    EVENT_ICONS = {
+        "quote_requested":       ("📋", "blue"),
+        "quote_sent":            ("📤", "navy"),
+        "quote_viewed":          ("👁",  "slate"),
+        "negotiation_requested": ("💬", "amber"),
+        "quote_accepted":        ("✅", "green"),
+        "quote_rejected":        ("❌", "red"),
+        "contract_activated":    ("🔐", "green"),
+        "visit_scheduled":       ("📅", "blue"),
+        "visit_completed":       ("✔",  "green"),
+        "payment_received":      ("💰", "green"),
+        "feedback_given":        ("⭐", "amber"),
+    }
+
+    @property
+    def icon_color(self):
+        return self.EVENT_ICONS.get(self.event_type, ("•", "slate"))
+
+
+# --------------------------------------------------------------------------- #
+# Wave 6 — Inventory (spare parts the technician picks when raising a
+# material quotation linked to a visit)
+# --------------------------------------------------------------------------- #
+class InventoryItem(db.Model):
+    __tablename__ = "inventory_items"
+
+    id       = db.Column(db.Integer, primary_key=True)
+    name     = db.Column(db.String(200), nullable=False)
+    category = db.Column(db.String(80), default="Materials")
+    unit     = db.Column(db.String(20), default="No.")   # No. / Kg / Mtr / Set / Job
+    rate     = db.Column(db.Integer, default=0)           # default unit rate (₹)
+    hsn      = db.Column(db.String(20))
+    active   = db.Column(db.Boolean, default=True)
+
+    def __repr__(self):
+        return f"<InventoryItem {self.name} ₹{self.rate}>"
+
+
+# --------------------------------------------------------------------------- #
+# Wave 6 — Fire System Health Checkup Report (FSHCR)
+# Mirrors NSE's printed inspection form. Most answers live in a JSON blob keyed
+# by the section/question constants below; key header fields are columns so the
+# report can be listed and linked. Can stand alone (non-AMC property survey) or
+# be linked to a contract/visit.
+# --------------------------------------------------------------------------- #
+class HealthCheckReport(db.Model):
+    __tablename__ = "health_check_reports"
+
+    id = db.Column(db.Integer, primary_key=True)
+    contract_id = db.Column(db.Integer, db.ForeignKey("contracts.id"), nullable=True)
+    visit_id    = db.Column(db.Integer, db.ForeignKey("visits.id"),    nullable=True)
+
+    property_name    = db.Column(db.String(200))
+    property_address = db.Column(db.Text)
+    property_contact = db.Column(db.String(120))
+    inspector_name   = db.Column(db.String(120))
+    inspector_contact = db.Column(db.String(120))
+    report_date      = db.Column(db.Date, default=date.today)
+
+    data       = db.Column(db.Text)     # JSON: checkbox answers, floor rows, particulars, remarks
+    scan_path  = db.Column(db.String(255))   # uploaded scanned copy (fallback to in-app form)
+    status     = db.Column(db.String(20), default="draft")   # draft / completed
+
+    created_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at    = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    contract   = db.relationship("Contract", foreign_keys=[contract_id])
+    visit      = db.relationship("Visit", foreign_keys=[visit_id])
+    created_by = db.relationship("User", foreign_keys=[created_by_id])
+
+    @property
+    def reference(self):
+        return f"HCR-{self.id:05d}"
+
+    @property
+    def answers(self):
+        """Deserialised JSON payload (always a dict)."""
+        import json
+        if not self.data:
+            return {}
+        try:
+            return json.loads(self.data)
+        except (ValueError, TypeError):
+            return {}
+
+    def set_answers(self, payload):
+        import json
+        self.data = json.dumps(payload)
+
+    # ---- Form structure constants (used by the in-app form and the PDF) -----
+    # Yes/No/N-A inspection questions grouped by section.
+    SECTIONS = [
+        ("Pump House", [
+            ("ph_heat",  "Heat in Pump room is 25°C or higher"),
+            ("ph_vent",  "The room has ventilation for smoke to exit"),
+            ("ph_water", "Excessive water does not appear on the floor"),
+            ("ph_coupling", "Coupling Guard is in place"),
+        ]),
+        ("Pump System", [
+            ("ps_valves", "Pump suction, discharge and bypass valves are open"),
+            ("ps_leaks",  "No piping or hose leaks"),
+            ("ps_seal",   "Fire Pump leaking one drop of water per second at seals"),
+            ("ps_suction", "Suction line pressure is within acceptable range"),
+            ("ps_system",  "System line pressure is within acceptable range"),
+            ("ps_switch",  "Pressure Switch & Gauge installed with Ball Valve, in good condition"),
+            ("ps_reservoir", "Suction reservoir is full"),
+            ("ps_flowtest",  "Water flow test valves are in closed position"),
+        ]),
+        ("Electrical Systems", [
+            ("es_pilot",   "Controller pilot light (Power on Light) is illuminated"),
+            ("es_transfer", "Transfer switch normal power is illuminated"),
+            ("es_isolating", "Isolating switch for standby power is closed"),
+            ("es_reverse", "Reverse phase alarm light is NOT illuminated"),
+            ("es_normal",  "Normal phase rotation light is illuminated"),
+            ("es_oil",     "Oil level in vertical motor sight glass is within range"),
+            ("es_jockey",  "Jockey / Pressure Maintenance Pump has power"),
+            ("es_switches", "Pressure Switch and Flow Switch are in good condition"),
+        ]),
+        ("Diesel Engine Systems", [
+            ("de_fuel",    "Diesel fuel tank is at least two-thirds full"),
+            ("de_selector", "Controller Selector Switch is in AUTO position"),
+            ("de_voltage", "Voltage readings for Batteries are within range"),
+            ("de_charge",  "Charging Current readings within range for batteries"),
+            ("de_power",   "Battery power light indicates ON (failure light OFF)"),
+        ]),
+    ]
+
+    # Hydrant & sprinkler items that also carry a "(Nos)" count.
+    HYDRANT_ITEMS = [
+        ("hy_line",       "Hydrant water line (G.I./M.S.) — no damage/rust/leakage", False),
+        ("hy_valve",      "Hydrant Valve", True),
+        ("hy_nozzle",     "Shut-Off Nozzle", True),
+        ("hy_hosebox",    "Hose Box", True),
+        ("hy_butterfly",  "Butter-Fly Valve", True),
+        ("hy_branch",     "Branch Pipe", True),
+        ("hy_sluice",     "Sluice Valve", True),
+        ("hy_rrl",        "RRL / Hose Pipe", True),
+        ("hy_strainer",   "Strainer", True),
+        ("hy_ball",       "Ball Valve", True),
+        ("hy_foot",       "Foot Valve", True),
+        ("hy_reelpipe",   "Reel Pipe", True),
+        ("hy_sprinkler",  "Sprinkler Head", True),
+        ("hy_reeldrum",   "Reel Drum", True),
+        ("hy_nrv",        "NRV", True),
+        ("hy_air",        "Air Release Valve", True),
+        ("hy_pswitch",    "Pressure Switch", True),
+        ("hy_pgauge",     "Pressure Gauge", True),
+        ("hy_inlet",      "Inlet Valve (2 Way / 4 Way)", False),
+        ("hy_charged",    "Line charged with 4 Kg to 6 Kg pressure", False),
+    ]
+
+    # Floor-wise equipment table columns.
+    FLOOR_COLUMNS = [
+        "Hydrant Valve", "Hose Box", "Branch Pipe", "RRL/Hose Pipe", "Reel Hose",
+        "MCP/Hooter", "Pump On/Off Switch", "Signages", "ABC Ext.", "CO2 Ext.", "Sprinklers",
+    ]
+    FLOOR_NAMES = [
+        "Basement (2)", "Basement (1)", "Ground Floor", "1st Floor", "2nd Floor",
+        "3rd Floor", "4th Floor", "5th Floor", "6th Floor", "7th Floor", "8th Floor",
+        "9th Floor", "10th Floor", "11th-15th Floor", "16th-20th Floor", "21st-30th Floor",
+    ]
+
+    # Numbered particulars (free-text answers).
+    PARTICULARS = [
+        ("p_charged",   "Is the line charged? (Comments)"),
+        ("p_ug_tank",   "Underground Tank Capacity (Ltrs)"),
+        ("p_upg_tank",  "Upper-ground Tank Capacity (Ltrs)"),
+        ("p_oh_tank",   "Over Head Tank Capacity (Ltrs)"),
+        ("p_diesel",    "Diesel Engine — HP / LPM / Make"),
+        ("p_mainpump",  "Main Pump — HP / LPM / Make"),
+        ("p_sprpump",   "Sprinkler Pump — HP / LPM / Make"),
+        ("p_jockey1",   "Jockey Pump (1) — HP / LPM / Make"),
+        ("p_jockey2",   "Jockey Pump (2) — HP / LPM / Make"),
+        ("p_booster",   "Booster Pump — HP / LPM / Make"),
+        ("p_pressure",  "Does the gauge indicate required pressure (4-6 Kg)?"),
+        ("p_zones",     "Fire Alarm Panel — zones total / in use"),
+        ("p_smoke",     "Are all Smoke Detectors working?"),
+        ("p_cables",    "Are main cables painted with Fire Retardant paint?"),
+        ("p_hydpaint",  "Is Hydrant System painted, no washout of red?"),
+        ("p_exits",     "How many emergency exit doors?"),
+    ]
+
+    # Yes/No extras at the foot of the form.
+    EXTRAS = [
+        ("ex_evac",   "Evacuation Plan"),
+        ("ex_pa",     "Public Addressing System"),
+        ("ex_lifts",  "External Lifts"),
+    ]

@@ -6,6 +6,36 @@
   <a href="{{ url_for('admin.contract', contract_id=v.contract_id) }}" class="text-sm text-slate-500 hover:text-navy-700">← {{ v.contract.reference }}</a>
   <h1 class="text-2xl font-extrabold text-navy-800 mt-2">{{ v.label }} {{ status_badge(v.status) }}</h1>
 
+  {% if is_future %}
+  <!-- ── Future-date lock banner ─────────────────────────────────────────── -->
+  <div class="bg-amber-50 border border-amber-300 rounded-2xl p-5 mt-4 flex items-start gap-3">
+    <span class="text-2xl">🔒</span>
+    <div>
+      <div class="font-bold text-amber-900">Visit locked until {{ v.scheduled_date.strftime('%d %b %Y') }}</div>
+      <p class="text-sm text-amber-800 mt-1">This visit is scheduled for a future date. All fields are read-only until the visit day arrives — no one can fill or edit them in advance. You can still reschedule the date or change the assigned technician below.</p>
+    </div>
+  </div>
+
+  <!-- Reschedule + technician only (allowed before visit date) -->
+  <form method="post" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mt-4 space-y-4">
+    <div class="grid sm:grid-cols-2 gap-3">
+      <label class="block"><span class="text-sm font-medium text-slate-700">Scheduled date</span>
+        <input type="date" name="scheduled_date" value="{{ v.scheduled_date.isoformat() if v.scheduled_date }}" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300"></label>
+      <label class="block"><span class="text-sm font-medium text-slate-700">Technician</span>
+        <select name="technician_id" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300">
+          <option value="">— Unassigned —</option>
+          {% for t in techs %}<option value="{{ t.id }}" {{ 'selected' if v.technician_id==t.id }}>{{ t.name }}</option>{% endfor %}
+        </select></label>
+    </div>
+    <!-- Hidden fields to pass through unchanged values -->
+    <input type="hidden" name="status" value="{{ v.status }}">
+    <input type="hidden" name="work_done" value="{{ v.work_done or '' }}">
+    <input type="hidden" name="notes" value="{{ v.notes or '' }}">
+    <input type="hidden" name="checklist_items_json" value="">
+    <button class="bg-navy-800 text-white font-semibold px-6 py-2.5 rounded-xl hover:bg-navy-700">Save changes</button>
+  </form>
+  {% else %}
+
   <form method="post" enctype="multipart/form-data" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mt-4 space-y-5">
     <div class="grid sm:grid-cols-3 gap-3">
       <label class="block"><span class="text-sm font-medium text-slate-700">Status</span>
@@ -36,9 +66,167 @@
         <input name="photo_caption" placeholder="Optional caption" class="mt-2 w-full px-3 py-1.5 rounded-lg border border-slate-300 text-sm"></label>
     </div>
 
-    <button class="w-full bg-green-600 text-white font-semibold py-3 rounded-xl hover:bg-green-500">Save visit</button>
+    <!-- ── Wave 2: Maintenance checklist ─────────────────────────── -->
+    <div class="border-t border-hairline pt-5">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-sm font-semibold text-ink">Maintenance Checklist</span>
+        <button type="button" onclick="addChecklistItem()" class="text-xs text-primary hover:underline">+ Add item</button>
+      </div>
+      <div id="checklist-body" class="space-y-2">
+        {% for it in v.checklist_items %}
+        <div class="checklist-row flex items-center gap-2">
+          <input type="text" value="{{ it.item }}" placeholder="Item name"
+                 class="flex-1 px-2.5 py-1.5 text-sm rounded-lg border border-hairline-strong"
+                 data-field="item">
+          <select class="px-2 py-1.5 text-sm rounded-lg border border-hairline-strong" data-field="status">
+            <option value="ok" {{ 'selected' if it.status=='ok' }}>✓ OK</option>
+            <option value="issue" {{ 'selected' if it.status=='issue' }}>⚠ Issue</option>
+            <option value="na" {{ 'selected' if it.status=='na' }}>— N/A</option>
+          </select>
+          <input type="text" value="{{ it.note or '' }}" placeholder="Note (optional)"
+                 class="w-36 px-2.5 py-1.5 text-sm rounded-lg border border-hairline-strong"
+                 data-field="note">
+          <button type="button" onclick="this.closest('.checklist-row').remove()"
+                  class="text-ink-tertiary hover:text-danger text-lg leading-none px-1">×</button>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Quick-add standard items -->
+      {% if not v.checklist_items %}
+      <div class="mt-2 flex flex-wrap gap-1.5">
+        {% for item in checklist_defaults %}
+        <button type="button" onclick="addChecklistItem('{{ item }}')"
+                class="text-[11px] px-2 py-1 rounded-full border border-hairline hover:border-amber-400 hover:bg-amber-50 transition text-ink-subtle">
+          {{ item }}
+        </button>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <input type="hidden" name="checklist_items_json" id="checklist-json">
+    </div>
+
+    <button class="w-full bg-green-600 text-white font-semibold py-3 rounded-xl hover:bg-green-500"
+            onclick="serializeChecklist()">Save visit</button>
     <p class="text-xs text-slate-500 text-center">Marking as <strong>completed</strong> notifies the customer and publishes the report &amp; photos to their portal.</p>
   </form>
+  {% endif %}{# end is_future / else #}
+
+  <!-- ── On-site: payment status (technician can update during the visit) ── -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mt-5">
+    <h2 class="font-bold text-navy-800 mb-1">Payment — {{ v.contract.reference }}</h2>
+    <p class="text-xs text-slate-500 mb-3">Update on-site once payment is collected. Current contract value: <strong>{{ v.contract.price|rupees }}</strong>.</p>
+    <form method="post" action="{{ url_for('admin.contract_payment', contract_id=v.contract_id) }}" class="flex flex-wrap items-end gap-3">
+      <label class="block"><span class="text-xs text-slate-500">Payment mode</span>
+        <select name="payment_mode" class="block mt-1 px-3 py-2 rounded-lg border border-slate-300 text-sm">
+          <option value="cash" {{ 'selected' if v.contract.payment_mode=='cash' }}>Cash</option>
+          <option value="online" {{ 'selected' if v.contract.payment_mode=='online' }}>Online</option>
+        </select></label>
+      <label class="block"><span class="text-xs text-slate-500">Payment status</span>
+        <select name="payment_status" class="block mt-1 px-3 py-2 rounded-lg border border-slate-300 text-sm">
+          <option value="pending" {{ 'selected' if v.contract.payment_status=='pending' }}>Pending</option>
+          <option value="paid" {{ 'selected' if v.contract.payment_status=='paid' }}>Paid</option>
+        </select></label>
+      <button class="bg-navy-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-navy-700">Update payment</button>
+    </form>
+  </div>
+
+  {% if not is_future %}
+  <!-- ── On-site: raise a material quotation from inventory ──────────────── -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mt-5">
+    <h2 class="font-bold text-navy-800 mb-1">Raise material quotation</h2>
+    <p class="text-xs text-slate-500 mb-3">Found a part that needs replacing? Pick from the inventory list — the rate auto-fills. On save it is instantly shared with the client for approval.</p>
+
+    <datalist id="inv-list">
+      {% for it in inventory %}<option value="{{ it.name }}">{{ it.category }} · {{ it.rate|rupees }}/{{ it.unit }}</option>{% endfor %}
+    </datalist>
+
+    <form method="post" action="{{ url_for('admin.visit_quotation', visit_id=v.id) }}">
+      <table class="w-full text-sm">
+        <thead><tr class="text-left text-xs text-slate-500">
+          <th class="py-1">Item (type or pick)</th><th class="py-1 w-16 text-center">Qty</th>
+          <th class="py-1 w-28 text-right">Rate (₹)</th><th class="py-1 w-28 text-right">Amount</th><th class="w-8"></th>
+        </tr></thead>
+        <tbody id="qbody">
+          <tr class="qrow">
+            <td class="py-1 pr-2"><input name="item_desc" list="inv-list" oninput="invFill(this)" class="w-full px-2 py-1.5 rounded-lg border border-slate-300" placeholder="e.g. ABC Dry Powder Refill (6 kg)"></td>
+            <td class="py-1 px-1"><input name="item_qty" type="number" min="1" value="1" oninput="qcalc()" class="w-full px-2 py-1.5 rounded-lg border border-slate-300 text-center"></td>
+            <td class="py-1 px-1"><input name="item_price" type="number" min="0" value="0" oninput="qcalc()" class="w-full px-2 py-1.5 rounded-lg border border-slate-300 text-right"></td>
+            <td class="py-1 text-right amt-cell text-slate-700">₹0</td>
+            <td class="py-1 text-center"><button type="button" onclick="this.closest('.qrow').remove();qcalc()" class="text-slate-400 hover:text-red-500 text-lg leading-none">×</button></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="flex items-center justify-between mt-2">
+        <button type="button" onclick="addQRow()" class="text-xs text-primary hover:underline">+ Add item</button>
+        <div class="text-sm font-semibold text-navy-800">Total: <span id="qtotal">₹0</span></div>
+      </div>
+      <input name="notes" placeholder="Optional note for the client" class="w-full mt-3 px-3 py-2 rounded-lg border border-slate-300 text-sm">
+      <button class="mt-3 w-full bg-navy-800 text-white font-semibold py-2.5 rounded-xl hover:bg-navy-700">Raise &amp; share with client</button>
+    </form>
+  </div>
+
+  <!-- ── This visit's material quotations + payment status ───────────────── -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mt-5">
+    <h2 class="font-bold text-navy-800 mb-3">Quotations linked to this visit</h2>
+    {% set vquotes = v.material_quotes %}
+    {% if vquotes %}
+    <div class="space-y-3">
+      {% for q in vquotes %}
+      <div class="border border-slate-200 rounded-xl p-3">
+        <div class="flex items-center justify-between text-sm">
+          <span class="font-medium text-navy-800">{{ q.reference }} <span class="text-slate-500 font-normal">· {{ q.items|length }} item(s) · {{ q.created_at|datefmt }}</span></span>
+          <span class="flex items-center gap-2"><span class="font-semibold">{{ q.total|rupees }}</span>{{ status_badge(q.status) }}</span>
+        </div>
+        {% if q.status == 'rejected' and q.rejection_acknowledged %}
+        <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 mt-2">⚠ Client declined and accepted the liability waiver. Next visit proceeds as scheduled.</p>
+        {% endif %}
+        {% if q.status == 'approved' %}
+        <form method="post" action="{{ url_for('admin.quotation_payment', quote_id=q.id) }}" class="flex flex-wrap items-end gap-2 mt-2 border-t border-slate-100 pt-2">
+          <label class="block"><span class="text-[11px] text-slate-500">Payment</span>
+            <select name="payment_status" class="block mt-0.5 px-2 py-1.5 rounded-lg border border-slate-300 text-sm">
+              <option value="pending" {{ 'selected' if q.payment_status!='paid' }}>Not paid</option>
+              <option value="paid" {{ 'selected' if q.payment_status=='paid' }}>Paid</option>
+            </select></label>
+          <label class="block"><span class="text-[11px] text-slate-500">Mode</span>
+            <select name="payment_mode" class="block mt-0.5 px-2 py-1.5 rounded-lg border border-slate-300 text-sm">
+              <option value="cash" {{ 'selected' if q.payment_mode=='cash' }}>Cash</option>
+              <option value="online" {{ 'selected' if q.payment_mode=='online' }}>Online</option>
+            </select></label>
+          <button class="bg-navy-800 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-navy-700">Update</button>
+          {% if q.is_paid %}<span class="text-xs text-green-600 font-medium ml-1">✓ Paid {{ q.payment_date|datefmt }}</span>{% endif %}
+        </form>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}<p class="text-slate-500 text-sm">No material quotations raised for this visit yet.</p>{% endif %}
+  </div>
+
+  {% endif %}{# end not is_future #}
+
+  <!-- ── Fire System Health Checkup Report ───────────────────────────────── -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mt-5">
+    <div class="flex items-center justify-between mb-2">
+      <h2 class="font-bold text-navy-800">Fire Health Checkup Report</h2>
+      <a href="{{ url_for('admin.health_report', visit_id=v.id, contract_id=v.contract_id) }}" class="text-sm bg-navy-800 text-white px-3 py-1.5 rounded-lg hover:bg-navy-700">+ New / fill report</a>
+    </div>
+    <p class="text-xs text-slate-500 mb-3">A complete property fire-system inspection. Fill it before the first visit or any time during the year — it stays available and is shared with the client.</p>
+    {% if health_reports %}
+    <div class="space-y-2">
+      {% for hr in health_reports %}
+      <div class="flex items-center justify-between border border-slate-200 rounded-lg px-3 py-2 text-sm">
+        <span class="font-medium text-navy-800">{{ hr.reference }} <span class="text-slate-500 font-normal">· {{ hr.report_date|datefmt }} · {{ hr.status|title }}</span></span>
+        <span>
+          <a href="{{ url_for('admin.health_report', report_id=hr.id) }}" class="text-primary hover:underline">Edit</a>
+          <a href="{{ url_for('admin.health_report_pdf', report_id=hr.id) }}" class="text-primary hover:underline ml-2">PDF</a>
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}<p class="text-slate-500 text-sm">No health report for this property yet.</p>{% endif %}
+  </div>
 
   {% if v.photos %}
   <h2 class="font-bold text-navy-800 mt-8 mb-3">Uploaded photos</h2>
@@ -49,4 +237,71 @@
   </div>
   {% endif %}
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function addChecklistItem(name) {
+  var row = document.createElement('div');
+  row.className = 'checklist-row flex items-center gap-2';
+  row.innerHTML =
+    '<input type="text" value="'+(name||'')+'" placeholder="Item name" class="flex-1 px-2.5 py-1.5 text-sm rounded-lg border border-hairline-strong" data-field="item">' +
+    '<select class="px-2 py-1.5 text-sm rounded-lg border border-hairline-strong" data-field="status">' +
+      '<option value="ok">OK</option><option value="issue">Issue</option><option value="na">N/A</option>' +
+    '</select>' +
+    '<input type="text" placeholder="Note (optional)" class="w-36 px-2.5 py-1.5 text-sm rounded-lg border border-hairline-strong" data-field="note">' +
+    '<button type="button" onclick="this.closest(\'.checklist-row\').remove()" class="text-ink-tertiary hover:text-danger text-xl leading-none px-1">×</button>';
+  document.getElementById('checklist-body').appendChild(row);
+}
+function serializeChecklist() {
+  var rows = document.querySelectorAll('.checklist-row');
+  var data = [];
+  rows.forEach(function(r) {
+    var item = r.querySelector('[data-field="item"]').value.trim();
+    if (item) data.push({
+      item: item,
+      status: r.querySelector('[data-field="status"]').value,
+      note: r.querySelector('[data-field="note"]').value,
+    });
+  });
+  document.getElementById('checklist-json').value = JSON.stringify(data);
+}
+
+// ── Inventory-driven material quotation picker ──────────────────────────────
+var INV = {
+  {% for it in inventory %}"{{ it.name|replace('"','\\"') }}": {{ it.rate }}{{ "," if not loop.last }}
+  {% endfor %}
+};
+function invFill(input) {
+  var rate = INV[input.value];
+  if (rate !== undefined) {
+    var row = input.closest('.qrow');
+    var p = row.querySelector('[name="item_price"]');
+    if (p && (!p.value || p.value === '0')) p.value = rate;
+  }
+  qcalc();
+}
+function fmt(n){ return '₹' + (n||0).toLocaleString('en-IN'); }
+function qcalc() {
+  var total = 0;
+  document.querySelectorAll('#qbody .qrow').forEach(function(r){
+    var qty = parseFloat(r.querySelector('[name="item_qty"]').value) || 0;
+    var pr  = parseFloat(r.querySelector('[name="item_price"]').value) || 0;
+    var amt = qty * pr; total += amt;
+    r.querySelector('.amt-cell').textContent = fmt(amt);
+  });
+  var t = document.getElementById('qtotal'); if (t) t.textContent = fmt(total);
+}
+function addQRow() {
+  var body = document.getElementById('qbody');
+  var first = body.querySelector('.qrow');
+  var row = first.cloneNode(true);
+  row.querySelectorAll('input').forEach(function(i){
+    if (i.name === 'item_qty') i.value = '1';
+    else if (i.name === 'item_price') i.value = '0';
+    else i.value = '';
+  });
+  body.appendChild(row); qcalc();
+}
+</script>
 {% endblock %}

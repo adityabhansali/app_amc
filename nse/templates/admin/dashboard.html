@@ -5,49 +5,116 @@
 <section class="max-w-6xl mx-auto px-4 py-10">
   <div class="flex items-center justify-between flex-wrap gap-3">
     <h1 class="text-2xl font-extrabold text-navy-800">Ops Console</h1>
-    <div class="flex gap-2 text-sm">
-      <a href="{{ url_for('admin.contracts') }}" class="bg-navy-800 text-white px-4 py-2 rounded-lg hover:bg-navy-700">Contracts</a>
-      <a href="{{ url_for('admin.requests_list') }}" class="bg-navy-800 text-white px-4 py-2 rounded-lg hover:bg-navy-700">Requests</a>
-      <a href="{{ url_for('admin.enquiries') }}" class="bg-navy-800 text-white px-4 py-2 rounded-lg hover:bg-navy-700">Enquiries</a>
+    <div class="flex flex-wrap gap-2 text-sm">
+      <a href="{{ url_for('admin.contracts') }}" class="btn btn-ghost text-sm px-3 py-2">Contracts</a>
+      <a href="{{ url_for('sq.list_quotations') }}" class="btn btn-ghost text-sm px-3 py-2 relative">Quotations{% if sq_action_count %}<span class="ml-1.5 inline-grid place-items-center min-w-[18px] h-[18px] px-1 rounded-full bg-amber text-white text-[11px] font-bold align-middle">{{ sq_action_count }}</span>{% endif %}</a>
+      <a href="{{ url_for('admin.notifications') }}" class="btn btn-ghost text-sm px-3 py-2 relative">🔔 Notifications{% if unread_notifications %}<span class="ml-1.5 inline-grid place-items-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[11px] font-bold align-middle">{{ unread_notifications }}</span>{% endif %}</a>
+      <a href="{{ url_for('admin.requests_list') }}" class="btn btn-ghost text-sm px-3 py-2">Requests</a>
+      <a href="{{ url_for('admin.refills_list') }}" class="btn btn-ghost text-sm px-3 py-2">Refills</a>
+      <a href="{{ url_for('admin.enquiries') }}" class="btn btn-ghost text-sm px-3 py-2">Enquiries</a>
+      <a href="{{ url_for('admin.calendar') }}" class="btn btn-ghost text-sm px-3 py-2">📅 Calendar</a>
+      <a href="{{ url_for('admin.analytics') }}" class="btn btn-ghost text-sm px-3 py-2">📊 Analytics</a>
+      <a href="{{ url_for('admin.financials') }}" class="btn btn-ghost text-sm px-3 py-2">💰 Financials</a>
+      <a href="{{ url_for('admin.health_reports') }}" class="btn btn-ghost text-sm px-3 py-2">🩺 Health Reports</a>
+      <a href="{{ url_for('admin.technician_performance') }}" class="btn btn-ghost text-sm px-3 py-2">⭐ Performance</a>
     </div>
   </div>
 
   <!-- KPI cards -->
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-    <div class="bg-white rounded-2xl border border-slate-200 p-5"><div class="text-3xl font-extrabold text-navy-800">{{ pending_apps|length }}</div><div class="text-sm text-slate-500">Pending applications</div></div>
-    <div class="bg-white rounded-2xl border border-slate-200 p-5"><div class="text-3xl font-extrabold text-green-600">{{ active }}</div><div class="text-sm text-slate-500">Active contracts</div></div>
-    <div class="bg-white rounded-2xl border border-slate-200 p-5"><div class="text-3xl font-extrabold text-red-600">{{ open_emergencies|length }}</div><div class="text-sm text-slate-500">Open emergencies</div></div>
-    <div class="bg-white rounded-2xl border border-slate-200 p-5"><div class="text-3xl font-extrabold text-star-600">{{ new_enquiries }}</div><div class="text-sm text-slate-500">New enquiries</div></div>
+    <div class="card p-5">
+      <div class="text-3xl font-extrabold text-navy-800">{{ pending_apps|length }}</div>
+      <div class="text-sm text-ink-subtle mt-1">Pending applications</div>
+      {% if pending_apps %}<div class="mt-2 w-full h-1 rounded-full" style="background:var(--amber-lt)"><div class="h-1 rounded-full" style="background:var(--amber);width:100%"></div></div>{% endif %}
+    </div>
+    <div class="card p-5">
+      <div class="text-3xl font-extrabold text-green-600">{{ active }}</div>
+      <div class="text-sm text-ink-subtle mt-1">Active contracts</div>
+    </div>
+    <div class="card p-5">
+      <div class="text-3xl font-extrabold text-red-600">{{ open_emergencies|length }}</div>
+      <div class="text-sm text-ink-subtle mt-1">Open emergencies</div>
+      {% if open_emergencies %}<div class="mt-2 flex items-center gap-1 text-xs text-red-600 font-medium"><span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>Needs attention</div>{% endif %}
+    </div>
+    <div class="card p-5">
+      <div class="text-3xl font-extrabold" style="color:var(--amber)">{{ new_enquiries }}</div>
+      <div class="text-sm text-ink-subtle mt-1">New enquiries</div>
+    </div>
+  </div>
+
+  <!-- Quotations needing attention -->
+  {% if sq_attention %}
+  <div class="card p-5 mt-6 border-l-4" style="border-left-color:var(--amber)">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-base font-bold text-navy-800">⚡ Quotations needing your action</h2>
+      <a href="{{ url_for('sq.list_quotations') }}" class="text-xs text-primary hover:underline">All quotations →</a>
+    </div>
+    <div class="space-y-2">
+      {% for q in sq_attention %}
+      <a href="{{ url_for('sq.detail_quotation', sq_id=q.id) }}"
+         class="flex items-center justify-between gap-3 rounded-xl border p-3 hover:border-primary transition
+                {% if q.status == 'accepted' %}border-green-200 bg-green-50{% else %}border-amber-200 bg-amber-50{% endif %}">
+        <div class="min-w-0">
+          <div class="font-semibold text-navy-800">{{ q.reference }}
+            <span class="text-xs px-2 py-0.5 rounded-full font-medium {% if q.status == 'accepted' %}bg-green-100 text-green-800{% else %}bg-amber-100 text-amber-800{% endif %}">{{ q.status_label }}</span>
+          </div>
+          <div class="text-sm text-slate-600 truncate">{{ q.customer_name }}{% if q.project_name %} · {{ q.project_name }}{% endif %} · ₹{{ '{:,.0f}'.format(q.grand_total) }}</div>
+          {% if q.status == 'negotiation_requested' and q.negotiation_note %}<div class="text-xs text-amber-700 mt-0.5 truncate">💬 {{ q.negotiation_note }}</div>{% endif %}
+        </div>
+        <span class="text-xs font-medium whitespace-nowrap {% if q.status == 'accepted' %}text-green-700{% else %}text-amber-700{% endif %}">
+          {% if q.status == 'accepted' %}{% if q.contract %}Activate {{ q.contract.reference }} →{% else %}Ready →{% endif %}{% else %}Respond →{% endif %}
+        </span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Filter chips -->
+  <div class="flex flex-wrap gap-2 mt-5">
+    <span class="filter-chip active">All</span>
+    <span class="filter-chip">📋 Pending ({{ pending_apps|length }})</span>
+    <span class="filter-chip">🚨 Emergencies ({{ open_emergencies|length }})</span>
+    <span class="filter-chip">🔔 New enquiries ({{ new_enquiries }})</span>
   </div>
 
   <div class="grid lg:grid-cols-2 gap-6 mt-8">
     <!-- Pending applications -->
     <div>
-      <h2 class="text-lg font-bold text-navy-800 mb-3">📝 Applications to review</h2>
+      <h2 class="text-lg font-bold text-navy-800 mb-3">Applications to review</h2>
       {% if pending_apps %}
       <div class="space-y-2">
         {% for c in pending_apps %}
-        <a href="{{ url_for('admin.contract', contract_id=c.id) }}" class="block bg-white rounded-xl border border-slate-200 p-4 hover:border-star-400">
-          <div class="flex justify-between"><span class="font-semibold text-navy-800">{{ c.reference }}</span><span class="text-sm text-slate-500">{{ c.created_at|datefmt }}</span></div>
-          <div class="text-sm text-slate-600">{{ c.applicant_name }} · {{ c.applicant_phone }}{% if c.area %} · {{ c.area }}{% endif %}</div>
-          <div class="text-xs text-slate-500 mt-1">{{ c.plan.name if c.plan else 'Custom' }} · {{ c.price|rupees }}</div>
+        {% set cq = c.amc_quote %}
+        <a href="{{ url_for('admin.contract', contract_id=c.id) }}" class="block priority-card {{ 'p-low' if c.can_activate else 'p-medium' }} p-4">
+          <div class="flex justify-between"><span class="font-semibold text-navy-800">{{ c.reference }}</span><span class="text-xs text-ink-subtle">{{ c.created_at|datefmt }}</span></div>
+          <div class="text-sm text-ink-muted mt-0.5">{{ c.applicant_name }} · {{ c.applicant_phone }}{% if c.area %} · {{ c.area }}{% endif %}</div>
+          <div class="flex items-center justify-between mt-2">
+            <span class="text-xs text-ink-subtle">{{ c.plan.name if c.plan else 'Custom' }}</span>
+            <span class="text-xs font-bold" style="color:var(--amber)">{{ c.price|rupees }}</span>
+          </div>
+          {% if cq %}
+          <div class="mt-2 text-xs font-medium {% if c.can_activate %}text-green-700{% else %}text-amber-700{% endif %}">
+            {% if c.can_activate %}✓ Quote accepted — ready to activate{% else %}🔒 Awaiting client approval · {{ cq.reference }} ({{ cq.status_label }}){% endif %}
+          </div>
+          {% endif %}
         </a>
         {% endfor %}
       </div>
-      {% else %}<p class="text-slate-500 text-sm">No pending applications. 🎉</p>{% endif %}
+      {% else %}<p class="text-slate-500 text-sm">No pending applications.</p>{% endif %}
     </div>
 
     <!-- Open emergencies / NOC -->
     <div>
-      <h2 class="text-lg font-bold text-navy-800 mb-3">🚨 Open emergency / NOC requests</h2>
+      <h2 class="text-lg font-bold text-navy-800 mb-3">Open emergency / NOC requests</h2>
       {% set open_reqs = open_emergencies + open_noc %}
       {% if open_reqs %}
       <div class="space-y-2">
         {% for r in open_reqs %}
-        <a href="{{ url_for('admin.service_request', req_id=r.id) }}" class="block bg-white rounded-xl border {{ 'border-red-200' if r.request_type=='emergency' else 'border-slate-200' }} p-4 hover:border-star-400">
-          <div class="flex justify-between"><span class="font-semibold text-navy-800">{{ r.reference }}</span>{{ status_badge(r.status) }}</div>
-          <div class="text-sm text-slate-600">{{ r.name }} · {{ r.phone }}{% if r.area %} · {{ r.area }}{% endif %}</div>
-          {% if r.description %}<div class="text-xs text-slate-500 mt-1 line-clamp-1">{{ r.description[:90] }}</div>{% endif %}
+        <a href="{{ url_for('admin.service_request', req_id=r.id) }}" class="block priority-card {{ 'p-high' if r.request_type=='emergency' else 'p-info' }} p-4">
+          <div class="flex justify-between items-center"><span class="font-semibold text-navy-800">{{ r.reference }}</span>{{ status_badge(r.status) }}</div>
+          <div class="text-sm text-ink-muted mt-0.5">{{ r.name }} · {{ r.phone }}{% if r.area %} · {{ r.area }}{% endif %}</div>
+          {% if r.description %}<div class="text-xs text-ink-subtle mt-1 line-clamp-1">{{ r.description[:90] }}</div>{% endif %}
         </a>
         {% endfor %}
       </div>
@@ -56,11 +123,11 @@
 
     <!-- Upcoming visits -->
     <div>
-      <h2 class="text-lg font-bold text-navy-800 mb-3">🗓 Upcoming visits</h2>
+      <h2 class="text-lg font-bold text-navy-800 mb-3">Upcoming visits</h2>
       {% if upcoming %}
       <div class="space-y-2">
         {% for v in upcoming %}
-        <a href="{{ url_for('admin.visit', visit_id=v.id) }}" class="flex justify-between items-center bg-white rounded-xl border border-slate-200 p-3 hover:border-star-400">
+        <a href="{{ url_for('admin.visit', visit_id=v.id) }}" class="flex justify-between items-center bg-white rounded-xl border border-slate-200 p-3 hover:border-primary">
           <div><span class="font-medium text-navy-800">{{ v.contract.reference }}</span> <span class="text-sm text-slate-500">· {{ v.label }}</span></div>
           <div class="text-sm text-slate-600">{{ v.scheduled_date|datefmt }}{% if v.technician %} · {{ v.technician.name }}{% endif %}</div>
         </a>
@@ -71,17 +138,33 @@
 
     <!-- Refills due -->
     <div>
-      <h2 class="text-lg font-bold text-navy-800 mb-3">🧯 Refills due / overdue</h2>
+      <h2 class="text-lg font-bold text-navy-800 mb-3">Refills due / overdue</h2>
       {% if due_refills %}
       <div class="space-y-2">
         {% for e in due_refills %}
-        <a href="{{ url_for('admin.contract', contract_id=e.contract_id) }}" class="flex justify-between items-center bg-white rounded-xl border border-slate-200 p-3 hover:border-star-400">
+        <a href="{{ url_for('admin.contract', contract_id=e.contract_id) }}" class="flex justify-between items-center bg-white rounded-xl border border-slate-200 p-3 hover:border-primary">
           <div><span class="font-medium text-navy-800">{{ e.name }}</span> <span class="text-xs text-slate-500">· {{ e.contract.reference }}</span></div>
           <div class="flex items-center gap-2"><span class="text-xs text-slate-500">{{ e.next_refill_date|datefmt }}</span>{{ refill_badge(e) }}</div>
         </a>
         {% endfor %}
       </div>
-      {% else %}<p class="text-slate-500 text-sm">All refills on track. ✅</p>{% endif %}
+      {% else %}<p class="text-slate-500 text-sm">All refills on track.</p>{% endif %}
+    </div>
+
+    <!-- Open refill orders -->
+    <div>
+      <h2 class="text-lg font-bold text-navy-800 mb-3">New refill orders</h2>
+      {% if open_refills %}
+      <div class="space-y-2">
+        {% for o in open_refills[:8] %}
+        <a href="{{ url_for('admin.refill_order', order_id=o.id) }}" class="block bg-white rounded-xl border border-slate-200 p-3 hover:border-primary transition">
+          <div class="flex justify-between"><span class="font-medium text-navy-800">{{ o.reference }}</span>{{ status_badge(o.status) }}</div>
+          <div class="text-sm text-slate-600">{{ o.name }} · {{ o.phone }}{% if o.area %} · {{ o.area }}{% endif %}</div>
+          <div class="text-xs text-slate-500 mt-0.5">{{ o.summary }}</div>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}<p class="text-slate-500 text-sm">No open refill orders.</p>{% endif %}
     </div>
   </div>
 </section>

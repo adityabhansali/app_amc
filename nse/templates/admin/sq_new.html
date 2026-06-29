@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}New Service Quotation — Ops{% endblock %}
+{% block content %}
+<section class="max-w-4xl mx-auto px-4 py-10">
+  <a href="{{ url_for('sq.list_quotations') }}" class="text-sm text-ink-subtle hover:text-ink">← Quotations</a>
+  <h1 class="text-2xl font-extrabold text-ink mt-2 mb-6">New Service Quotation</h1>
+
+  <form method="post" id="sqForm" class="space-y-6">
+    <!-- Service type + client info -->
+    <div class="card p-6 space-y-4">
+      <h2 class="font-bold text-ink">1. Service &amp; Client</h2>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <label class="block">
+          <span class="text-sm font-medium text-ink-muted">Service type</span>
+          <select name="service_type" required class="mt-1.5 w-full px-3 py-2.5">
+            <option value="amc" {{ 'selected' if not contract }}>AMC</option>
+            <option value="noc" {{ 'selected' if sr and sr.request_type=='noc' }}>NOC</option>
+            <option value="refilling" {{ 'selected' if ro }}>Refilling</option>
+            <option value="emergency" {{ 'selected' if sr and sr.request_type=='emergency' }}>Emergency</option>
+          </select>
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-ink-muted">Project / Site name</span>
+          <input name="project_name" value="{{ contract.site_name or (sr.location if sr) or '' }}" class="mt-1.5 w-full px-3 py-2.5" placeholder="e.g. Rajshree City Centre">
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-ink-muted">Customer name <span class="text-danger">*</span></span>
+          <input name="customer_name" required value="{{ contract.applicant_name or (sr.name if sr) or (ro.name if ro) or '' }}" class="mt-1.5 w-full px-3 py-2.5">
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-ink-muted">Phone</span>
+          <input name="customer_phone" value="{{ contract.applicant_phone or (sr.phone if sr) or (ro.phone if ro) or '' }}" class="mt-1.5 w-full px-3 py-2.5">
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-ink-muted">Email</span>
+          <input name="customer_email" type="email" value="{{ contract.applicant_email or (sr.email if sr) or (ro.email if ro) or '' }}" class="mt-1.5 w-full px-3 py-2.5">
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-ink-muted">Address</span>
+          <textarea name="customer_address" rows="2" class="mt-1.5 w-full px-3 py-2.5">{{ contract.site_address or (sr.location if sr) or (ro.address if ro) or '' }}</textarea>
+        </label>
+      </div>
+      <!-- Hidden links -->
+      {% if contract %}<input type="hidden" name="contract_id" value="{{ contract.id }}">{% endif %}
+      {% if sr %}<input type="hidden" name="service_request_id" value="{{ sr.id }}">{% endif %}
+      {% if ro %}<input type="hidden" name="refill_order_id" value="{{ ro.id }}">{% endif %}
+    </div>
+
+    <!-- Line items -->
+    <!-- Inventory datalist: type to search, rate auto-fills -->
+    <datalist id="sq-inv-list">
+      {% for it in inventory %}<option value="{{ it.name }}" data-cat="{{ it.category }}" data-rate="{{ it.rate }}" data-unit="{{ it.unit }}">{{ it.category }} · ₹{{ it.rate }}/{{ it.unit }}</option>{% endfor %}
+    </datalist>
+
+    <div class="card p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-bold text-ink">2. Line Items</h2>
+        <button type="button" onclick="addRow()" class="btn btn-ghost text-sm px-3 py-1.5">+ Add row</button>
+      </div>
+      <p class="text-xs text-ink-subtle mb-3">💡 Start typing in the <strong>Description</strong> field to pick from your inventory — category and rate auto-fill.</p>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm" id="itemsTable">
+          <thead class="bg-slate-50 text-xs uppercase text-ink-subtle border-b border-hairline">
+            <tr>
+              <th class="px-2 py-2 text-left w-[20%]">Category</th>
+              <th class="px-2 py-2 text-left w-[38%]">Description</th>
+              <th class="px-2 py-2 text-center w-[8%]">Unit</th>
+              <th class="px-2 py-2 text-center w-[10%]">Qty</th>
+              <th class="px-2 py-2 text-right w-[16%]">Rate (₹)</th>
+              <th class="px-2 py-2 text-right w-[6%]"></th>
+            </tr>
+          </thead>
+          <tbody id="itemsBody">
+            <!-- Default 1 row -->
+            <tr class="item-row border-b border-hairline">
+              <td class="px-2 py-1.5"><input name="item_category" placeholder="e.g. Maintenance" class="w-full px-2 py-1.5 text-sm"></td>
+              <td class="px-2 py-1.5"><input name="item_desc" required list="sq-inv-list" oninput="sqFill(this)" placeholder="Type to search inventory…" class="w-full px-2 py-1.5 text-sm"></td>
+              <td class="px-2 py-1.5"><input name="item_unit" list="sq-unit-list" value="Nos" class="w-full px-2 py-1.5 text-sm text-center"></td>
+              <td class="px-2 py-1.5"><input name="item_qty" type="number" step="0.01" value="1" class="w-full px-2 py-1.5 text-sm text-center" oninput="calcRow(this)"></td>
+              <td class="px-2 py-1.5"><input name="item_rate" type="number" step="0.01" value="0" class="w-full px-2 py-1.5 text-sm text-right" oninput="calcRow(this)"></td>
+              <td class="px-2 py-1.5 text-center"><button type="button" onclick="removeRow(this)" class="text-danger text-lg leading-none hover:opacity-70">×</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <datalist id="sq-unit-list">
+        <option>Nos</option><option>Mtr</option><option>Job</option><option>Set</option><option>Kg</option><option>Ltr</option><option>Sqft</option>
+      </datalist>
+
+      <!-- Totals preview -->
+      <div class="mt-4 flex flex-col items-end gap-1 text-sm">
+        <div class="flex gap-8"><span class="text-ink-subtle">Subtotal:</span><span id="previewSubtotal" class="font-semibold w-28 text-right">₹0.00</span></div>
+        <div class="flex gap-8 items-center">
+          <span class="text-ink-subtle">GST <input name="gst_percent" id="gstPct" type="number" step="0.1" value="18" class="w-14 px-1 py-0.5 text-center text-xs inline border border-hairline-strong rounded" oninput="updateTotals()"> %:</span>
+          <span id="previewGST" class="font-semibold w-28 text-right">₹0.00</span>
+        </div>
+        <div class="flex gap-8 border-t border-hairline pt-2 mt-1"><span class="font-bold text-ink">Grand Total:</span><span id="previewTotal" class="font-extrabold text-ink w-28 text-right">₹0.00</span></div>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="card p-6 grid sm:grid-cols-2 gap-4">
+      <h2 class="font-bold text-ink sm:col-span-2">3. Settings</h2>
+      <label class="block">
+        <span class="text-sm font-medium text-ink-muted">Valid for (days)</span>
+        <input name="valid_days" type="number" value="7" class="mt-1.5 w-full px-3 py-2.5">
+      </label>
+      <label class="block">
+        <span class="text-sm font-medium text-ink-muted">Notes / special terms</span>
+        <textarea name="notes" rows="2" class="mt-1.5 w-full px-3 py-2.5" placeholder="Any additional terms or notes for this quotation…"></textarea>
+      </label>
+    </div>
+
+    <button type="submit" class="btn btn-primary w-full">Save Quotation (Draft)</button>
+  </form>
+</section>
+
+<script>
+// Build a lookup map: inventory name → {cat, rate, unit}
+var SQ_INV = {};
+document.querySelectorAll('#sq-inv-list option').forEach(function(o){
+  SQ_INV[o.value] = {cat: o.dataset.cat, rate: parseFloat(o.dataset.rate)||0, unit: o.dataset.unit||'Nos'};
+});
+function sqFill(descInput) {
+  var match = SQ_INV[descInput.value];
+  if (!match) { updateTotals(); return; }
+  var row = descInput.closest('.item-row');
+  var catIn  = row.querySelector('[name=item_category]');
+  var rateIn = row.querySelector('[name=item_rate]');
+  var unitIn = row.querySelector('[name=item_unit]');
+  if (catIn  && (!catIn.value  || catIn.value === ''))  catIn.value  = match.cat;
+  if (rateIn && (!rateIn.value || rateIn.value === '0')) rateIn.value = match.rate;
+  if (unitIn) unitIn.value = match.unit;
+  updateTotals();
+}
+function rowTemplate() {
+  return `<tr class="item-row border-b border-hairline">
+    <td class="px-2 py-1.5"><input name="item_category" placeholder="Category" class="w-full px-2 py-1.5 text-sm"></td>
+    <td class="px-2 py-1.5"><input name="item_desc" list="sq-inv-list" oninput="sqFill(this)" placeholder="Type to search inventory…" class="w-full px-2 py-1.5 text-sm"></td>
+    <td class="px-2 py-1.5"><input name="item_unit" list="sq-unit-list" value="Nos" class="w-full px-2 py-1.5 text-sm text-center"></td>
+    <td class="px-2 py-1.5"><input name="item_qty" type="number" step="0.01" value="1" class="w-full px-2 py-1.5 text-sm text-center" oninput="calcRow(this)"></td>
+    <td class="px-2 py-1.5"><input name="item_rate" type="number" step="0.01" value="0" class="w-full px-2 py-1.5 text-sm text-right" oninput="calcRow(this)"></td>
+    <td class="px-2 py-1.5 text-center"><button type="button" onclick="removeRow(this)" class="text-danger text-lg leading-none hover:opacity-70">×</button></td>
+  </tr>`;
+}
+function addRow() {
+  document.getElementById('itemsBody').insertAdjacentHTML('beforeend', rowTemplate());
+  updateTotals();
+}
+function removeRow(btn) {
+  btn.closest('tr').remove();
+  updateTotals();
+}
+function calcRow(inp) { updateTotals(); }
+function fmt(n) { return '₹' + n.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function updateTotals() {
+  let sub = 0;
+  document.querySelectorAll('.item-row').forEach(row => {
+    const qty  = parseFloat(row.querySelector('[name=item_qty]')?.value || 0);
+    const rate = parseFloat(row.querySelector('[name=item_rate]')?.value || 0);
+    sub += qty * rate;
+  });
+  const gst = sub * (parseFloat(document.getElementById('gstPct').value || 18) / 100);
+  document.getElementById('previewSubtotal').textContent = fmt(sub);
+  document.getElementById('previewGST').textContent = fmt(gst);
+  document.getElementById('previewTotal').textContent = fmt(sub + gst);
+}
+updateTotals();
+</script>
+{% endblock %}

@@ -1,9 +1,24 @@
 {% extends "base.html" %}
-{% from "_macros.html" import status_badge %}
+{% from "_macros.html" import status_badge, star_rating_inputs %}
 {% block title %}{{ v.label }} — {{ v.contract.reference }}{% endblock %}
 {% block content %}
 <section class="max-w-4xl mx-auto px-4 py-10">
   <a href="{{ url_for('portal.contract', contract_id=v.contract_id) }}" class="text-sm text-slate-500 hover:text-navy-700">← Back to {{ v.contract.reference }}</a>
+
+  {% set fb = v.feedback %}
+
+  <!-- Congratulations banner (completed, not yet approved/rated) -->
+  {% if v.status == 'completed' and not v.customer_approved %}
+  <div class="bg-gradient-to-r from-green-50 to-amber-50 border border-green-200 rounded-2xl p-6 mt-3 text-center">
+    <div class="text-3xl">🎉</div>
+    <h2 class="text-xl font-extrabold text-navy-800 mt-1">Congratulations — your {{ v.label }} is done!</h2>
+    <p class="text-slate-600 text-sm mt-1">Please check your service report, then approve and rate the service.</p>
+    <div class="mt-4 flex flex-wrap gap-3 justify-center">
+      <a href="{{ url_for('portal.service_report_pdf', visit_id=v.id) }}" class="bg-green-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-green-500">⬇ Download report</a>
+      <button onclick="document.getElementById('rate-modal').style.display='flex'" class="bg-amber-500 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-amber-600">★ Approve &amp; rate visit</button>
+    </div>
+  </div>
+  {% endif %}
 
   <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mt-3">
     <div class="flex items-start justify-between flex-wrap gap-3">
@@ -27,10 +42,31 @@
   </div>
   {% endif %}
 
-  {% if v.service_report_path %}
-  <div class="bg-green-50 border border-green-200 rounded-2xl p-5 mt-5 flex items-center justify-between">
-    <div><h2 class="font-bold text-green-800">Service report</h2><p class="text-sm text-green-700">Your signed-off report for this visit.</p></div>
-    <a href="{{ url_for('portal.report', visit_id=v.id) }}" class="bg-green-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-green-500">📄 Download</a>
+  {% if v.checklist_summary %}
+  <div class="bg-white rounded-2xl border border-slate-200 p-6 mt-5">
+    <h2 class="font-bold text-navy-800 mb-2">Maintenance checklist</h2>
+    <p class="text-sm text-slate-600">{{ v.checklist_summary.total }} items checked · <span class="text-green-700 font-medium">{{ v.checklist_summary.ok }} OK</span>{% if v.checklist_summary.issues %} · <span class="text-red-600 font-medium">{{ v.checklist_summary.issues }} issue(s)</span>{% endif %}</p>
+  </div>
+  {% endif %}
+
+  <!-- Service report downloads -->
+  {% if v.status == 'completed' %}
+  <div class="bg-green-50 border border-green-200 rounded-2xl p-5 mt-5 flex items-center justify-between flex-wrap gap-3">
+    <div><h2 class="font-bold text-green-800">Service report</h2><p class="text-sm text-green-700">Your branded report for this visit.</p></div>
+    <div class="flex gap-2">
+      <a href="{{ url_for('portal.service_report_pdf', visit_id=v.id) }}" class="bg-green-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-green-500">⬇ Branded PDF</a>
+      {% if v.service_report_path %}<a href="{{ url_for('portal.report', visit_id=v.id) }}" class="bg-white border border-green-300 text-green-700 px-4 py-2.5 rounded-xl font-medium hover:bg-green-50">Uploaded file</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Already-rated summary -->
+  {% if v.customer_approved and fb %}
+  <div class="bg-white rounded-2xl border border-slate-200 p-6 mt-5">
+    <h2 class="font-bold text-navy-800 mb-1">Your rating</h2>
+    <p class="text-amber-500 text-xl">{{ '★' * (fb.rating_overall or 0) }}<span class="text-slate-300">{{ '★' * (5 - (fb.rating_overall or 0)) }}</span> <span class="text-slate-500 text-sm align-middle">{{ fb.rating_overall }}/5</span></p>
+    {% if fb.comment %}<p class="text-sm text-slate-600 mt-1 italic">“{{ fb.comment }}”</p>{% endif %}
+    <p class="text-xs text-slate-400 mt-1">Approved on {{ v.approved_at|datefmt }} · thank you for your feedback.</p>
   </div>
   {% endif %}
 
@@ -45,12 +81,28 @@
     </a>
     {% endfor %}
   </div>
-  {% elif v.status == 'completed' %}
-  <p class="text-slate-500 text-sm mt-6">No photos were attached to this visit.</p>
   {% endif %}
 
   {% if v.status != 'completed' %}
   <p class="text-slate-500 text-sm mt-6 bg-white border border-dashed border-slate-300 rounded-xl p-5">This visit is {{ v.status.replace('_',' ') }}. Photos and the service report will appear here once it's completed.</p>
   {% endif %}
 </section>
+
+<!-- ── Mandatory rating popup ──────────────────────────────────────────────── -->
+{% if v.status == 'completed' and not v.customer_approved %}
+<div id="rate-modal" style="display:none;position:fixed;inset:0;z-index:60;background:rgba(15,23,42,.55);align-items:center;justify-content:center;padding:1rem">
+  <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+    <h3 class="text-lg font-bold text-navy-800">Rate your {{ v.label }}</h3>
+    <p class="text-sm text-slate-500 mt-1">Your feedback helps us serve you better. All stars are required.</p>
+    <form method="post" action="{{ url_for('portal.visit_approve', visit_id=v.id) }}" class="mt-4">
+      {{ star_rating_inputs() }}
+      <textarea name="comment" rows="2" placeholder="Any comments (optional)" class="w-full mt-3 px-3 py-2 rounded-lg border border-slate-300 text-sm"></textarea>
+      <div class="mt-5 flex gap-3 justify-end">
+        <button type="button" onclick="document.getElementById('rate-modal').style.display='none'" class="px-4 py-2.5 rounded-xl bg-surface-2 text-ink-muted font-medium hover:bg-surface-3">Later</button>
+        <button class="px-5 py-2.5 rounded-xl bg-amber-500 text-white font-semibold hover:bg-amber-600">Submit &amp; approve</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
 {% endblock %}

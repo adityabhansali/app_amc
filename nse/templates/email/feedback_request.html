@@ -1,0 +1,11 @@
+{% extends "email/_base_email.html" %}
+{% block content %}
+<h2>How did we do? ⭐</h2>
+<p>Dear {{ contract.applicant_name or 'Valued Customer' }},</p>
+<p>Thank you for choosing Northern Star Engineering. Your <strong>{{ visit.label }}</strong> has been completed.</p>
+<p>We value your feedback — it helps us improve and recognise our team. It takes less than a minute!</p>
+<div style="text-align:center;margin:28px 0">
+  <a href="{{ feedback_url }}" class="btn">Rate Your Service</a>
+</div>
+<p style="font-size:13px;color:#888">Link valid for 30 days. If the button does not work, copy this URL: {{ feedback_url }}</p>
+{% endblock %}

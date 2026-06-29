@@ -1,0 +1,14 @@
+{% extends "email/_base_email.html" %}
+{% block content %}
+<h2>✅ Payment Confirmed</h2>
+<p>Dear Customer,</p>
+<p>We have received your payment. Here are the details:</p>
+<div class="info-box">
+  <p><strong>Reference:</strong> {{ ref }}</p>
+  <p><strong>Amount:</strong> ₹{{ "{:,.0f}".format(amount) }}</p>
+  <p><strong>Mode:</strong> {{ mode.title() }}</p>
+  <p><strong>Date:</strong> {{ now_date.strftime('%d %B %Y') if now_date is defined else '' }}</p>
+</div>
+<p>Thank you for your payment. Our team will proceed as scheduled.</p>
+<p>For queries: <a href="tel:+919687266625">+91 96872 66625</a></p>
+{% endblock %}

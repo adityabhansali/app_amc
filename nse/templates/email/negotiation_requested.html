@@ -1,0 +1,20 @@
+{% extends "email/_base_email.html" %}
+{% block content %}
+<h2>⚡ Negotiation Requested</h2>
+<p>A customer has requested a negotiation call for their quotation.</p>
+<div class="info-box">
+  <p><strong>Quotation:</strong> {{ q.reference }}</p>
+  <p><strong>Customer:</strong> {{ q.customer_name }}</p>
+  <p><strong>Phone:</strong> {{ q.customer_phone }}</p>
+  <p><strong>Email:</strong> {{ q.customer_email }}</p>
+  <p><strong>Grand Total:</strong> ₹{{ "%.2f"|format(q.grand_total) }}</p>
+</div>
+{% if q.negotiation_note %}
+<p><strong>Customer message:</strong></p>
+<div class="info-box" style="border-color:#f59e0b;background:#fffbeb">
+  <p style="color:#92400e">{{ q.negotiation_note }}</p>
+</div>
+{% endif %}
+<p>Please call <strong>{{ q.customer_name }}</strong> at <a href="tel:{{ q.customer_phone }}">{{ q.customer_phone }}</a> to discuss.</p>
+<p>Sales Manager line: <a href="tel:{{ sales_phone }}">{{ sales_phone }}</a></p>
+{% endblock %}

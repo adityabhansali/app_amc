@@ -15,9 +15,9 @@
       </div>
       {% if r.description %}<p class="text-sm text-slate-600 mt-2">{{ r.description }}</p>{% endif %}
       <div class="text-xs text-slate-500 mt-2 flex flex-wrap gap-4">
-        <span>📍 {{ r.location or r.area or '—' }}</span>
-        {% if r.team_eta %}<span>🚑 ETA: {{ r.team_eta }}</span>{% endif %}
-        {% if r.scheduled_date %}<span>🗓 {{ r.scheduled_date.strftime('%d %b %Y, %I:%M %p') }}</span>{% endif %}
+        <span>{{ r.location or r.area or '—' }}</span>
+        {% if r.team_eta %}<span>ETA: {{ r.team_eta }}</span>{% endif %}
+        {% if r.scheduled_date %}<span>{{ r.scheduled_date.strftime('%d %b %Y, %I:%M %p') }}</span>{% endif %}
         <span>Raised {{ r.created_at|datefmt }}</span>
       </div>
     </div>

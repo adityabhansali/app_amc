@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}Book Extinguisher Refilling — {{ COMPANY_NAME }}{% endblock %}
+{% block content %}
+<section class="max-w-5xl mx-auto px-4 py-16">
+  <div class="max-w-2xl">
+    <span class="eyebrow">Refilling</span>
+    <h1 class="text-3xl md:text-4xl font-extrabold text-ink mt-3">Book extinguisher refilling</h1>
+    <p class="text-ink-subtle mt-3 text-lg">Empty, expired or discharged extinguisher? Book a refill in minutes — we pick up or service on-site, refill with verified weight, and hand back a QR-tracked certificate. No AMC needed.</p>
+  </div>
+
+  <!-- Rate card -->
+  <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+    {% set rates = [
+      ('ABC Dry Powder', 'from ₹500', 'MAP 50% premium powder'),
+      ('CO₂', '₹800 – ₹2,000', 'By cylinder capacity'),
+      ('K-Class', 'On request', 'Kitchen / wet chemical'),
+      ('Modular', 'On request', 'Ceiling-mounted units')
+    ] %}
+    {% for name, price, sub in rates %}
+    <div class="card p-5">
+      <div class="text-sm font-semibold text-ink">{{ name }}</div>
+      <div class="text-2xl font-extrabold text-primary mt-1">{{ price }}</div>
+      <div class="text-xs text-ink-subtle mt-1">{{ sub }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  <p class="text-xs text-ink-subtle mt-3">+18% GST applicable. Transportation charged separately. Final amount confirmed after inspection &amp; weight check.</p>
+
+  <!-- Process -->
+  <div class="card p-5 mt-6 flex flex-wrap items-center gap-x-2 gap-y-2 text-sm">
+    <span class="font-semibold text-ink mr-1">Our process:</span>
+    {% for step in ['Inspection', 'Hydro test', 'Cleaning', 'Refill', 'QR certificate'] %}
+      <span class="inline-flex items-center gap-2">
+        <span class="text-ink-muted">{{ step }}</span>
+        {% if not loop.last %}<svg class="w-4 h-4 text-ink-tertiary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>{% endif %}
+      </span>
+    {% endfor %}
+  </div>
+
+  <!-- Booking form -->
+  <form method="post" class="card p-7 mt-8 space-y-6">
+    <h2 class="text-xl font-bold text-ink">Your details</h2>
+    <div class="grid sm:grid-cols-2 gap-4">
+      {{ field('Your name', 'name', required=true) }}
+      {{ field('Phone number', 'phone', type='tel', required=true, placeholder='10-digit mobile') }}
+      {{ field('Email (optional)', 'email', type='email') }}
+      {{ field('Area', 'area', placeholder='e.g. Adajan, Vesu, Katargam…') }}
+    </div>
+    {{ field('Pickup / site address', 'address', required=true, placeholder='Building, street, landmark, Surat') }}
+
+    <div>
+      <span class="text-sm font-medium text-ink-muted">How should we handle it?</span>
+      <div class="mt-2 flex flex-wrap gap-3">
+        <label class="flex items-center gap-2.5 border border-hairline-strong rounded-lg px-4 py-2.5 cursor-pointer hover:border-primary transition"><input type="radio" name="service_mode" value="onsite" checked> Service on-site</label>
+        <label class="flex items-center gap-2.5 border border-hairline-strong rounded-lg px-4 py-2.5 cursor-pointer hover:border-primary transition"><input type="radio" name="service_mode" value="pickup"> Pick up &amp; return</label>
+      </div>
+    </div>
+
+    <div>
+      <div class="flex items-center justify-between">
+        <span class="text-sm font-medium text-ink-muted">Extinguishers to refill</span>
+      </div>
+      <div id="items" class="mt-2 space-y-2">
+        <div class="refill-row grid grid-cols-12 gap-2 items-center">
+          <select name="item_type" class="col-span-5 px-3 py-2.5 text-sm">
+            <option value="ABC">ABC Dry Powder</option>
+            <option value="CO2">CO₂</option>
+            <option value="K-Class">K-Class</option>
+            <option value="Modular">Modular</option>
+          </select>
+          <input name="item_capacity" placeholder="Capacity (e.g. 6 kg)" class="col-span-4 px-3 py-2.5 text-sm">
+          <input name="item_qty" type="number" value="1" min="1" placeholder="Qty" class="col-span-2 px-3 py-2.5 text-sm">
+          <button type="button" onclick="removeRow(this)" class="col-span-1 text-ink-tertiary hover:text-danger transition" aria-label="Remove">
+            <svg class="w-5 h-5 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+      <button type="button" onclick="addRow()" class="mt-2 text-sm text-primary font-semibold">+ Add another extinguisher</button>
+    </div>
+
+    <label class="block">
+      <span class="text-sm font-medium text-ink-muted">Notes (optional)</span>
+      <textarea name="notes" rows="2" class="mt-1.5 w-full px-3 py-2.5" placeholder="Anything we should know — brand, condition, preferred timing…"></textarea>
+    </label>
+
+    <div>
+      <span class="text-sm font-medium text-ink-muted">Preferred payment</span>
+      <div class="mt-2 flex flex-wrap gap-3">
+        <label class="flex items-center gap-2.5 border border-hairline-strong rounded-lg px-4 py-2.5 cursor-pointer hover:border-primary transition"><input type="radio" name="payment_mode" value="cash" checked> Cash on visit</label>
+        <label class="flex items-center gap-2.5 border border-hairline-strong rounded-lg px-4 py-2.5 cursor-pointer hover:border-primary transition"><input type="radio" name="payment_mode" value="online"> Pay online</label>
+      </div>
+    </div>
+
+    <button class="btn btn-primary w-full">Book refill</button>
+  </form>
+</section>
+
+<script>
+function addRow() {
+  const tpl = document.querySelector('#items > .refill-row');
+  const row = tpl.cloneNode(true);
+  row.querySelectorAll('input').forEach((i) => { if (i.name === 'item_qty') i.value = '1'; else i.value = ''; });
+  row.querySelector('select').selectedIndex = 0;
+  document.getElementById('items').appendChild(row);
+}
+function removeRow(btn) {
+  const rows = document.querySelectorAll('#items > .refill-row');
+  if (rows.length > 1) btn.closest('.refill-row').remove();
+}
+</script>
+{% endblock %}

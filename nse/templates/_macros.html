@@ -20,11 +20,114 @@
   <span class="inline-block text-xs font-semibold px-2.5 py-1 rounded-full {{ map[s] }}">{{ label[s] }}</span>
 {% endmacro %}
 
+{# ── workflow_track ─────────────────────────────────────────────────────────
+   Horizontal progress roadmap for a contract: Quote → Contract → Visit 1..N.
+   Each step's filled dot + connector show completion; the current step pulses.
+   Usage: {{ workflow_track(contract) }}
+#}
+{% macro workflow_track(c) %}
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+  <h3 class="text-sm font-bold text-navy-800 mb-4">Your service roadmap</h3>
+  <div class="flex items-start overflow-x-auto pb-1">
+    {% set steps = c.workflow_steps %}
+    {% for s in steps %}
+    <div class="flex flex-col items-center text-center min-w-[78px] relative">
+      {% if not loop.first %}
+      <div class="absolute top-3 right-1/2 w-full h-1 {{ 'bg-green-500' if s.done else 'bg-slate-200' }}" style="z-index:0"></div>
+      {% endif %}
+      <div class="relative w-7 h-7 rounded-full grid place-items-center text-xs font-bold
+                  {{ 'bg-green-500 text-white' if s.done else ('bg-amber-400 text-white ring-4 ring-amber-100' if s.active else 'bg-slate-200 text-slate-500') }}"
+           style="z-index:1">
+        {{ '✓' if s.done else ('●' if s.active else loop.index) }}
+      </div>
+      <span class="mt-2 text-[11px] leading-tight {{ 'text-navy-800 font-semibold' if (s.done or s.active) else 'text-slate-400' }}">{{ s.label }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endmacro %}
+
+{# ── star_rating_inputs ─────────────────────────────────────────────────────
+   Five required 1-5 star rows for the post-visit rating popup. JS-driven
+   (nseStar) so all stars up to the chosen one fill. Needs nseStar() in base.html.
+#}
+{% macro star_rating_inputs() %}
+  {% set dims = [('rating_behaviour','Technician behaviour'),('rating_quality','Quality of work'),
+                 ('rating_punctuality','Punctuality'),('rating_communication','Communication'),
+                 ('rating_overall','Overall satisfaction')] %}
+  {% for name, label in dims %}
+  <div class="flex items-center justify-between gap-3 py-1.5 border-b border-slate-100">
+    <span class="text-sm text-slate-700">{{ label }}</span>
+    <span class="star-row flex gap-1" data-field="{{ name }}">
+      {% for n in [1,2,3,4,5] %}
+      <span class="star text-2xl text-slate-300 cursor-pointer select-none" data-val="{{ n }}" onclick="nseStar(this)">★</span>
+      {% endfor %}
+      <input type="hidden" name="{{ name }}" required>
+    </span>
+  </div>
+  {% endfor %}
+{% endmacro %}
+
 {% macro field(label, name, type='text', value='', required=false, placeholder='') %}
   <label class="block">
-    <span class="text-sm font-medium text-slate-700">{{ label }}{% if required %} <span class="text-red-500">*</span>{% endif %}</span>
+    <span class="text-sm font-medium text-ink-muted">{{ label }}{% if required %} <span class="text-danger">*</span>{% endif %}</span>
     <input type="{{ type }}" name="{{ name }}" value="{{ value }}" {% if required %}required{% endif %}
            placeholder="{{ placeholder }}"
-           class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-star-400">
+           class="mt-1.5 w-full px-3 py-2.5">
   </label>
+{% endmacro %}
+
+
+{# ── voice_note_widget ──────────────────────────────────────────────────────
+   Renders a voice recording button + live transcript box.
+   transcript_field: the name of the hidden input that holds the final text.
+   label:            displayed above the widget.
+   Usage: {{ voice_note_widget('voice_note', 'Describe your requirement') }}
+#}
+{% macro voice_note_widget(transcript_field='voice_note', label='Describe by voice (optional)') %}
+<div class="voice-widget" data-field="{{ transcript_field }}">
+  <span class="text-sm font-medium text-ink-muted">{{ label }}</span>
+  <div class="mt-1.5 card p-4 space-y-3">
+    <div class="flex items-center gap-3">
+      <button type="button" class="voice-btn btn btn-ghost flex items-center gap-2 text-sm"
+              aria-label="Start recording">
+        <svg class="w-4 h-4 voice-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3M8 22h8"/>
+        </svg>
+        <span class="voice-label">Tap to speak</span>
+      </button>
+      <span class="voice-status text-xs text-ink-subtle hidden"></span>
+    </div>
+    <div class="voice-transcript bg-surface-2 rounded-lg px-3 py-2 text-sm text-ink-muted min-h-[3rem] italic hidden">
+      Listening…
+    </div>
+    <p class="voice-unsupported text-xs text-amber-700 hidden">
+      Voice input is not supported on this browser. Please use Chrome or Safari on your phone, or type your message below.
+    </p>
+    <input type="hidden" name="{{ transcript_field }}" class="voice-hidden-input">
+  </div>
+</div>
+{% endmacro %}
+
+
+{# ── photo_upload_widget ─────────────────────────────────────────────────────
+   A preview-enabled multi-photo upload input.
+   field_name: the name="" for the file input (use getlist() in the handler).
+   label:      displayed label text.
+#}
+{% macro photo_upload_widget(field_name='site_photos', label='Upload site photos (optional)', multiple=true) %}
+<div>
+  <span class="text-sm font-medium text-ink-muted">{{ label }}</span>
+  <label class="mt-1.5 flex flex-col items-center gap-2 border-2 border-dashed border-hairline-strong rounded-xl px-4 py-6 cursor-pointer hover:border-primary transition" id="drop-{{ field_name }}">
+    <svg class="w-8 h-8 text-ink-tertiary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="17 8 12 3 7 8"/>
+      <line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+    <span class="text-sm text-ink-subtle text-center">Click to choose photos or drag &amp; drop<br><span class="text-xs text-ink-tertiary">JPG, PNG, WebP — up to 10 MB each</span></span>
+    <input type="file" name="{{ field_name }}" accept="image/*" {% if multiple %}multiple{% endif %} class="hidden photo-input" data-preview="preview-{{ field_name }}">
+  </label>
+  <div id="preview-{{ field_name }}" class="mt-2 flex flex-wrap gap-2"></div>
+</div>
 {% endmacro %}

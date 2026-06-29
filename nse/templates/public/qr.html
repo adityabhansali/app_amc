@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Mobile QR Code — {{ COMPANY_NAME }}{% endblock %}
+{% block content %}
+<section class="max-w-md mx-auto px-4 py-16 text-center">
+  <div class="card p-8">
+    <div class="w-14 h-14 rounded-2xl mx-auto mb-5 grid place-items-center" style="background:rgba(22,35,91,.08)">
+      <svg class="w-7 h-7 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M17 20h3M20 17h-3"/></svg>
+    </div>
+    <h1 class="text-xl font-bold text-ink">Open on your phone</h1>
+    <p class="text-sm text-ink-subtle mt-2 mb-6">
+      Make sure your phone is on the <strong>same WiFi</strong> as this computer,<br>
+      then scan the QR code below.
+    </p>
+
+    <!-- QR code rendered by qrcode.js CDN -->
+    <div id="qrcode" class="mx-auto w-fit p-3 bg-white rounded-2xl border border-hairline shadow-sm"></div>
+
+    <p class="mt-5 text-xs text-ink-tertiary font-mono break-all">{{ url }}</p>
+
+    <div class="mt-6 pt-5 border-t border-hairline flex flex-col gap-2 text-sm text-ink-subtle">
+      <div class="flex items-center justify-between">
+        <span>Local IP</span><span class="font-mono text-ink">{{ local_ip }}</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span>Port</span><span class="font-mono text-ink">{{ port }}</span>
+      </div>
+    </div>
+
+    <a href="{{ url }}" target="_blank"
+       class="btn btn-ghost w-full mt-5 text-sm">
+      Open in browser →
+    </a>
+  </div>
+
+  <p class="mt-4 text-xs text-ink-tertiary">This link only works on your local network. For external access, deploy to Vercel.</p>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+        integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4zsX7sZ7bXGSqHYif/uFQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+new QRCode(document.getElementById("qrcode"), {
+  text: "{{ url }}",
+  width: 220,
+  height: 220,
+  colorDark: "#16235b",
+  colorLight: "#ffffff",
+  correctLevel: QRCode.CorrectLevel.M
+});
+</script>
+{% endblock %}

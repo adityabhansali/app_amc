@@ -1,0 +1,13 @@
+{% extends "email/_base_email.html" %}
+{% block content %}
+<h2>Your Service Visit is Scheduled</h2>
+<p>Dear {{ contract.applicant_name or 'Valued Customer' }},</p>
+<div class="info-box">
+  <p><strong>Contract:</strong> {{ contract.reference }}</p>
+  <p><strong>Visit:</strong> {{ visit.label }}</p>
+  <p><strong>Date:</strong> {{ visit.scheduled_date.strftime('%d %B %Y') if visit.scheduled_date else 'TBD' }}</p>
+  {% if visit.technician %}<p><strong>Technician:</strong> {{ visit.technician.name }}</p>{% endif %}
+</div>
+<p>Our team will arrive at your site on the scheduled date. Please ensure site access is available and the relevant staff are present.</p>
+<p>To reschedule, please call <a href="tel:+919687266625">+91 96872 66625</a> at least 24 hours before the visit.</p>
+{% endblock %}

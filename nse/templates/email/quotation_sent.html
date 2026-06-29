@@ -1,0 +1,18 @@
+{% extends "email/_base_email.html" %}
+{% block content %}
+<h2>Your Quotation is Ready</h2>
+<p>Dear {{ q.customer_name }},</p>
+<p>Thank you for your interest in Northern Star Engineering. Please find your quotation attached to this email.</p>
+<div class="info-box">
+  <p><strong>Quotation No.:</strong> {{ q.reference }}</p>
+  <p><strong>Date:</strong> {{ q.created_at.strftime('%d-%m-%Y') }}</p>
+  <p><strong>Service:</strong> {{ q.service_type.upper() }} — {{ q.project_name or 'Your Project' }}</p>
+  <p><strong>Grand Total:</strong> ₹{{ "%.2f"|format(q.grand_total) }} (incl. {{ q.gst_percent }}% GST)</p>
+  <p><strong>Valid for:</strong> {{ q.valid_days }} days from issue date</p>
+</div>
+<p>Please log in to your portal to <strong>accept</strong> this quotation or request a <strong>negotiation</strong> call with our sales team.</p>
+<div class="divider"></div>
+<p><strong>Payment Terms:</strong> 50% advance, 50% on delivery/completion.</p>
+<p>If you have any questions, please call us at <a href="tel:+919687266625">+91 96872 66625</a> or reply to this email.</p>
+<p>Warm regards,<br><strong>Northern Star Engineering — Sales Team</strong></p>
+{% endblock %}

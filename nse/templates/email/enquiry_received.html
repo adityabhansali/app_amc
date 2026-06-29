@@ -1,0 +1,12 @@
+{% extends "email/_base_email.html" %}
+{% block content %}
+<h2>We received your enquiry</h2>
+<p>Dear {{ e.name }},</p>
+<p>Thank you for contacting Northern Star Engineering. We have received your enquiry and our team will get back to you within 24 hours.</p>
+<div class="info-box">
+  <p><strong>Subject:</strong> {{ e.subject or 'General Enquiry' }}</p>
+  <p><strong>Message:</strong> {{ e.message[:200] }}{% if e.message|length > 200 %}…{% endif %}</p>
+</div>
+<p>In the meantime, you can reach us at <a href="tel:+919687266625">+91 96872 66625</a> or for emergencies call our 24×7 hotline: <a href="tel:18008918565">1800-891-8565</a>.</p>
+<p>Warm regards,<br><strong>Northern Star Engineering Team</strong></p>
+{% endblock %}

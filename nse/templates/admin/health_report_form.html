@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% set answers = r.answers if r else {} %}
+{% block title %}{{ (r.reference + ' — ') if r else 'New ' }}Health Checkup Report — Ops{% endblock %}
+{% block content %}
+<section class="max-w-4xl mx-auto px-4 py-10">
+  <a href="{{ url_for('admin.health_reports') }}" class="text-sm text-slate-500 hover:text-navy-700">← All health reports</a>
+  <div class="flex items-center justify-between flex-wrap gap-3 mt-2 mb-4">
+    <h1 class="text-2xl font-extrabold text-navy-800">{{ r.reference if r else 'New' }} · Fire System Health Checkup</h1>
+    {% if r %}<a href="{{ url_for('admin.health_report_pdf', report_id=r.id) }}" class="text-sm bg-navy-800 text-white px-4 py-2 rounded-lg hover:bg-navy-700">Download PDF</a>{% endif %}
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="space-y-6">
+
+    <!-- Header / property -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+      <div class="grid sm:grid-cols-2 gap-3 text-sm">
+        <label class="block"><span class="text-slate-500">Property name</span>
+          <input name="property_name" value="{{ r.property_name if r else (contract.site_name if contract else '') }}" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300"></label>
+        <label class="block"><span class="text-slate-500">Property contact</span>
+          <input name="property_contact" value="{{ r.property_contact if r else '' }}" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300"></label>
+        <label class="block sm:col-span-2"><span class="text-slate-500">Property address</span>
+          <input name="property_address" value="{{ r.property_address if r else (contract.site_address if contract else '') }}" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300"></label>
+        <label class="block"><span class="text-slate-500">Inspector</span>
+          <input name="inspector_name" value="{{ r.inspector_name if r else current_user.name }}" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300"></label>
+        <label class="block"><span class="text-slate-500">Inspector contact</span>
+          <input name="inspector_contact" value="{{ r.inspector_contact if r else '' }}" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300"></label>
+        <label class="block"><span class="text-slate-500">Date</span>
+          <input type="date" name="report_date" value="{{ (r.report_date.isoformat() if r and r.report_date else today.isoformat()) }}" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300"></label>
+        <label class="block"><span class="text-slate-500">Link to contract (optional)</span>
+          <select name="contract_id" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300">
+            <option value="">— Standalone (non-AMC property) —</option>
+            {% for c in contracts %}
+            <option value="{{ c.id }}" {{ 'selected' if (r and r.contract_id==c.id) or (contract and contract.id==c.id and not r) }}>{{ c.reference }} · {{ c.site_name or c.applicant_name }}</option>
+            {% endfor %}
+          </select></label>
+      </div>
+      {% if visit %}<input type="hidden" name="visit_id" value="{{ visit.id }}">{% endif %}
+    </div>
+
+    <!-- Scan-and-upload fallback -->
+    <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5">
+      <h2 class="font-bold text-amber-900 text-sm">App not working on site? Scan &amp; upload instead</h2>
+      <p class="text-xs text-amber-800 mt-1">Fill the digital form below, OR upload a photo/scan of the paper report here. Both are saved with this record.</p>
+      <input type="file" name="scan" accept=".pdf,.png,.jpg,.jpeg" class="mt-2 w-full text-sm">
+      {% if r and r.scan_path %}<p class="text-xs text-green-700 mt-1">✓ Scanned copy on file — <a href="{{ r.scan_path|upload_url }}" target="_blank" class="underline">view</a></p>{% endif %}
+    </div>
+
+    <!-- Yes/No/N-A sections -->
+    {% for title, qs in model.SECTIONS %}
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+      <h2 class="font-bold text-navy-800 mb-3 uppercase text-sm tracking-wide">{{ title }}</h2>
+      <div class="space-y-2">
+        {% for key, label in qs %}
+        <div class="flex items-center justify-between gap-3 text-sm border-b border-slate-50 pb-2">
+          <span class="text-slate-700 flex-1">{{ label }}</span>
+          <span class="flex gap-3 shrink-0">
+            {% for opt in ['yes','no','na'] %}
+            <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="{{ key }}" value="{{ opt }}" {{ 'checked' if answers.get(key)==opt }}> {{ 'N/A' if opt=='na' else opt|capitalize }}</label>
+            {% endfor %}
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+
+    <!-- Hydrant & sprinkler with counts -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+      <h2 class="font-bold text-navy-800 mb-3 uppercase text-sm tracking-wide">Fire Hydrant &amp; Sprinkler System</h2>
+      <div class="space-y-2">
+        {% for key, label, has_count in model.HYDRANT_ITEMS %}
+        <div class="flex items-center justify-between gap-3 text-sm border-b border-slate-50 pb-2">
+          <span class="text-slate-700 flex-1">{{ label }}</span>
+          <span class="flex items-center gap-3 shrink-0">
+            {% if has_count %}<input name="{{ key }}_nos" value="{{ answers.get(key + '_nos','') }}" placeholder="Nos" class="w-16 px-2 py-1 rounded border border-slate-300 text-center text-xs">{% endif %}
+            {% for opt in ['yes','no','na'] %}
+            <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="{{ key }}" value="{{ opt }}" {{ 'checked' if answers.get(key)==opt }}> {{ 'N/A' if opt=='na' else opt|capitalize }}</label>
+            {% endfor %}
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Floor-wise equipment table -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-bold text-navy-800 uppercase text-sm tracking-wide">Floor-wise Fire Protection Equipment</h2>
+        <button type="button" onclick="addFloorRow()" class="text-xs text-primary hover:underline">+ Add floor</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="text-xs min-w-full" id="floor-table">
+          <thead><tr class="text-slate-500">
+            <th class="p-1 text-left">Floor</th>
+            {% for col in model.FLOOR_COLUMNS %}<th class="p-1 w-12">{{ col }}</th>{% endfor %}
+            <th></th>
+          </tr></thead>
+          <tbody id="floor-body"></tbody>
+        </table>
+      </div>
+      <input type="hidden" name="floors_json" id="floors-json">
+    </div>
+
+    <!-- Particulars -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+      <h2 class="font-bold text-navy-800 mb-3 uppercase text-sm tracking-wide">System Particulars</h2>
+      <div class="grid sm:grid-cols-2 gap-3 text-sm">
+        {% for key, label in model.PARTICULARS %}
+        <label class="block"><span class="text-slate-500">{{ label }}</span>
+          <input name="{{ key }}" value="{{ answers.get(key,'') }}" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300"></label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Extras + remarks -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+      <div class="flex flex-wrap gap-5 text-sm">
+        {% for key, label in model.EXTRAS %}
+        <div class="flex items-center gap-2">
+          <span class="text-slate-700">{{ label }}:</span>
+          {% for opt in ['yes','no'] %}
+          <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="{{ key }}" value="{{ opt }}" {{ 'checked' if answers.get(key)==opt }}> {{ opt|capitalize }}</label>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      <label class="block mt-3 text-sm"><span class="text-slate-500">Other</span>
+        <input name="ex_other" value="{{ answers.get('ex_other','') }}" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300"></label>
+      <label class="block mt-3 text-sm"><span class="text-slate-500">Remarks</span>
+        <textarea name="remarks" rows="4" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300">{{ answers.get('remarks','') }}</textarea></label>
+    </div>
+
+    <!-- Status + save -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex items-center justify-between flex-wrap gap-3">
+      <label class="block text-sm"><span class="text-slate-500">Status</span>
+        <select name="status" class="mt-1 px-3 py-2 rounded-lg border border-slate-300">
+          <option value="draft" {{ 'selected' if r and r.status=='draft' }}>Draft</option>
+          <option value="completed" {{ 'selected' if r and r.status=='completed' }}>Completed (notify client)</option>
+        </select></label>
+      <button onclick="serializeFloors()" class="bg-green-600 text-white font-semibold px-6 py-2.5 rounded-xl hover:bg-green-500">Save report</button>
+    </div>
+  </form>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var FLOOR_NAMES = {{ model.FLOOR_NAMES|tojson }};
+var FLOOR_COLS  = {{ model.FLOOR_COLUMNS|tojson }};
+var EXISTING_FLOORS = {{ (answers.get('floors') or [])|tojson }};
+
+function floorRowHTML(row) {
+  row = row || {};
+  var opts = FLOOR_NAMES.map(function(n){
+    return '<option value="'+n+'"'+(row.floor===n?' selected':'')+'>'+n+'</option>';
+  }).join('');
+  var cells = FLOOR_COLS.map(function(c){
+    var v = (row.cols && row.cols[c]) ? row.cols[c] : '';
+    return '<td class="p-0.5"><input data-col="'+c+'" value="'+v+'" class="w-12 px-1 py-1 rounded border border-slate-200 text-center"></td>';
+  }).join('');
+  return '<tr class="floor-row">'+
+    '<td class="p-0.5"><select data-floor class="px-2 py-1 rounded border border-slate-300">'+opts+'</select></td>'+
+    cells+
+    '<td class="p-0.5"><button type="button" onclick="this.closest(\'.floor-row\').remove()" class="text-slate-400 hover:text-red-500">×</button></td>'+
+  '</tr>';
+}
+function addFloorRow(row) {
+  document.getElementById('floor-body').insertAdjacentHTML('beforeend', floorRowHTML(row));
+}
+function serializeFloors() {
+  var rows = [];
+  document.querySelectorAll('#floor-body .floor-row').forEach(function(tr){
+    var cols = {};
+    tr.querySelectorAll('[data-col]').forEach(function(i){ if (i.value.trim()) cols[i.getAttribute('data-col')] = i.value.trim(); });
+    var floor = tr.querySelector('[data-floor]').value;
+    if (Object.keys(cols).length) rows.push({floor: floor, cols: cols});
+  });
+  document.getElementById('floors-json').value = JSON.stringify(rows);
+}
+// Prefill
+if (EXISTING_FLOORS.length) EXISTING_FLOORS.forEach(addFloorRow);
+else addFloorRow();
+</script>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge %}
+{% block title %}Refill orders — Ops{% endblock %}
+{% block content %}
+<section class="max-w-6xl mx-auto px-4 py-10">
+  <a href="{{ url_for('admin.dashboard') }}" class="text-sm text-ink-subtle hover:text-primary transition">← Ops Console</a>
+  <h1 class="text-2xl font-extrabold text-ink mt-2">Extinguisher refill orders</h1>
+
+  <div class="card overflow-x-auto mt-5">
+    <table class="w-full text-sm min-w-[760px]">
+      <thead class="bg-surface-2 text-ink-subtle text-left text-xs uppercase">
+        <tr><th class="px-4 py-2.5">Ref</th><th class="px-4 py-2.5">Items</th><th class="px-4 py-2.5">Contact</th><th class="px-4 py-2.5">Mode</th><th class="px-4 py-2.5">Status</th><th class="px-4 py-2.5">Raised</th></tr>
+      </thead>
+      <tbody>
+      {% for o in orders %}
+        <tr class="border-t border-hairline hover:bg-surface-2 cursor-pointer" onclick="location.href='{{ url_for('admin.refill_order', order_id=o.id) }}'">
+          <td class="px-4 py-2.5 font-medium text-ink">{{ o.reference }}</td>
+          <td class="px-4 py-2.5 text-ink-muted">{{ o.summary }}<div class="text-xs text-ink-tertiary">{{ o.total_units }} unit(s)</div></td>
+          <td class="px-4 py-2.5">{{ o.name }}<div class="text-xs text-ink-tertiary">{{ o.phone }}</div></td>
+          <td class="px-4 py-2.5 text-ink-muted">{{ 'Pickup' if o.service_mode=='pickup' else 'On-site' }}</td>
+          <td class="px-4 py-2.5">{{ status_badge(o.status) }}</td>
+          <td class="px-4 py-2.5 text-ink-subtle">{{ o.created_at|datefmt }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="px-4 py-6 text-center text-ink-subtle">No refill orders yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

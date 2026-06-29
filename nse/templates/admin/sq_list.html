@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Service Quotations — Ops{% endblock %}
+{% block content %}
+<section class="max-w-6xl mx-auto px-4 py-10">
+  <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+    <div>
+      <h1 class="text-2xl font-extrabold text-ink">Service Quotations</h1>
+      <p class="text-ink-subtle text-sm mt-1">Sales proposals for AMC, NOC, Refilling &amp; Emergency services</p>
+    </div>
+    <a href="{{ url_for('sq.new_quotation') }}" class="btn btn-primary">+ New Quotation</a>
+  </div>
+
+  <!-- Filters -->
+  <form method="get" class="flex flex-wrap gap-3 mb-6">
+    <select name="status" class="px-3 py-2 text-sm rounded-lg border border-hairline-strong" onchange="this.form.submit()">
+      <option value="">All statuses</option>
+      {% for s,l in [('draft','Draft'),('sent','Sent'),('viewed','Viewed'),('negotiation_requested','Negotiation'),('accepted','Accepted'),('rejected','Rejected')] %}
+      <option value="{{ s }}" {{ 'selected' if status_filter==s }}>{{ l }}</option>
+      {% endfor %}
+    </select>
+    <select name="stype" class="px-3 py-2 text-sm rounded-lg border border-hairline-strong" onchange="this.form.submit()">
+      <option value="">All types</option>
+      {% for s,l in [('amc','AMC'),('noc','NOC'),('refilling','Refilling'),('emergency','Emergency')] %}
+      <option value="{{ s }}" {{ 'selected' if stype_filter==s }}>{{ l }}</option>
+      {% endfor %}
+    </select>
+  </form>
+
+  {% macro sq_badge(status) %}
+  {% set cls = {'draft':'bg-slate-100 text-slate-600','sent':'bg-blue-50 text-blue-700','viewed':'bg-indigo-50 text-indigo-700','negotiation_requested':'bg-amber-50 text-amber-700','accepted':'bg-green-50 text-green-700','rejected':'bg-red-50 text-red-700'}.get(status,'bg-slate-100 text-slate-600') %}
+  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold {{ cls }}">{{ status.replace('_',' ')|title }}</span>
+  {% endmacro %}
+
+  {% macro stype_chip(t) %}
+  {% set cls = {'amc':'bg-navy-50 text-navy-700','noc':'bg-purple-50 text-purple-700','refilling':'bg-green-50 text-green-700','emergency':'bg-red-50 text-red-700'}.get(t,'bg-slate-100 text-slate-500') %}
+  <span class="px-2 py-0.5 rounded text-xs font-semibold {{ cls }}">{{ t.upper() }}</span>
+  {% endmacro %}
+
+  <div class="card overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-hairline">
+        <tr>
+          <th class="px-4 py-3 text-left">Quotation</th>
+          <th class="px-4 py-3 text-left">Customer</th>
+          <th class="px-4 py-3 text-left">Type</th>
+          <th class="px-4 py-3 text-right">Amount</th>
+          <th class="px-4 py-3 text-left">Status</th>
+          <th class="px-4 py-3 text-left">Date</th>
+          <th class="px-4 py-3"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sq in quotations %}
+        <tr class="border-b border-hairline hover:bg-surface-2 transition">
+          <td class="px-4 py-3 font-semibold text-ink">{{ sq.reference }}</td>
+          <td class="px-4 py-3">
+            <div class="font-medium text-ink">{{ sq.customer_name }}</div>
+            {% if sq.project_name %}<div class="text-xs text-ink-subtle">{{ sq.project_name }}</div>{% endif %}
+          </td>
+          <td class="px-4 py-3">{{ stype_chip(sq.service_type) }}</td>
+          <td class="px-4 py-3 text-right font-semibold text-ink">{{ sq.grand_total|rupees }}</td>
+          <td class="px-4 py-3">{{ sq_badge(sq.status) }}</td>
+          <td class="px-4 py-3 text-ink-subtle">{{ sq.created_at.strftime('%d %b %Y') }}</td>
+          <td class="px-4 py-3 text-right">
+            <a href="{{ url_for('sq.detail_quotation', sq_id=sq.id) }}" class="text-primary text-xs font-medium hover:underline">View →</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="px-4 py-10 text-center text-ink-subtle">No quotations yet. <a href="{{ url_for('sq.new_quotation') }}" class="text-primary font-medium">Create one →</a></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

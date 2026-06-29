@@ -1,0 +1,15 @@
+{% extends "email/_base_email.html" %}
+{% block content %}
+<h2>📅 Reminder: Upcoming Service Visit</h2>
+<p>Dear {{ contract.applicant_name or 'Valued Customer' }},</p>
+<p>This is a friendly reminder about your upcoming fire safety service visit.</p>
+<div class="info-box">
+  <p><strong>Contract:</strong> {{ contract.reference }}</p>
+  <p><strong>Visit:</strong> {{ visit.label }}</p>
+  <p><strong>Date:</strong> {{ visit.scheduled_date.strftime('%d %B %Y') if visit.scheduled_date else 'TBD' }}</p>
+  {% if visit.technician %}<p><strong>Technician:</strong> {{ visit.technician.name }}</p>{% endif %}
+  <p><strong>Site:</strong> {{ contract.site_address or contract.area }}</p>
+</div>
+<p>Please ensure that site access is available and the designated staff member is present during the visit.</p>
+<p>Questions? Call us: <a href="tel:+919687266625">+91 96872 66625</a></p>
+{% endblock %}

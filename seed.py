@@ -8,7 +8,7 @@ from nse import create_app
 from nse.extensions import db
 from nse.models import (User, AMCPlan, Contract, Visit, VisitPhoto, Equipment,
                         RefillRecord, Quotation, QuotationItem, ServiceRequest,
-                        Enquiry, Notification)
+                        Enquiry, Notification, InventoryItem)
 
 app = create_app()
 
@@ -59,6 +59,37 @@ def run():
             tech.set_password("tech123")
             db.session.add(tech)
         db.session.commit()
+
+        # ---- Inventory (spare parts for visit-linked quotations) --------- #
+        if InventoryItem.query.count() == 0:
+            inv = [
+                ("ABC Dry Powder Refill (6 kg)", "Refilling", "No.", 650),
+                ("ABC Dry Powder Refill (4 kg)", "Refilling", "No.", 500),
+                ("CO2 Cartridge Refill (CO2 4.5 kg)", "Refilling", "No.", 1200),
+                ("Clean Agent Refill (per kg)", "Refilling", "Kg", 1500),
+                ("Fire Extinguisher ABC 6 kg (new)", "Equipment", "No.", 2200),
+                ("Fire Extinguisher CO2 4.5 kg (new)", "Equipment", "No.", 6500),
+                ("Hydrant Valve (single headed)", "Equipment", "No.", 2800),
+                ("Branch Pipe (SS)", "Equipment", "No.", 1400),
+                ("RRL Hose Pipe 63mm x 15m", "Equipment", "No.", 3200),
+                ("Shut-off Nozzle", "Equipment", "No.", 950),
+                ("Hose Box (MS, single)", "Equipment", "No.", 2600),
+                ("Sprinkler Head (pendant)", "Equipment", "No.", 220),
+                ("Smoke Detector", "Equipment", "No.", 850),
+                ("Heat Detector", "Equipment", "No.", 800),
+                ("Manual Call Point (MCP)", "Equipment", "No.", 700),
+                ("Hooter / Sounder", "Equipment", "No.", 650),
+                ("Pressure Gauge", "Spares", "No.", 450),
+                ("Pressure Switch", "Spares", "No.", 1100),
+                ("Ball Valve 25mm", "Spares", "No.", 350),
+                ("Fire Retardant Paint (per ltr)", "Consumables", "Ltr", 480),
+                ("Safety Signage (photo-luminescent)", "Consumables", "No.", 180),
+                ("Service / Labour Charge", "Service", "Job", 500),
+            ]
+            for name, cat, unit, rate in inv:
+                db.session.add(InventoryItem(name=name, category=cat, unit=unit, rate=rate))
+            db.session.commit()
+            print(f"Seeded {len(inv)} inventory items.")
 
         # ---- Demo customer + contract ------------------------------------ #
         cust = User.query.filter_by(phone="9876543210").first()

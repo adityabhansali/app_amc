@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page {
+    size: A4;
+    margin: 15mm 14mm 18mm 14mm;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 9.5pt;
+    color: #111;
+    margin: 0;
+  }
+
+  /* ── Company header ───────────────────────────────────────────── */
+  .co-header {
+    text-align: center;
+    border-bottom: 2px solid #16235b;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+  }
+  .co-header img { height: 52px; }
+  .co-name {
+    font-size: 18pt;
+    font-weight: bold;
+    color: #16235b;
+    margin: 4px 0 2px;
+  }
+  .co-tagline { font-size: 9pt; color: #444; font-style: italic; margin: 0; }
+  .co-iso { font-size: 8pt; color: #555; margin: 2px 0; }
+  .co-address {
+    background: #16235b;
+    color: #fff;
+    text-align: center;
+    font-size: 8.5pt;
+    padding: 4px 10px;
+    border-radius: 2px;
+    margin: 6px 0 4px;
+  }
+  .co-contact { font-size: 8pt; color: #333; text-align: center; margin: 2px 0 4px; }
+
+  /* ── QUOTATION title ──────────────────────────────────────────── */
+  .doc-title {
+    text-align: center;
+    font-size: 14pt;
+    font-weight: bold;
+    color: #16235b;
+    margin: 8px 0 6px;
+    text-decoration: underline;
+  }
+
+  /* ── Meta block (quotation no / client / project) ─────────────── */
+  .meta-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+  }
+  .meta-table td { padding: 3px 6px; font-size: 9pt; vertical-align: top; }
+  .meta-left { width: 50%; border: 1px solid #ccc; border-right: none; }
+  .meta-right {
+    width: 50%;
+    border: 1px solid #ccc;
+    background: #f7f9ff;
+  }
+  .meta-label { color: #555; font-weight: bold; width: 38%; }
+  .meta-value { color: #111; }
+  .project-name { font-size: 12pt; font-weight: bold; color: #16235b; margin: 0 0 4px; }
+
+  /* ── Line-items table ─────────────────────────────────────────── */
+  .items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 2px;
+    font-size: 9pt;
+  }
+  .items-table th {
+    background: #16235b;
+    color: #fff;
+    padding: 6px 8px;
+    text-align: left;
+    font-weight: bold;
+  }
+  .items-table th.right, .items-table td.right { text-align: right; }
+  .items-table th.center, .items-table td.center { text-align: center; }
+  .cat-header td {
+    background: #dce4f4;
+    color: #16235b;
+    font-weight: bold;
+    padding: 5px 8px;
+    text-align: center;
+    font-size: 8.5pt;
+  }
+  .items-table td {
+    padding: 5px 8px;
+    border-bottom: 1px solid #e5e9f2;
+    vertical-align: top;
+  }
+  .items-table tr:nth-child(even) td { background: #f9faff; }
+  .items-table .sr { width: 5%; text-align: center; color: #555; }
+  .items-table .desc { width: 52%; }
+  .items-table .qty  { width: 10%; text-align: center; }
+  .items-table .rate { width: 16%; text-align: right; }
+  .items-table .amt  { width: 17%; text-align: right; font-weight: bold; }
+
+  /* ── Totals ───────────────────────────────────────────────────── */
+  .totals-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 4px;
+  }
+  .totals-table td { padding: 4px 8px; }
+  .totals-table .lbl { text-align: right; color: #444; width: 80%; font-size: 9pt; }
+  .totals-table .val { text-align: right; font-size: 9pt; font-weight: bold; width: 20%; border-bottom: 1px solid #ccc; }
+  .grand-total .lbl { font-size: 11pt; font-weight: bold; color: #16235b; }
+  .grand-total .val { font-size: 11pt; font-weight: bold; color: #16235b; border-bottom: 2px solid #16235b; border-top: 2px solid #16235b; }
+
+  /* ── Terms ────────────────────────────────────────────────────── */
+  .terms-heading {
+    text-align: center;
+    font-weight: bold;
+    font-size: 11pt;
+    color: #16235b;
+    margin: 16px 0 6px;
+    text-decoration: underline;
+  }
+  .terms-list { margin: 0; padding-left: 18px; }
+  .terms-list li { margin-bottom: 3px; font-size: 8pt; color: #333; line-height: 1.5; }
+
+  /* ── Footer signature ─────────────────────────────────────────── */
+  .footer-tag {
+    text-align: center;
+    margin-top: 18px;
+    font-style: italic;
+    font-size: 9pt;
+    color: #16235b;
+    font-weight: bold;
+  }
+  .footer-tag .options { color: #dc2626; }
+
+  /* ── GST / validity note ──────────────────────────────────────── */
+  .note-box {
+    background: #fffbeb;
+    border: 1px solid #f59e0b;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 8pt;
+    color: #78350f;
+    margin: 8px 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Company Header ───────────────────────────────────────────── -->
+<div class="co-header">
+  {% if logo_url %}
+  <img src="{{ logo_url }}" alt="{{ company_name }}">
+  {% endif %}
+  <div class="co-name">{{ company_name.upper() }}</div>
+  <div class="co-tagline">Enlightening Safety...</div>
+  <div class="co-iso">An ISO 9001:2015 Company &nbsp;|&nbsp; Govt. Approved Fire Consultant</div>
+  <div class="co-address">{{ company_address }}</div>
+  <div class="co-contact">
+    Web: northernstarengineering.com &nbsp;|&nbsp;
+    Mail: {{ company_email }} &nbsp;|&nbsp;
+    GST: {{ company_gst }}
+  </div>
+</div>
+
+<!-- ── Document Title ───────────────────────────────────────────── -->
+<div class="doc-title">QUOTATION</div>
+
+<!-- ── Meta block ───────────────────────────────────────────────── -->
+<table class="meta-table">
+  <tr>
+    <td class="meta-left">
+      <table style="width:100%;border-collapse:collapse">
+        <tr>
+          <td class="meta-label">Quotation No.:</td>
+          <td class="meta-value"><strong>{{ q.reference }}</strong></td>
+        </tr>
+        <tr>
+          <td class="meta-label">Quotation Date:</td>
+          <td class="meta-value">{{ q.created_at.strftime('%d-%m-%Y') }}</td>
+        </tr>
+        <tr>
+          <td class="meta-label">Name:</td>
+          <td class="meta-value">{{ q.customer_name }}</td>
+        </tr>
+        {% if q.customer_phone %}
+        <tr>
+          <td class="meta-label">Contact:</td>
+          <td class="meta-value">{{ q.customer_phone }}</td>
+        </tr>
+        {% endif %}
+        {% if q.customer_email %}
+        <tr>
+          <td class="meta-label">Email:</td>
+          <td class="meta-value">{{ q.customer_email }}</td>
+        </tr>
+        {% endif %}
+        <tr>
+          <td class="meta-label">Valid for:</td>
+          <td class="meta-value">{{ q.valid_days }} days</td>
+        </tr>
+      </table>
+    </td>
+    <td class="meta-right">
+      {% if q.project_name %}
+      <div class="project-name">{{ q.project_name }}</div>
+      {% endif %}
+      {% if q.customer_address %}
+      <div style="font-size:8.5pt;color:#333;line-height:1.5">
+        <strong>Address: </strong>{{ q.customer_address }}
+      </div>
+      {% endif %}
+    </td>
+  </tr>
+</table>
+
+<!-- ── Line Items ───────────────────────────────────────────────── -->
+<table class="items-table">
+  <thead>
+    <tr>
+      <th class="sr">No</th>
+      <th class="desc">Products / Description</th>
+      <th class="qty">Qty.</th>
+      <th class="rate">Rate</th>
+      <th class="amt">Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% set ns = namespace(sr=0) %}
+    {% for category, items in q.items_by_category.items() %}
+    <tr class="cat-header">
+      <td colspan="5">{{ category }}</td>
+    </tr>
+    {% for item in items %}
+    {% set ns.sr = ns.sr + 1 %}
+    <tr>
+      <td class="sr">{{ ns.sr }}</td>
+      <td class="desc">{{ item.description }}</td>
+      <td class="qty">{{ "%.2f"|format(item.quantity) }} {{ item.unit }}</td>
+      <td class="rate">{{ "{:,.2f}".format(item.rate) }}</td>
+      <td class="amt">{{ "{:,.2f}".format(item.total) }}</td>
+    </tr>
+    {% endfor %}
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- ── Totals ───────────────────────────────────────────────────── -->
+<table class="totals-table">
+  <tr>
+    <td class="lbl">Subtotal:</td>
+    <td class="val">{{ "{:,.2f}".format(q.subtotal) }}</td>
+  </tr>
+  <tr>
+    <td class="lbl">Total Tax ({{ q.gst_percent }}% GST):</td>
+    <td class="val">{{ "{:,.2f}".format(q.gst_amount) }}</td>
+  </tr>
+  <tr class="grand-total">
+    <td class="lbl">Grand Total:</td>
+    <td class="val">{{ "{:,.2f}".format(q.grand_total) }}</td>
+  </tr>
+</table>
+
+<div class="note-box">
+  GST No.: {{ company_gst }} &nbsp;|&nbsp;
+  Payment Terms: 50% advance, 50% against delivery/completion. &nbsp;|&nbsp;
+  Offer valid for {{ q.valid_days }} days from issue date. Metal item rates are subject to market fluctuations.
+</div>
+
+<!-- ── Terms & Conditions ───────────────────────────────────────── -->
+<div class="terms-heading">TERMS AND CONDITIONS</div>
+<ol class="terms-list">
+  <li>Material taken in consideration is the ISI and original. We will provide certificate of materials if necessary.</li>
+  <li>50% advance, 50% against delivery.</li>
+  <li>All the prices are quoted as per BOQ and design by NSE. If any change in dimensions as per actual at site, the quantity &amp; price may vary.</li>
+  <li>Offer valid for {{ q.valid_days }} days thereafter. (Metal items rates are subject to market fluctuations.)</li>
+  <li>Supply, installation, and testing of Fire Fighting Services will be conducted in time as per the schedule given to NORTHERN STAR ENGINEERING AND LABOURS.</li>
+  <li>Please note that all the warranties on the equipment installed will be as per manufacturer's warranty.</li>
+  <li>Client has to use all the equipment as per standard procedure only. Northern Star Engineering does not take any responsibility for misuse or damage of any equipment in the future.</li>
+  <li>We suggest conducting a mock drill for awareness of society members, including how to use fire equipment in the event of a fire emergency.</li>
+  <li>All electrical facilities as per location will be provided by the client. Power, water, and all types of civil work will be within the client's scope. Scaffolding will also be provided by the client.</li>
+  <li>Unfortunately, if any fire incident occurs while the Northern Star team is installing fire equipment, NSE will not be responsible.</li>
+  <li>If the project continues for more than 6 months, then the price will be revised.</li>
+  <li>GST will be extra as per government law.</li>
+  <li>We only have 80 meters of power cable. You need to provide us with boards at certain places.</li>
+  <li>Anchor fasteners and other holes will only be done after approval from your site engineer. We do not take responsibility for civil damages.</li>
+  <li>Labor facilities are staying. Water supply, basic washroom arrangement will be in your scope.</li>
+  <li>We need a secure godown for material storage until the project is completed.</li>
+  <li>Any changes in length, width, or location will be subject to site clearance. If it affects the cost, it must be taken into consideration.</li>
+  <li>NOC will be given only after successful completion of work and subject to fire officer inspection.</li>
+  <li>Any dispute will fall under the jurisdiction of Surat.</li>
+</ol>
+
+<!-- ── Footer tagline ───────────────────────────────────────────── -->
+<div class="footer-tag">
+  We offer Three Kinds of Service.<br>
+  <span class="options">Good – Cheap – Fast.</span><br>
+  You can pick any Two:<br>
+  (1) Good &amp; Cheap won't be Fast. &nbsp;
+  (2) Good &amp; Fast won't be Cheap. &nbsp;
+  (3) Fast &amp; Cheap won't be Good.
+</div>
+
+</body>
+</html>

@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}{{ sq.reference }} — Quotation{% endblock %}
+{% block content %}
+<section class="max-w-5xl mx-auto px-4 py-10">
+  <a href="{{ url_for('sq.list_quotations') }}" class="text-sm text-ink-subtle hover:text-ink">← Quotations</a>
+
+  <!-- Header -->
+  <div class="card p-6 mt-3">
+    <div class="flex items-start justify-between flex-wrap gap-4">
+      <div>
+        <h1 class="text-2xl font-extrabold text-ink">{{ sq.reference }}</h1>
+        <p class="text-ink-subtle mt-1">{{ sq.service_type.upper() }} quotation · {{ sq.created_at.strftime('%d %b %Y') }}</p>
+        {% if sq.project_name %}<p class="font-semibold text-ink mt-1">{{ sq.project_name }}</p>{% endif %}
+      </div>
+      <!-- Status badge -->
+      {% set sc = {'draft':'bg-slate-100 text-slate-700','sent':'bg-blue-50 text-blue-800','viewed':'bg-indigo-50 text-indigo-800','negotiation_requested':'bg-amber-50 text-amber-800','accepted':'bg-green-50 text-green-800','rejected':'bg-red-50 text-red-800'}.get(sq.status,'bg-slate-100 text-slate-700') %}
+      <span class="px-3 py-1 rounded-full text-sm font-semibold {{ sc }}">{{ sq.status_label }}</span>
+    </div>
+
+    <!-- Client info -->
+    <div class="grid sm:grid-cols-3 gap-3 mt-5 text-sm">
+      <div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-ink-subtle mb-1">Customer</div><div class="font-medium text-ink">{{ sq.customer_name }}</div></div>
+      <div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-ink-subtle mb-1">Phone</div><div class="font-medium text-ink"><a href="tel:{{ sq.customer_phone }}" class="text-primary">{{ sq.customer_phone or '—' }}</a></div></div>
+      <div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-ink-subtle mb-1">Email</div><div class="font-medium text-ink">{{ sq.customer_email or '—' }}</div></div>
+      {% if sq.customer_address %}
+      <div class="sm:col-span-3 bg-slate-50 rounded-lg p-3"><div class="text-xs text-ink-subtle mb-1">Address</div><div class="font-medium text-ink">{{ sq.customer_address }}</div></div>
+      {% endif %}
+    </div>
+
+    <!-- Action buttons -->
+    <div class="flex flex-wrap gap-3 mt-5">
+      <a href="{{ url_for('sq.download_pdf', sq_id=sq.id) }}" class="btn btn-ghost text-sm">⬇ Download PDF</a>
+      {% if sq.status == 'draft' %}
+      <form method="post">
+        <input type="hidden" name="action" value="send">
+        <button class="btn btn-primary text-sm">📤 Send to Customer</button>
+      </form>
+      {% endif %}
+      {% if sq.status == 'negotiation_requested' %}
+      <a href="tel:{{ sq.customer_phone }}" class="btn btn-emergency text-sm">📞 Call Customer Now</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Negotiation panel -->
+  {% if sq.status == 'negotiation_requested' %}
+  <div class="card p-5 mt-5 border-amber-200 bg-amber-50">
+    <h3 class="font-bold text-amber-800 mb-2">💬 Customer Requested Negotiation</h3>
+    {% if sq.negotiation_note %}
+    <p class="text-amber-700 text-sm mb-3 bg-amber-100 rounded-lg p-3">{{ sq.negotiation_note }}</p>
+    {% endif %}
+    <form method="post" class="mb-4">
+      <input type="hidden" name="action" value="respond_negotiation">
+      <label class="block text-sm font-medium text-ink mb-1">Your response / revised offer notes</label>
+      <textarea name="staff_response" rows="2" class="w-full px-3 py-2.5 text-sm mb-3">{{ sq.staff_response or '' }}</textarea>
+      <button class="btn btn-ghost text-sm">Save Response (no re-send)</button>
+    </form>
+
+    <!-- Revise rates and re-send for a fresh acceptance -->
+    <form method="post" class="border-t border-amber-200 pt-4">
+      <input type="hidden" name="action" value="revise_send">
+      <p class="text-sm font-semibold text-amber-800 mb-2">Revise &amp; re-send</p>
+      <div class="space-y-2 mb-3">
+        {% for item in sq.items %}
+        <div class="flex items-center gap-2 text-sm">
+          <span class="flex-1 truncate text-ink">{{ item.description.split('\n')[0] }}</span>
+          <span class="text-ink-subtle">₹</span>
+          <input type="number" step="0.01" name="rate_{{ item.id }}" value="{{ item.rate }}"
+                 class="w-32 px-2 py-1.5 rounded-lg border border-amber-300 text-sm text-right">
+        </div>
+        {% endfor %}
+      </div>
+      <textarea name="staff_response" rows="2" placeholder="Optional note to the customer about the revision"
+                class="w-full px-3 py-2.5 text-sm mb-3 rounded-lg border border-amber-300">{{ sq.staff_response or '' }}</textarea>
+      <button class="btn btn-primary text-sm">📤 Save &amp; re-send revised quote</button>
+      <p class="text-xs text-amber-700 mt-2">Re-sending sets the quote back to <strong>Sent</strong> so the customer can accept the new price. The contract stays locked until they accept.</p>
+    </form>
+  </div>
+  {% endif %}
+
+  <!-- Line items -->
+  <div class="card mt-5 overflow-hidden">
+    <div class="px-5 py-4 border-b border-hairline font-bold text-ink">Line Items</div>
+    <table class="w-full text-sm">
+      <thead class="bg-slate-50 text-xs uppercase text-ink-subtle">
+        <tr>
+          <th class="px-4 py-2 text-left w-4">No</th>
+          <th class="px-4 py-2 text-left">Description</th>
+          <th class="px-4 py-2 text-center w-20">Qty</th>
+          <th class="px-4 py-2 text-right w-24">Rate</th>
+          <th class="px-4 py-2 text-right w-28">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set ns = namespace(sr=0) %}
+        {% for category, items in sq.items_by_category.items() %}
+        <tr class="bg-navy-50 border-t border-hairline">
+          <td colspan="5" class="px-4 py-2 font-semibold text-navy-800 text-xs uppercase tracking-wide">{{ category }}</td>
+        </tr>
+        {% for item in items %}
+        {% set ns.sr = ns.sr + 1 %}
+        <tr class="border-t border-hairline">
+          <td class="px-4 py-2 text-ink-subtle text-center">{{ ns.sr }}</td>
+          <td class="px-4 py-2 text-ink">{{ item.description }}</td>
+          <td class="px-4 py-2 text-center text-ink-muted">{{ "%.2f"|format(item.quantity) }} {{ item.unit }}</td>
+          <td class="px-4 py-2 text-right text-ink-muted">{{ item.rate|rupees }}</td>
+          <td class="px-4 py-2 text-right font-semibold text-ink">{{ item.total|rupees }}</td>
+        </tr>
+        {% endfor %}
+        {% endfor %}
+      </tbody>
+      <tfoot class="border-t-2 border-hairline-strong bg-slate-50">
+        <tr>
+          <td colspan="4" class="px-4 py-2 text-right text-ink-muted font-medium">Subtotal</td>
+          <td class="px-4 py-2 text-right font-semibold text-ink">{{ sq.subtotal|rupees }}</td>
+        </tr>
+        <tr>
+          <td colspan="4" class="px-4 py-2 text-right text-ink-muted font-medium">GST ({{ sq.gst_percent }}%)</td>
+          <td class="px-4 py-2 text-right font-semibold text-ink">{{ sq.gst_amount|rupees }}</td>
+        </tr>
+        <tr class="bg-navy-50">
+          <td colspan="4" class="px-4 py-3 text-right font-extrabold text-navy-800 text-base">Grand Total</td>
+          <td class="px-4 py-3 text-right font-extrabold text-navy-800 text-base">{{ sq.grand_total|rupees }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- Journey timeline -->
+  {% if journey %}
+  <div class="mt-6">
+    <h3 class="font-bold text-ink mb-3">Activity Log</h3>
+    <div class="space-y-2">
+      {% for ev in journey %}
+      <div class="flex items-start gap-3 text-sm">
+        <span class="w-6 h-6 rounded-full bg-navy-50 border border-hairline flex items-center justify-center text-xs flex-shrink-0 mt-0.5">{{ ev.icon_color[0] }}</span>
+        <div>
+          <span class="text-ink">{{ ev.description }}</span>
+          <span class="text-ink-subtle ml-2">· {{ ev.created_at.strftime('%d %b %Y %H:%M') }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "email/_base_email.html" %}
+{% block content %}
+<h2>✅ Quotation Accepted!</h2>
+<p>Great news — a customer has accepted their quotation.</p>
+<div class="info-box">
+  <p><strong>Quotation:</strong> {{ q.reference }}</p>
+  <p><strong>Customer:</strong> {{ q.customer_name }}</p>
+  <p><strong>Phone:</strong> {{ q.customer_phone }}</p>
+  <p><strong>Service:</strong> {{ q.service_type.upper() }}</p>
+  <p><strong>Value:</strong> ₹{{ "%.2f"|format(q.grand_total) }}</p>
+</div>
+<p>Please proceed to activate the contract / confirm the order in the Ops Console.</p>
+{% endblock %}

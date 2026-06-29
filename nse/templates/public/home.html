@@ -1,143 +1,653 @@
 {% extends "base.html" %}
-{% block title %}{{ COMPANY_NAME }} — Fire Safety AMC in {{ COMPANY_CITY }}{% endblock %}
+{% block title %}{{ COMPANY_NAME }} — Fire Safety, Maintenance &amp; Emergency Response in {{ COMPANY_CITY }}{% endblock %}
 {% block content %}
 
-<!-- Hero -->
-<section class="bg-navy-800 text-white">
-  <div class="max-w-6xl mx-auto px-4 py-16 md:py-24 grid md:grid-cols-2 gap-10 items-center">
-    <div>
-      <span class="inline-block bg-navy-700 text-star-400 text-xs font-semibold px-3 py-1 rounded-full mb-4">
-        ★ {{ COMPANY_TAGLINE }}
-      </span>
-      <h1 class="text-4xl md:text-5xl font-extrabold leading-tight">
-        Annual Maintenance Contracts, made <span class="text-star-400">transparent.</span>
-      </h1>
-      <p class="mt-5 text-slate-300 text-lg">
-        From design to NOC, {{ COMPANY_NAME }} keeps your fire-safety systems alive.
-        Apply for an AMC, track every visit, see your service reports &amp; photos, and
-        watch your extinguisher refills — all in one place.
-      </p>
-      <div class="mt-8 flex flex-wrap gap-3">
-        <a href="{{ url_for('public.apply') }}" class="bg-star-500 text-navy-900 font-semibold px-6 py-3 rounded-xl hover:bg-star-400">Apply for AMC</a>
-        <a href="{{ url_for('public.plans') }}" class="bg-navy-700 text-white px-6 py-3 rounded-xl hover:bg-navy-600">View Plans &amp; Pricing</a>
-        <a href="{{ url_for('public.emergency') }}" class="bg-red-600 text-white px-6 py-3 rounded-xl hover:bg-red-500">🚨 Emergency Visit</a>
+{% set check %}<svg class="w-5 h-5 flex-shrink-0 text-primary mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>{% endset %}
+
+<!-- ── HERO ──────────────────────────────────────────────────────────────── -->
+<style>
+/* ── Hero section ── */
+#nse-hero{position:relative;min-height:calc(100vh - 54px);display:flex;align-items:center;overflow:hidden;color:#fff}
+#heroCanvas{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+.h-overlay{position:absolute;inset:0;z-index:1;background:linear-gradient(140deg,#050c1e 0%,#0a1230 38%,#0c153a 65%,#050c1e 100%)}
+.h-phase{position:absolute;inset:0;z-index:2;opacity:0;pointer-events:none;transition:opacity 1.6s ease}
+#hpa{background:radial-gradient(ellipse at 50% 40%,rgba(220,38,38,.09) 0%,transparent 68%)}
+#hpr{background:radial-gradient(ellipse at 50% 40%,rgba(22,163,74,.06) 0%,transparent 68%)}
+.h-glow{position:absolute;pointer-events:none;z-index:2;border-radius:50%}
+.h-glow-a{top:-18%;right:-6%;width:52vw;height:52vw;background:radial-gradient(ellipse,rgba(245,158,11,.07) 0%,transparent 58%)}
+.h-glow-b{bottom:-12%;left:-8%;width:42vw;height:42vw;background:radial-gradient(ellipse,rgba(59,130,246,.05) 0%,transparent 58%)}
+/* Entrance animations */
+.ha{opacity:0;transition:opacity .75s cubic-bezier(.22,1,.36,1),transform .75s cubic-bezier(.22,1,.36,1)}
+.ha-u{transform:translateY(26px)}.ha-r{transform:translateX(38px)}.ha.in{opacity:1;transform:none}
+/* Hero buttons */
+.hb{display:inline-flex;align-items:center;justify-content:center;gap:.45rem;font-weight:700;font-size:.95rem;line-height:1;border-radius:.85rem;padding:.82rem 1.5rem;cursor:pointer;white-space:nowrap;text-decoration:none;position:relative;overflow:hidden;transition:transform .2s cubic-bezier(.22,1,.36,1),box-shadow .2s ease,background .2s ease,border-color .2s ease}
+.hb-p{background:#f59e0b;color:#18181b;box-shadow:0 1px 3px rgba(245,158,11,.3)}
+.hb-p:hover{background:#d97706;transform:translateY(-2px);box-shadow:0 0 0 4px rgba(245,158,11,.18),0 14px 28px -8px rgba(245,158,11,.45)}
+.hb-o{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.26)}
+.hb-o::before{content:'';position:absolute;inset:0;background:rgba(255,255,255,.05);opacity:0;transition:opacity .2s}
+.hb-o:hover{border-color:rgba(255,255,255,.65);transform:translateY(-1px)}.hb-o:hover::before{opacity:1}
+.hb-e{background:#dc2626;color:#fff;box-shadow:0 1px 3px rgba(220,38,38,.4)}
+.hb-e:hover{background:#b91c1c;transform:translateY(-2px);box-shadow:0 0 0 5px rgba(220,38,38,.15),0 12px 26px -8px rgba(220,38,38,.45)}
+.emgdot{width:7px;height:7px;border-radius:50%;background:#fff;flex-shrink:0;animation:epulse 1.9s ease-in-out infinite}
+@keyframes epulse{0%,100%{opacity:1;transform:scale(1);box-shadow:0 0 0 0 rgba(255,255,255,.5)}50%{opacity:.65;transform:scale(1.1);box-shadow:0 0 0 5px rgba(255,255,255,0)}}
+/* Stats */
+.h-stat-div{width:1px;background:rgba(255,255,255,.1);align-self:stretch}
+/* Live dot */
+.ldot{width:6px;height:6px;border-radius:50%;animation:lpulse 2.2s ease-in-out infinite}
+@keyframes lpulse{0%,100%{box-shadow:0 0 0 0 currentColor;opacity:1}50%{box-shadow:0 0 0 4px transparent;opacity:.6}}
+/* Dashboard */
+.h-dash{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.085);border-radius:22px;backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);box-shadow:0 44px 88px -22px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.04),inset 0 1px 0 rgba(255,255,255,.07);overflow:hidden}
+.h-dash-hd{padding:13px 18px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.018)}
+.h-dash-kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,.04)}
+.h-dash-kc{background:rgba(255,255,255,.02);padding:11px 12px;text-align:center}
+.h-dash-row{padding:11px 18px;display:flex;align-items:center;gap:11px;border-bottom:1px solid rgba(255,255,255,.042)}
+.h-dash-row:last-child{border-bottom:none}
+.h-dash-ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;flex-shrink:0}
+/* Progress */
+.h-pbar{height:4px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden;margin-top:7px}
+.h-pfill{height:100%;border-radius:4px;background:linear-gradient(90deg,#f59e0b,#d97706);box-shadow:0 0 10px rgba(245,158,11,.4);transition:width 1.3s cubic-bezier(.22,1,.36,1);width:0}
+/* Compliance ring */
+.cring{position:relative;width:36px;height:36px;flex-shrink:0}
+.cring svg{transform:rotate(-90deg)}
+.cr-t{stroke:rgba(255,255,255,.08)}
+.cr-f{stroke:#f59e0b;stroke-dasharray:94.25;stroke-dashoffset:94.25;filter:drop-shadow(0 0 3px rgba(245,158,11,.55));transition:stroke-dashoffset 1.5s cubic-bezier(.22,1,.36,1)}
+/* Floating notifications */
+#h-notifs{position:absolute;bottom:5rem;left:1.5rem;z-index:30;pointer-events:none;display:flex;flex-direction:column;gap:8px}
+@media(max-width:1023px){ #h-notifs { display:none; } }
+.h-notif{display:flex;align-items:center;gap:10px;background:rgba(8,18,44,.78);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:10px 14px;backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:0 8px 32px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.05);min-width:230px;max-width:290px;opacity:0;transform:translateX(-16px) translateY(4px);transition:opacity .45s cubic-bezier(.22,.68,0,1.15),transform .45s cubic-bezier(.22,.68,0,1.15)}
+.h-notif.vis{opacity:1;transform:none}
+.h-ni{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;font-size:15px;flex-shrink:0}
+</style>
+
+<section id="nse-hero">
+  <!-- Cinematic looping video background (place hero.mp4 in nse/static/video/) -->
+  <video id="heroBgVid" autoplay muted loop playsinline
+         style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:0;transition:opacity 2s ease">
+    <source src="{{ url_for('static', filename='video/hero.mp4') }}" type="video/mp4">
+  </video>
+  <!-- Canvas particle animation shows until video loads, then fades behind it -->
+  <canvas id="heroCanvas"></canvas>
+  <!-- Dark overlay — deepens when video is playing for text readability -->
+  <div id="heroVidOverlay" class="h-overlay"></div>
+  <div id="hpa" class="h-phase"></div>
+  <div id="hpr" class="h-phase"></div>
+  <div class="h-glow h-glow-a"></div>
+  <div class="h-glow h-glow-b"></div>
+
+  <div class="relative max-w-6xl mx-auto px-4 py-16 md:py-24 w-full" style="z-index:10">
+    <div class="grid lg:grid-cols-[1fr_445px] gap-12 lg:gap-14 items-center">
+
+      <!-- ── Left: copy ──────────────────────────────────────────────────── -->
+      <div>
+        <!-- Headline -->
+        <h1 class="ha ha-u" id="hel-title"
+            style="font-size:clamp(2.75rem,5.4vw,4.2rem);font-weight:800;line-height:1.02;letter-spacing:-0.038em;margin-top:0">
+          Fire Safety,<br>
+          <span style="color:#f59e0b;position:relative;display:inline-block">
+            reinvented.
+            <span style="position:absolute;left:0;bottom:-3px;right:0;height:2px;background:linear-gradient(90deg,#f59e0b,transparent);border-radius:2px;opacity:.4"></span>
+          </span>
+        </h1>
+
+        <!-- Subtitle -->
+        <p class="ha ha-u" id="hel-sub"
+           style="margin-top:1.35rem;color:rgba(255,255,255,.52);font-size:1.08rem;line-height:1.72;max-width:455px">
+          India's first digital platform built exclusively<br class="hidden md:block">
+          for fire safety management.
+        </p>
+
+        <!-- CTAs -->
+        <div class="ha ha-u" id="hel-ctas" style="margin-top:2rem;display:flex;flex-wrap:wrap;gap:11px">
+          <a href="{{ url_for('public.apply') }}" class="hb hb-o">
+            Get an AMC
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <a href="{{ url_for('public.refill') }}" class="hb hb-o">Book a Refill</a>
+          <a href="{{ url_for('public.emergency') }}" class="hb hb-o" style="border-color:rgba(239,68,68,.5);color:rgba(252,165,165,.9)">Emergency</a>
+        </div>
+
+        <!-- Animated stats -->
+        <div class="ha" id="hel-stats" style="display:flex;flex-wrap:wrap;gap:1.5rem;margin-top:2.2rem;align-items:flex-start">
+          <div>
+            <div style="font-size:1.55rem;font-weight:800;color:#fff;letter-spacing:-.02em;line-height:1"><span class="ctr" data-t="600">0</span>+</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.36);text-transform:uppercase;letter-spacing:.09em;margin-top:3px">Satisfied Clients</div>
+          </div>
+          <div class="h-stat-div"></div>
+          <div>
+            <div style="font-size:1.55rem;font-weight:800;color:#fff;letter-spacing:-.02em;line-height:1"><span class="ctr" data-t="700">0</span>+</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.36);text-transform:uppercase;letter-spacing:.09em;margin-top:3px">Projects Delivered</div>
+          </div>
+          <div class="h-stat-div"></div>
+          <div>
+            <div style="font-size:1.55rem;font-weight:800;color:#fff;letter-spacing:-.02em;line-height:1"><span class="ctr" data-t="7">0</span>+</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.36);text-transform:uppercase;letter-spacing:.09em;margin-top:3px">Years Experience</div>
+          </div>
+          <div class="h-stat-div"></div>
+          <div>
+            <div style="font-size:.9rem;font-weight:700;color:rgba(255,255,255,.62);letter-spacing:.04em;line-height:1.45">NBC · BIS<br>IS · NFPA</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.36);text-transform:uppercase;letter-spacing:.09em;margin-top:3px">Compliant</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Right: SaaS dashboard ─────────────────────────────────────── -->
+      <div class="hidden lg:block relative ha ha-r" id="hel-dash">
+
+        <div class="h-dash">
+
+          <!-- Header bar -->
+          <div class="h-dash-hd">
+            <div class="ldot" style="color:#4ade80;background:#4ade80;box-shadow:0 0 6px #4ade80"></div>
+            <span style="font-size:11px;font-weight:600;color:rgba(255,255,255,.55);letter-spacing:.07em;text-transform:uppercase">NSE Platform</span>
+            <span style="font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:5px;background:rgba(74,222,128,.12);color:#4ade80;border:1px solid rgba(74,222,128,.2);margin-left:2px">LIVE</span>
+            <div style="margin-left:auto;display:flex;gap:4px">
+              <div style="width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.1)"></div>
+              <div style="width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.1)"></div>
+              <div style="width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.1)"></div>
+            </div>
+          </div>
+
+          <!-- KPI strip -->
+          <div class="h-dash-kpi">
+            <div class="h-dash-kc">
+              <div style="font-size:9px;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">AMC Status</div>
+              <div style="margin-top:4px;font-size:12px;font-weight:700;color:#4ade80;display:flex;align-items:center;justify-content:center;gap:4px">
+                <span style="width:5px;height:5px;border-radius:50%;background:#4ade80;box-shadow:0 0 5px #4ade80"></span>Active
+              </div>
+            </div>
+            <div class="h-dash-kc">
+              <div style="font-size:9px;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Compliance</div>
+              <div style="margin-top:4px;font-size:14px;font-weight:800;color:#f59e0b">98%</div>
+            </div>
+            <div class="h-dash-kc">
+              <div style="font-size:9px;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.08em">Emergency</div>
+              <div style="margin-top:4px;font-size:12px;font-weight:700;color:#4ade80;display:flex;align-items:center;justify-content:center;gap:4px">
+                <span style="width:5px;height:5px;border-radius:50%;background:#4ade80;box-shadow:0 0 5px #4ade80"></span>Online
+              </div>
+            </div>
+          </div>
+
+          <!-- Contract block -->
+          <div style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.042)">
+            <div style="display:flex;align-items:flex-start;gap:12px">
+              <div style="flex:1">
+                <div style="font-size:13px;font-weight:600;color:rgba(255,255,255,.85)">Sunrise Apartments, Surat</div>
+                <div style="font-size:10.5px;color:rgba(255,255,255,.3);margin-top:2px">Annual Maintenance Contract · 2025</div>
+              </div>
+              <!-- Compliance ring -->
+              <div class="cring" title="Compliance 98%">
+                <svg width="36" height="36" viewBox="0 0 36 36">
+                  <circle class="cr-t" cx="18" cy="18" r="15" fill="none" stroke-width="3"/>
+                  <circle id="cArc" class="cr-f" cx="18" cy="18" r="15" fill="none" stroke-width="3"
+                          stroke-dasharray="94.25" stroke-dashoffset="94.25"/>
+                </svg>
+                <div style="position:absolute;inset:0;display:grid;place-items:center;font-size:8.5px;font-weight:700;color:#f59e0b">98%</div>
+              </div>
+            </div>
+            <div style="margin-top:10px">
+              <div style="display:flex;justify-content:space-between;font-size:9.5px;color:rgba(255,255,255,.3);margin-bottom:1px">
+                <span>Annual visits</span><span style="font-weight:600;color:rgba(255,255,255,.52)">3 / 4</span>
+              </div>
+              <div class="h-pbar"><div class="h-pfill" id="hPF"></div></div>
+            </div>
+          </div>
+
+          <!-- Upcoming Inspection -->
+          <div class="h-dash-row">
+            <div class="h-dash-ic" style="background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.18)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            </div>
+            <div style="flex:1">
+              <div style="font-size:9.5px;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.07em">Upcoming Inspection</div>
+              <div style="font-size:12.5px;font-weight:600;color:rgba(255,255,255,.82);margin-top:1.5px">15 July 2025 · Q3</div>
+            </div>
+            <span style="font-size:10px;font-weight:600;color:#93c5fd">Scheduled</span>
+          </div>
+
+          <!-- QR Asset Tracking -->
+          <div class="h-dash-row">
+            <div class="h-dash-ic" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.18)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c4b5fd" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M17 20h3M20 17h-3"/></svg>
+            </div>
+            <div style="flex:1">
+              <div style="font-size:9.5px;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.07em">QR Asset Tracking</div>
+              <div style="font-size:12.5px;font-weight:600;color:rgba(255,255,255,.82);margin-top:1.5px">12 assets · All verified</div>
+            </div>
+            <div class="ldot" style="color:#4ade80;background:#4ade80;box-shadow:0 0 5px #4ade80"></div>
+          </div>
+
+          <!-- Fire Extinguishers -->
+          <div class="h-dash-row">
+            <div class="h-dash-ic" style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.18)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l1 4H8z"/><path d="M8 7h8v13a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1z"/><path d="M12 11v4M10 13h4"/></svg>
+            </div>
+            <div style="flex:1">
+              <div style="font-size:9.5px;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.07em">Fire Extinguishers</div>
+              <div style="font-size:12.5px;font-weight:600;color:rgba(255,255,255,.82);margin-top:1.5px">12 units · Certified</div>
+            </div>
+            <span style="font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:5px;background:rgba(74,222,128,.12);color:#4ade80;border:1px solid rgba(74,222,128,.18)">OK</span>
+          </div>
+
+          <!-- Last Inspection Report -->
+          <div class="h-dash-row" style="border-bottom:none">
+            <div class="h-dash-ic" style="background:rgba(22,163,74,.1);border:1px solid rgba(22,163,74,.18)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/></svg>
+            </div>
+            <div style="flex:1">
+              <div style="font-size:9.5px;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.07em">Last Inspection Report</div>
+              <div style="font-size:12.5px;font-weight:600;color:rgba(255,255,255,.82);margin-top:1.5px">Apr 2025 · All systems ✓</div>
+            </div>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+
+          <!-- Service Requests footer -->
+          <div style="margin:0 14px 14px;padding:10px 13px;background:rgba(245,158,11,.055);border:1px solid rgba(245,158,11,.13);border-radius:11px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div>
+                <div style="font-size:9.5px;color:rgba(255,255,255,.32);text-transform:uppercase;letter-spacing:.07em">Service Requests</div>
+                <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,.7);margin-top:2px">2 pending · 1 in progress</div>
+              </div>
+              <div style="width:28px;height:28px;border-radius:8px;background:rgba(245,158,11,.14);display:grid;place-items:center">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
       </div>
     </div>
-    <div class="bg-surface-1 rounded-2xl p-6 border border-hairline">
-      <h3 class="font-semibold text-primary-hover mb-4">Why customers choose us</h3>
-      <ul class="space-y-3 text-slate-200 text-sm">
-        <li class="flex gap-3"><span>✅</span> Fixed scheduled visits with documented reports &amp; site photos</li>
-        <li class="flex gap-3"><span>✅</span> Live extinguisher &amp; equipment refill tracking — never miss a due date</li>
-        <li class="flex gap-3"><span>✅</span> Transparent material quotations you approve before any work</li>
-        <li class="flex gap-3"><span>✅</span> 24×7 Fire Emergency Response team across Surat</li>
-        <li class="flex gap-3"><span>✅</span> Pay by cash or online — your choice</li>
-      </ul>
-    </div>
   </div>
 </section>
 
-<!-- Trust stats -->
-<section class="border-b border-hairline">
-  <div class="max-w-6xl mx-auto px-4 py-10 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-    {% set stats = [('7+','Years of experience'),('700+','Projects completed'),('600+','Satisfied clients'),('99%','Client retention')] %}
-    {% for big, label in stats %}
-    <div>
-      <div class="text-3xl md:text-4xl font-extrabold text-ink">{{ big }}</div>
-      <div class="text-sm text-ink-subtle mt-1">{{ label }}</div>
+<!-- ── TRUST STATS ────────────────────────────────────────────────────────── -->
+<section class="bg-surface-1 border-b border-hairline">
+  <div class="max-w-6xl mx-auto px-4 py-10 grid grid-cols-2 md:grid-cols-4 gap-8 text-center stagger">
+    {% for big, label in [('7+','Years of experience'),('700+','Projects completed'),('600+','Satisfied clients'),('99%','Client retention')] %}
+    <div class="fade-up">
+      <div class="text-4xl md:text-5xl font-extrabold tracking-tight" style="color:var(--amber)">{{ big }}</div>
+      <div class="text-sm text-ink-subtle mt-2">{{ label }}</div>
     </div>
     {% endfor %}
   </div>
 </section>
 
-<!-- Full-service scope -->
-<section class="max-w-6xl mx-auto px-4 py-14">
+<!-- ── SERVICE TILES ─────────────────────────────────────────────────────── -->
+<section class="max-w-6xl mx-auto px-4 pt-16 pb-4">
   <div class="text-center mb-10">
-    <span class="text-[11px] font-semibold tracking-[0.12em] uppercase text-primary-hover">360° Fire &amp; Safety</span>
-    <h2 class="text-3xl font-extrabold text-navy-800 mt-2">From design to NOC — and maintenance for life</h2>
-    <p class="text-slate-600 mt-2 max-w-2xl mx-auto">End-to-end fire protection engineered to NBC, BIS, IS &amp; NFPA codes. This portal is the maintenance arm that keeps it all alive after handover.</p>
+    <span class="eyebrow" style="color:var(--amber)">Our services</span>
+    <h2 class="text-3xl md:text-4xl font-extrabold text-ink mt-3">What can we help you with?</h2>
+    <p class="text-ink-subtle mt-3 text-base max-w-xl mx-auto">Select a service to get started — no AMC required for emergencies or refills.</p>
   </div>
-  <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
-    {% set services = [
-      ('📐','Design &amp; Consultation','Industry &amp; space-wise system design by qualified engineers.'),
-      ('🏗️','Projects &amp; Installation','Execution by trained staff under engineer supervision.'),
-      ('🛠️','Service &amp; Maintenance','AMC plans &amp; 24-hour emergency response.'),
-      ('🎓','Training &amp; Audit','Fire-safety training &amp; Fire NOC liaison.'),
-      ('🧪','Testing &amp; Commissioning','Verified handover with daily progress reports.')
-    ] %}
-    {% for icon, t, d in services %}
-    <div class="bg-white rounded-xl border border-slate-200 p-5">
-      <div class="text-2xl">{{ icon|safe }}</div>
-      <h3 class="font-semibold text-navy-800 mt-3 text-[15px]">{{ t|safe }}</h3>
-      <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">{{ d|safe }}</p>
-    </div>
-    {% endfor %}
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 stagger">
+    <!-- AMC -->
+    <a href="{{ url_for('public.apply') }}" class="service-tile fade-up group">
+      <span class="service-tile-icon">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+      </span>
+      <div class="font-bold text-ink text-sm mt-1">Annual AMC</div>
+      <div class="text-xs text-ink-subtle">4 visits/year · from ₹24,000</div>
+    </a>
+    <!-- Refilling -->
+    <a href="{{ url_for('public.refill') }}" class="service-tile fade-up group">
+      <span class="service-tile-icon">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l1 4H8z"/><path d="M8 7h8v13a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1z"/><path d="M12 11v4M10 13h4"/></svg>
+      </span>
+      <div class="font-bold text-ink text-sm mt-1">Extinguisher Refill</div>
+      <div class="text-xs text-ink-subtle">ABC · CO₂ · K-class · from ₹500</div>
+    </a>
+    <!-- Emergency -->
+    <a href="{{ url_for('public.emergency') }}" class="service-tile fade-up group" style="border-color: #fecaca;">
+      <span class="service-tile-icon" style="background:#fef2f2;color:#dc2626">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+      </span>
+      <div class="font-bold text-ink text-sm mt-1">Emergency Response</div>
+      <div class="text-xs text-ink-subtle">24×7 · team dispatched with ETA</div>
+    </a>
+    <!-- NOC -->
+    <a href="{{ url_for('public.noc') }}" class="service-tile fade-up group">
+      <span class="service-tile-icon">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>
+      </span>
+      <div class="font-bold text-ink text-sm mt-1">Fire NOC</div>
+      <div class="text-xs text-ink-subtle">New · renewal · compliance</div>
+    </a>
   </div>
-  <p class="text-center text-xs text-ink-subtle mt-6">Trusted across 16 sectors — residential, commercial, healthcare, retail, government, education, manufacturing &amp; more.</p>
 </section>
 
-<!-- Pricing snapshot -->
-<section class="max-w-6xl mx-auto px-4 py-14">
-  <div class="text-center mb-10">
-    <h2 class="text-3xl font-extrabold text-navy-800">Simple, honest pricing</h2>
-    <p class="text-slate-600 mt-2">Plans for homes and commercial complexes. Pick what fits your premises.</p>
+<!-- ── 3 CORE SERVICES ───────────────────────────────────────────────────── -->
+<section class="max-w-6xl mx-auto px-4 py-20">
+  <div class="text-center max-w-2xl mx-auto mb-14">
+    <span class="eyebrow">What we do</span>
+    <h2 class="text-3xl md:text-4xl font-extrabold text-ink mt-3">Three ways we keep you safe</h2>
+    <p class="text-ink-subtle mt-4 text-lg">Fast dispatch, no paperwork, and everything tracked on your phone — fire safety made effortless.</p>
   </div>
-  <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-    {% for p in plans %}
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col">
-      <span class="text-xs font-semibold uppercase tracking-wide {{ 'text-blue-600' if p.category=='residential' else 'text-star-600' }}">{{ p.category }}</span>
-      <h3 class="text-xl font-bold text-navy-800 mt-1">{{ p.name }}</h3>
-      <div class="mt-3"><span class="text-3xl font-extrabold text-navy-800">{{ p.price|rupees }}</span><span class="text-slate-500 text-sm">/year</span></div>
-      <p class="text-sm text-slate-600 mt-2">{{ p.visits_per_year }} visits/year · {{ p.response_time }} response</p>
-      <ul class="mt-4 space-y-1.5 text-sm text-slate-700 flex-1">
-        {% for f in p.feature_list[:4] %}<li class="flex gap-2"><span class="text-green-600">✓</span> {{ f }}</li>{% endfor %}
+
+  <div class="grid md:grid-cols-3 gap-7 stagger">
+    <!-- AMC -->
+    <div class="card p-8 flex flex-col fade-up">
+      <span class="icon-chip">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+      </span>
+      <h3 class="text-xl font-bold text-ink mt-6">Annual Maintenance Contract</h3>
+      <p class="text-ink-subtle mt-3 leading-relaxed flex-1">Your fire systems are inspected quarterly by our technicians. Every visit is logged with photos, a service report, and material quotations — all visible in your customer portal.</p>
+      <ul class="mt-5 space-y-2 text-sm text-ink-muted">
+        <li class="flex gap-2.5">{{ check }} <span>4 scheduled visits/year</span></li>
+        <li class="flex gap-2.5">{{ check }} <span>Detailed reports &amp; site photos</span></li>
+        <li class="flex gap-2.5">{{ check }} <span>Extinguisher refill tracking</span></li>
+        <li class="flex gap-2.5">{{ check }} <span>2 mock drills included</span></li>
+        <li class="flex gap-2.5">{{ check }} <span>24×7 support</span></li>
       </ul>
-      <a href="{{ url_for('public.apply', plan_id=p.id) }}" class="mt-5 text-center bg-navy-800 text-white py-2.5 rounded-xl font-medium hover:bg-navy-700">Choose plan</a>
+      <div class="mt-7 pt-5 border-t border-hairline flex items-center justify-between">
+        <span class="text-2xl font-extrabold text-ink">₹24,000<span class="text-sm font-normal text-ink-subtle">/yr</span></span>
+        <a href="{{ url_for('public.apply') }}" class="btn btn-primary">Apply now</a>
+      </div>
     </div>
-    {% else %}
-    <p class="text-slate-500">Plans are being set up. Please check back soon.</p>
-    {% endfor %}
+
+    <!-- Refilling -->
+    <div class="card p-8 flex flex-col fade-up">
+      <span class="icon-chip">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l1 4H8z"/><path d="M8 7h8v13a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1z"/><path d="M12 11v4M10 13h4"/></svg>
+      </span>
+      <h3 class="text-xl font-bold text-ink mt-6">Extinguisher Refilling</h3>
+      <p class="text-ink-subtle mt-3 leading-relaxed flex-1">Discharged or expired extinguisher? Book a pick-up or on-site refill. We use MAP 50% premium powder, 100% weight-verify every cylinder, and hand you back a QR-tracked certificate.</p>
+      <ul class="mt-5 space-y-2 text-sm text-ink-muted">
+        <li class="flex gap-2.5">{{ check }} <span>ABC dry powder from <strong>₹500</strong></span></li>
+        <li class="flex gap-2.5">{{ check }} <span>CO₂ from <strong>₹800 – ₹2,000</strong></span></li>
+        <li class="flex gap-2.5">{{ check }} <span>K-class &amp; modular available</span></li>
+        <li class="flex gap-2.5">{{ check }} <span>Hydro test + QR certificate</span></li>
+        <li class="flex gap-2.5">{{ check }} <span>+18% GST · transport extra</span></li>
+      </ul>
+      <div class="mt-7 pt-5 border-t border-hairline">
+        <a href="{{ url_for('public.refill') }}" class="btn btn-primary w-full">Book a refill</a>
+      </div>
+    </div>
+
+    <!-- Emergency -->
+    <div class="card p-8 flex flex-col border-l-4 border-l-danger fade-up">
+      <span class="inline-grid place-items-center w-12 h-12 rounded-xl bg-red-50 text-danger">
+        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+      </span>
+      <h3 class="text-xl font-bold text-ink mt-6">Emergency Response</h3>
+      <p class="text-ink-subtle mt-3 leading-relaxed flex-1">No AMC? No problem. Fire or safety emergency at any hour — share your location and what happened, and our team is dispatched with a live ETA. You can also call directly.</p>
+      <ul class="mt-5 space-y-2 text-sm text-ink-muted">
+        <li class="flex gap-2.5">{{ check }} <span>No contract needed</span></li>
+        <li class="flex gap-2.5">{{ check }} <span>24×7 all days</span></li>
+        <li class="flex gap-2.5">{{ check }} <span>Team ETA shared instantly</span></li>
+        <li class="flex gap-2.5">{{ check }} <span>Cash or online payment</span></li>
+      </ul>
+      <div class="mt-7 pt-5 border-t border-hairline flex flex-col gap-2">
+        <a href="{{ url_for('public.emergency') }}" class="btn btn-emergency w-full">Request emergency visit</a>
+        <a href="tel:{{ EMERGENCY_HOTLINE }}" class="text-center text-sm font-bold text-danger">or call {{ EMERGENCY_HOTLINE }}</a>
+      </div>
+    </div>
   </div>
 </section>
 
-<!-- How it works -->
-<section class="bg-white border-y border-slate-200">
-  <div class="max-w-6xl mx-auto px-4 py-14">
-    <h2 class="text-3xl font-extrabold text-navy-800 text-center mb-10">How your AMC works</h2>
-    <div class="grid md:grid-cols-4 gap-6 text-center">
+<!-- ── HOW AMC WORKS ─────────────────────────────────────────────────────── -->
+<section class="bg-white border-y border-hairline">
+  <div class="max-w-6xl mx-auto px-4 py-20">
+    <div class="text-center max-w-2xl mx-auto mb-14">
+      <span class="eyebrow">Your AMC journey</span>
+      <h2 class="text-3xl md:text-4xl font-extrabold text-ink mt-3">Apply once, protected for a year</h2>
+    </div>
+    <div class="grid sm:grid-cols-2 md:grid-cols-4 gap-8 stagger">
       {% set steps = [
-        ('1','Apply','Choose a plan and submit your premises details. Pay by cash or online.'),
-        ('2','We schedule','Your visits are scheduled across the year and a technician is assigned.'),
-        ('3','Service & report','Each visit gets photos, work done and a downloadable service report.'),
-        ('4','Stay covered','Track refills, approve material quotations, and call us anytime for emergencies.')
+        ('Apply online','Pick a plan, fill in your site details, choose cash or online payment.'),
+        ('We activate','Your contract is confirmed, visits scheduled, technician assigned.'),
+        ('Quarterly visits','Each visit is documented — photos, work done, signed-off service report.'),
+        ('Track everything','View visits, approve quotations, and track refill dates in your portal.')
       ] %}
-      {% for n, t, d in steps %}
-      <div class="p-5">
-        <div class="star-badge w-12 h-12 rounded-xl grid place-items-center text-navy-900 font-black text-lg mx-auto">{{ n }}</div>
-        <h3 class="font-bold text-navy-800 mt-4">{{ t }}</h3>
-        <p class="text-sm text-slate-600 mt-1">{{ d }}</p>
+      {% for t, d in steps %}
+      <div class="fade-up">
+        <div class="num-badge">{{ loop.index }}</div>
+        <h3 class="font-bold text-ink mt-5">{{ t }}</h3>
+        <p class="text-sm text-ink-subtle mt-2 leading-relaxed">{{ d }}</p>
       </div>
       {% endfor %}
     </div>
   </div>
 </section>
 
-<!-- Services band -->
-<section class="max-w-6xl mx-auto px-4 py-14 grid md:grid-cols-3 gap-6">
-  <div class="bg-red-50 border border-red-200 rounded-2xl p-6">
-    <h3 class="font-bold text-red-700 text-lg">🚨 Emergency, even without an AMC</h3>
-    <p class="text-sm text-slate-700 mt-2">Fire or safety emergency? Our response team is ready 24×7. Request a per-visit service and get a team ETA.</p>
-    <a href="{{ url_for('public.emergency') }}" class="inline-block mt-4 text-red-700 font-semibold">Request emergency visit →</a>
+<!-- ── PRICING SNAPSHOT ──────────────────────────────────────────────────── -->
+{% if plans %}
+<section class="max-w-6xl mx-auto px-4 py-20">
+  <div class="text-center max-w-2xl mx-auto mb-12">
+    <span class="eyebrow">Pricing</span>
+    <h2 class="text-3xl md:text-4xl font-extrabold text-ink mt-3">Simple, honest AMC pricing</h2>
+    <p class="text-ink-subtle mt-4">For homes and commercial complexes. Sites installed by Northern Star get a free first year.</p>
   </div>
-  <div class="bg-navy-50 border border-navy-100 rounded-2xl p-6">
-    <h3 class="font-bold text-navy-800 text-lg">📄 NOC assistance</h3>
-    <p class="text-sm text-slate-700 mt-2">Need a fire NOC for your premises? We handle design to final clearance. Raise a request and we'll guide you.</p>
-    <a href="{{ url_for('public.noc') }}" class="inline-block mt-4 text-navy-700 font-semibold">Request NOC →</a>
+  <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger">
+    {% set check2 %}<svg class="w-4 h-4 flex-shrink-0 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>{% endset %}
+    {% for p in plans %}
+    <div class="card card-hover p-7 flex flex-col fade-up {{ 'ring-2 ring-primary' if loop.index == 2 else '' }}">
+      {% if loop.index == 2 %}<span class="self-start -mt-1 mb-3 text-[11px] font-semibold uppercase tracking-wide text-white bg-primary px-2.5 py-1 rounded-full">Most popular</span>{% endif %}
+      <span class="text-xs font-semibold uppercase tracking-wide text-ink-subtle">{{ p.category }}</span>
+      <h3 class="text-xl font-bold text-ink mt-1">{{ p.name }}</h3>
+      <div class="mt-4 flex items-end gap-1"><span class="text-4xl font-extrabold text-ink tracking-tight">{{ p.price|rupees }}</span><span class="text-ink-subtle text-sm mb-1">/year</span></div>
+      <p class="text-sm text-ink-subtle mt-2">{{ p.visits_per_year }} visits/year · {{ p.response_time }} response</p>
+      <ul class="mt-5 space-y-2 text-sm text-ink-muted flex-1">
+        {% for f in p.feature_list[:4] %}<li class="flex gap-2.5">{{ check2 }} <span>{{ f }}</span></li>{% endfor %}
+      </ul>
+      <a href="{{ url_for('public.apply', plan_id=p.id) }}" class="btn {{ 'btn-primary' if loop.index == 2 else 'btn-ghost' }} mt-6 w-full">Choose plan</a>
+    </div>
+    {% endfor %}
   </div>
-  <div class="bg-surface-1 border border-hairline rounded-2xl p-6">
-    <h3 class="font-bold text-primary-hover text-lg">💬 Have a question?</h3>
-    <p class="text-sm text-slate-700 mt-2">Ask our AI assistant anything about AMC, or send an enquiry to our team. We're here to help.</p>
-    <a href="{{ url_for('public.enquiry') }}" class="inline-block mt-4 text-star-600 font-semibold">Ask Northern Star →</a>
+  <p class="text-center text-sm text-ink-subtle mt-6">Need help choosing? <a href="{{ url_for('public.enquiry') }}" class="text-primary font-semibold">Ask Tara →</a></p>
+</section>
+{% endif %}
+
+<!-- ── NOC STRIP ─────────────────────────────────────────────────────────── -->
+<section class="max-w-6xl mx-auto px-4 pb-20">
+  <div class="card p-7 md:p-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+    <div class="flex items-start gap-5">
+      <span class="icon-chip-soft flex-shrink-0">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15l2 2 4-4"/></svg>
+      </span>
+      <div>
+        <h3 class="font-bold text-ink text-lg">Need a Fire NOC?</h3>
+        <p class="text-ink-subtle text-sm mt-1 max-w-xl">We handle the full process — design, provisioning to final clearance from the fire department. Upload your old NOC for renewal or start fresh. Our team guides you every step.</p>
+      </div>
+    </div>
+    <a href="{{ url_for('public.noc') }}" class="btn btn-ghost flex-shrink-0">Request NOC →</a>
   </div>
 </section>
 
+<!-- ── FINAL CTA ──────────────────────────────────────────────────────────── -->
+<section class="hero-bg text-white relative overflow-hidden">
+  <div class="hero-grid absolute inset-0 opacity-50"></div>
+  <div class="relative max-w-4xl mx-auto px-4 py-16 text-center">
+    <h2 class="text-3xl md:text-4xl font-extrabold">Ready to protect your premises?</h2>
+    <p class="text-white/65 mt-4 text-lg max-w-xl mx-auto">Apply for an AMC, book a refill, or call us right now. We are ready.</p>
+    <div class="mt-8 flex flex-wrap gap-3 justify-center">
+      <a href="{{ url_for('public.apply') }}" class="btn btn-white">Apply for AMC</a>
+      <a href="{{ url_for('public.refill') }}" class="btn btn-outline">Book refilling</a>
+      <a href="tel:{{ EMERGENCY_HOTLINE }}" class="btn btn-emergency">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        Call {{ EMERGENCY_HOTLINE }}
+      </a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+/* ════════════════════════════════════════════════════
+   0. VIDEO BACKGROUND — fade in when ready, dim canvas
+   ════════════════════════════════════════════════════ */
+(function(){
+  var vid = document.getElementById('heroBgVid');
+  var canvas = document.getElementById('heroCanvas');
+  var overlay = document.getElementById('heroVidOverlay');
+  if(!vid) return;
+  function onReady(){
+    /* Fade in video */
+    vid.style.opacity = '0.42';
+    /* Deepen the gradient overlay so text stays readable over real footage */
+    if(overlay) overlay.style.background =
+      'linear-gradient(140deg,rgba(5,12,30,.82) 0%,rgba(10,18,48,.72) 38%,rgba(12,21,58,.68) 65%,rgba(5,12,30,.82) 100%)';
+    /* Dim canvas — particles still overlay the video subtly */
+    if(canvas) canvas.style.opacity = '0.35';
+  }
+  vid.addEventListener('canplaythrough', onReady);
+  vid.addEventListener('playing', onReady);
+  /* If video file is missing, nothing changes — canvas stays as background */
+})();
+
+/* ════════════════════════════════════════════════════════
+   1. CANVAS — particle network + radar + cinematic phases
+   ════════════════════════════════════════════════════════ */
+(function(){
+  var canvas = document.getElementById('heroCanvas');
+  if(!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var hpa = document.getElementById('hpa');
+  var hpr = document.getElementById('hpr');
+  var W, H, pts = [], radarA = 0, startTs = null;
+  var N = 56, CONN = 128, CYCLE = 12000;
+
+  function resize(){
+    W = canvas.width  = canvas.offsetWidth;
+    H = canvas.height = canvas.offsetHeight;
+    pts = [];
+    for(var i=0;i<N;i++) pts.push({
+      x:Math.random()*W, y:Math.random()*H,
+      vx:(Math.random()-.5)*.28, vy:(Math.random()-.5)*.28,
+      r:Math.random()*1.6+.45,
+      a:Math.random()*.35+.08,
+      ph:Math.random()*Math.PI*2, ps:.018+Math.random()*.016
+    });
+  }
+
+  function phase(ms){
+    var p=(ms%CYCLE)/CYCLE;
+    if(p<.38)  return {al:0, re:0};
+    if(p<.50)  return {al:Math.min(1,(p-.38)/.1), re:0};
+    if(p<.64)  return {al:1-(p-.5)/.14, re:0};
+    if(p<.74)  return {al:0, re:Math.min(1,(p-.64)/.08)};
+    if(p<.90)  return {al:0, re:1-(p-.74)/.16};
+    return {al:0, re:0};
+  }
+
+  function frame(ts){
+    if(!startTs) startTs=ts;
+    var el=ts-startTs, ph=phase(el), sm=1+ph.al*.55;
+    if(canvas.offsetWidth!==W||canvas.offsetHeight!==H) resize();
+    ctx.clearRect(0,0,W,H);
+
+    /* phase overlays */
+    if(hpa) hpa.style.opacity=ph.al;
+    if(hpr) hpr.style.opacity=ph.re;
+
+    /* move + pulse particles */
+    pts.forEach(function(p){ p.x+=p.vx*sm; p.y+=p.vy*sm; p.ph+=p.ps;
+      if(p.x<-8) p.x=W+8; if(p.x>W+8) p.x=-8;
+      if(p.y<-8) p.y=H+8; if(p.y>H+8) p.y=-8;
+    });
+
+    /* connections */
+    for(var i=0;i<pts.length;i++){
+      var a=pts[i];
+      for(var j=i+1;j<pts.length;j++){
+        var b=pts[j], dx=a.x-b.x, dy=a.y-b.y, d=Math.sqrt(dx*dx+dy*dy);
+        if(d<CONN){
+          var fade=(1-d/CONN);
+          var r=Math.round(100+ph.al*110), g=Math.round(140-ph.al*55);
+          ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
+          ctx.strokeStyle='rgba('+r+','+g+',220,'+fade*.13+')';
+          ctx.lineWidth=.55; ctx.stroke();
+        }
+      }
+    }
+
+    /* nodes */
+    pts.forEach(function(p){
+      var pa=p.a*(.65+.35*Math.sin(p.ph));
+      var nr=Math.round(148+ph.al*82+ph.re*(-45));
+      var ng=Math.round(185-ph.al*52+ph.re*62);
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle='rgba('+nr+','+ng+',255,'+pa+')'; ctx.fill();
+      if(p.r>1.3){
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r*3.5,0,Math.PI*2);
+        ctx.fillStyle='rgba('+nr+','+ng+',255,'+(pa*.075)+')'; ctx.fill();
+      }
+    });
+
+    /* radar sweep */
+    var rcx=W*.76, rcy=H*.5, rmax=Math.min(W*.19,H*.38);
+    radarA+=.011+ph.al*.006;
+    [.33,.66,1].forEach(function(f){
+      ctx.beginPath(); ctx.arc(rcx,rcy,rmax*f,0,Math.PI*2);
+      ctx.strokeStyle='rgba(245,158,11,'+(0.055+ph.al*.04)+')';
+      ctx.lineWidth=.7; ctx.stroke();
+    });
+    ctx.save(); ctx.translate(rcx,rcy); ctx.rotate(radarA);
+    var sw=Math.PI*.38;
+    for(var a2=0;a2>-sw;a2-=.04){
+      var fd=(a2+sw)/sw;
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,rmax,a2-.04,a2); ctx.closePath();
+      ctx.fillStyle='rgba(245,158,11,'+(0.065*fd+ph.al*.04)+')'; ctx.fill();
+    }
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(rmax,0);
+    ctx.strokeStyle='rgba(245,158,11,'+(0.55+ph.al*.2)+')';
+    ctx.lineWidth=1.2; ctx.stroke(); ctx.restore();
+
+    requestAnimationFrame(frame);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+  requestAnimationFrame(frame);
+})();
+
+/* ═══════════════════════════════════
+   2. ENTRANCE ANIMATIONS (staggered)
+   ═══════════════════════════════════ */
+(function(){
+  var seq = [
+    {id:'hel-title', d:280},
+    {id:'hel-sub',   d:590},
+    {id:'hel-ctas',  d:730},
+    {id:'hel-dash',  d:820},
+    {id:'hel-stats', d:960}
+  ];
+  seq.forEach(function(s){
+    var el=document.getElementById(s.id);
+    if(el) setTimeout(function(){ el.classList.add('in'); }, s.d);
+  });
+  /* progress bar + compliance ring after dash enters */
+  setTimeout(function(){
+    var pf=document.getElementById('hPF');
+    if(pf) pf.style.width='75%';
+    var arc=document.getElementById('cArc');
+    if(arc) arc.style.strokeDashoffset=(94.25*(1-.98)).toFixed(2);
+  }, 1180);
+})();
+
+
+/* ════════════════════════════════
+   4. COUNT-UP ANIMATED STATISTICS
+   ════════════════════════════════ */
+(function(){
+  function run(){
+    document.querySelectorAll('.ctr').forEach(function(el){
+      var target=parseInt(el.getAttribute('data-t'),10);
+      var dur=target>100?1600:1100, steps=52, step=0;
+      var timer=setInterval(function(){
+        step++;
+        el.textContent=Math.round(target*Math.pow(step/steps,.6));
+        if(step>=steps){ el.textContent=target; clearInterval(timer); }
+      }, dur/steps);
+    });
+  }
+  var sel=document.getElementById('hel-stats');
+  if(sel&&'IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(entries){
+      if(entries[0].isIntersecting){ setTimeout(run,160); io.disconnect(); }
+    },{threshold:.3});
+    io.observe(sel);
+  } else { setTimeout(run,1100); }
+})();
+</script>
 {% endblock %}

@@ -12,27 +12,92 @@
         <h1 class="text-2xl font-extrabold text-navy-800">{{ c.reference }} {{ status_badge(c.status) }}</h1>
         <p class="text-slate-600 mt-1">{{ c.applicant_name or (c.customer.name if c.customer) }} · {{ c.applicant_phone }}{% if c.applicant_email %} · {{ c.applicant_email }}{% endif %}</p>
         <p class="text-sm text-slate-500">{{ c.plan.name if c.plan else 'Custom plan' }} · {{ c.property_type or '' }}</p>
-        {% if c.site_address %}<p class="text-sm text-slate-500">📍 {{ c.site_address }}{% if c.area %}, {{ c.area }}{% endif %}</p>{% endif %}
+        {% if c.site_address %}<p class="text-sm text-slate-500">{{ c.site_address }}{% if c.area %}, {{ c.area }}{% endif %}</p>{% endif %}
         {% if c.application_notes %}<p class="text-sm text-slate-600 mt-2 bg-slate-50 rounded-lg p-3">{{ c.application_notes }}</p>{% endif %}
+        {% if c.voice_note %}
+        <div class="mt-2 flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
+          <svg class="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3M8 22h8"/></svg>
+          <span><span class="font-medium text-blue-800">Voice note:</span> <span class="text-blue-700">{{ c.voice_note }}</span></span>
+        </div>
+        {% endif %}
       </div>
     </div>
+    {% set photos = c|attr('id') and attachments %}
+    {% if attachments %}
+    <div class="mt-4 grid grid-cols-4 sm:grid-cols-6 gap-2">
+      {% for a in attachments %}
+      <a href="{{ a.file_path|upload_url }}" target="_blank">
+        <img src="{{ a.file_path|upload_url }}" class="w-full h-16 object-cover rounded-lg border border-hairline hover:opacity-80 transition">
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
   </div>
 
   <!-- Activation (pending) -->
   {% if c.status == 'pending' %}
-  <div class="bg-amber-50 border border-amber-200 rounded-2xl p-6 mt-5">
+
+  {% set q = c.amc_quote %}
+  {# ── Linked AMC quotation status (gates activation) ───────────────────── #}
+  {% if q %}
+  {% set qcolor = {'accepted':'green','negotiation_requested':'amber','rejected':'red'}.get(q.status,'blue') %}
+  <div class="rounded-2xl p-5 mt-5 border bg-{{ qcolor }}-50 border-{{ qcolor }}-200">
+    <div class="flex items-start justify-between flex-wrap gap-3">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-{{ qcolor }}-800">Quotation {{ q.reference }}</span>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-{{ qcolor }}-100 text-{{ qcolor }}-800 font-medium">{{ q.status_label }}</span>
+        </div>
+        <p class="text-sm text-{{ qcolor }}-700 mt-1">
+          {% if q.status == 'accepted' %}Client accepted ₹{{ '{:,.0f}'.format(q.grand_total) }} (incl. GST). Price is locked below — activate to generate visits.
+          {% elif q.status == 'negotiation_requested' %}Client requested a negotiation. Revise &amp; re-send the quote, then wait for their acceptance before activating.
+          {% elif q.status == 'rejected' %}Client rejected this quotation. Activation is blocked until a new quote is accepted.
+          {% else %}Waiting for the client to accept the price. Activation unlocks once they accept.{% endif %}
+        </p>
+        {% if q.negotiation_note %}
+        <div class="mt-2 text-sm bg-white/60 rounded-lg p-3 border border-{{ qcolor }}-200">
+          <span class="font-medium text-{{ qcolor }}-800">Client note:</span> <span class="text-{{ qcolor }}-700">{{ q.negotiation_note }}</span>
+        </div>
+        {% endif %}
+      </div>
+      <a href="{{ url_for('sq.detail_quotation', sq_id=q.id) }}" class="text-sm bg-{{ qcolor }}-700 text-white px-3 py-1.5 rounded-lg hover:opacity-90 whitespace-nowrap">Review quotation →</a>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if c.can_activate %}
+  {% set locked = c.quote_locked_price %}
+  <div class="bg-amber-50 border border-amber-200 rounded-2xl p-6 mt-4">
     <h2 class="font-bold text-amber-800">Activate contract</h2>
-    <p class="text-sm text-amber-700 mt-1">Set start date, price and number of visits. This creates the customer account (by phone) and auto-generates scheduled visits.</p>
+    <p class="text-sm text-amber-700 mt-1">Set start date and number of visits. This creates the customer account (by phone) and auto-generates scheduled visits.</p>
     <form method="post" action="{{ url_for('admin.activate_contract', contract_id=c.id) }}" class="grid sm:grid-cols-3 gap-3 mt-4">
       <label class="block"><span class="text-sm font-medium text-slate-700">Start date</span>
         <input type="date" name="start_date" value="{{ today.isoformat() }}" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300"></label>
       <label class="block"><span class="text-sm font-medium text-slate-700">Total visits</span>
         <input type="number" name="total_visits" value="{{ c.total_visits }}" min="1" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300"></label>
-      <label class="block"><span class="text-sm font-medium text-slate-700">Price (₹)</span>
-        <input type="number" name="price" value="{{ c.price }}" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300"></label>
+      <label class="block"><span class="text-sm font-medium text-slate-700">Price (₹){% if locked is not none %} <span class="text-xs text-green-700">🔒 locked, incl. GST</span>{% endif %}</span>
+        {% if locked is not none %}
+        <input type="number" value="{{ locked }}" readonly title="Price was finalised in the accepted quotation (GST included) and cannot be changed here."
+               class="mt-1 w-full px-3 py-2 rounded-lg border border-green-300 bg-green-50 text-slate-600 cursor-not-allowed">
+        <span class="text-xs text-slate-500">Finalised in {{ c.amc_quote.reference }} (₹{{ '{:,.0f}'.format(c.amc_quote.subtotal) }} + {{ c.amc_quote.gst_percent }}% GST) — edit it in the quotation, not here.</span>
+        {% else %}
+        <input type="number" name="price" value="{{ c.price }}" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300">
+        {% endif %}
+      </label>
       <button class="sm:col-span-3 bg-green-600 text-white font-semibold py-2.5 rounded-xl hover:bg-green-500">✓ Activate &amp; generate visits</button>
     </form>
   </div>
+  {% else %}
+  <div class="bg-slate-50 border border-dashed border-slate-300 rounded-2xl p-6 mt-4 text-center">
+    <div class="text-3xl mb-1">🔒</div>
+    <h2 class="font-bold text-slate-700">Activation locked</h2>
+    <p class="text-sm text-slate-500 mt-1 max-w-md mx-auto">
+      <strong>Activate &amp; generate visits</strong> unlocks only after the client accepts quotation {{ q.reference }}.
+      Until then, follow up on the quotation above.
+    </p>
+  </div>
+  {% endif %}
+
   {% else %}
   <!-- Payment status -->
   <form method="post" action="{{ url_for('admin.contract_payment', contract_id=c.id) }}" class="bg-white rounded-2xl border border-slate-200 p-4 mt-5 flex flex-wrap items-end gap-3">
@@ -51,16 +116,28 @@
   </form>
 
   <!-- Visits -->
-  <h2 class="text-lg font-bold text-navy-800 mt-8 mb-3">Visits</h2>
+  <div class="flex items-center justify-between mt-8 mb-3">
+    <h2 class="text-lg font-bold text-navy-800">Visits</h2>
+    <span class="text-xs text-slate-500">Pick a date to reschedule — the client is notified &amp; it's logged in their journey.</span>
+  </div>
   <div class="space-y-2">
     {% for v in c.visits %}
-    <a href="{{ url_for('admin.visit', visit_id=v.id) }}" class="flex items-center justify-between bg-white rounded-xl border border-slate-200 p-3 hover:border-star-400">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-full grid place-items-center font-bold text-sm {{ 'bg-green-100 text-green-700' if v.status=='completed' else 'bg-slate-100 text-slate-500' }}">{{ v.visit_number }}</div>
-        <div><div class="font-medium text-navy-800">{{ v.label }}</div><div class="text-xs text-slate-500">{{ v.scheduled_date|datefmt }}{% if v.technician %} · {{ v.technician.name }}{% endif %}</div></div>
+    <div class="bg-white rounded-xl border border-slate-200 p-3 hover:border-primary transition">
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <a href="{{ url_for('admin.visit', visit_id=v.id) }}" class="flex items-center gap-3 flex-1 min-w-0">
+          <div class="w-9 h-9 rounded-full grid place-items-center font-bold text-sm {{ 'bg-green-100 text-green-700' if v.status=='completed' else 'bg-slate-100 text-slate-500' }}">{{ v.visit_number }}</div>
+          <div class="min-w-0"><div class="font-medium text-navy-800">{{ v.label }}</div><div class="text-xs text-slate-500">{{ v.scheduled_date|datefmt }}{% if v.technician %} · {{ v.technician.name }}{% endif %}</div></div>
+        </a>
+        <div class="flex items-center gap-3">{% if v.photos %}<span class="text-xs text-slate-400">{{ v.photos|length }} photos</span>{% endif %}{% if v.service_report_path %}<span class="text-xs text-green-700 font-medium">Report</span>{% endif %}{{ status_badge(v.status) }}</div>
       </div>
-      <div class="flex items-center gap-3">{% if v.photos %}<span class="text-xs text-slate-400">📷{{ v.photos|length }}</span>{% endif %}{% if v.service_report_path %}<span class="text-xs text-green-600">📄</span>{% endif %}{{ status_badge(v.status) }}</div>
-    </a>
+      {% if v.status not in ('completed','cancelled') %}
+      <form method="post" action="{{ url_for('admin.reschedule_visit', visit_id=v.id) }}" class="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100">
+        <span class="text-xs text-slate-500">📅 Reschedule:</span>
+        <input type="date" name="scheduled_date" value="{{ v.scheduled_date.isoformat() if v.scheduled_date }}" class="px-2 py-1 rounded border border-slate-300 text-xs">
+        <button class="bg-navy-800 text-white px-2.5 py-1 rounded text-xs hover:bg-navy-700">Save date</button>
+      </form>
+      {% endif %}
+    </div>
     {% endfor %}
   </div>
 

@@ -1,29 +1,26 @@
 {% extends "base.html" %}
 {% block title %}Login — {{ COMPANY_NAME }}{% endblock %}
 {% block content %}
-<section class="max-w-md mx-auto px-4 py-14">
-  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-7">
-    <h1 class="text-2xl font-extrabold text-navy-800">Customer login</h1>
-    <p class="text-slate-600 text-sm mt-1">Log in with your mobile number to track your AMC, visits and requests.</p>
-    <form method="post" action="{{ url_for('auth.otp_request') }}" class="mt-5 space-y-4">
+<section class="max-w-md mx-auto px-4 py-16">
+  <div class="card p-8">
+    <h1 class="text-2xl font-extrabold text-ink">Customer login</h1>
+    <p class="text-ink-subtle text-sm mt-1.5">Log in with your mobile number to track your AMC, visits and requests.</p>
+    <form method="post" action="{{ url_for('auth.otp_request') }}" class="mt-6 space-y-4">
       <label class="block">
-        <span class="text-sm font-medium text-slate-700">Mobile number</span>
-        <input type="tel" name="phone" required placeholder="10-digit mobile"
-               class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-star-400">
+        <span class="text-sm font-medium text-ink-muted">Mobile number</span>
+        <input type="tel" name="phone" required placeholder="10-digit mobile" class="mt-1.5 w-full px-3 py-2.5">
       </label>
-      <button class="w-full bg-star-500 text-navy-900 font-semibold py-3 rounded-xl hover:bg-star-400">Send OTP</button>
+      <button class="btn btn-primary w-full">Send OTP</button>
     </form>
   </div>
 
-  <div class="mt-6 bg-navy-50 border border-navy-100 rounded-2xl p-5">
+  <div class="mt-6 card p-6 bg-navy-50 border-navy-100">
     <details>
-      <summary class="text-sm font-semibold text-navy-800 cursor-pointer">Staff / Ops login</summary>
+      <summary class="text-sm font-semibold text-primary cursor-pointer">Staff / Ops login</summary>
       <form method="post" action="{{ url_for('auth.staff_login') }}" class="mt-4 space-y-3">
-        <input type="email" name="email" required placeholder="Email"
-               class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-navy-600">
-        <input type="password" name="password" required placeholder="Password"
-               class="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-navy-600">
-        <button class="w-full bg-navy-800 text-white font-medium py-2.5 rounded-xl hover:bg-navy-700">Staff login</button>
+        <input type="email" name="email" required placeholder="Email" class="w-full px-3 py-2.5">
+        <input type="password" name="password" required placeholder="Password" class="w-full px-3 py-2.5">
+        <button class="btn btn-primary w-full">Staff login</button>
       </form>
     </details>
   </div>

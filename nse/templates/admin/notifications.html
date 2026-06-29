@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Notifications — Ops Console{% endblock %}
+{% block content %}
+<section class="max-w-3xl mx-auto px-4 py-10">
+  <div class="flex items-center justify-between flex-wrap gap-3 mb-6">
+    <div>
+      <h1 class="text-2xl font-extrabold text-navy-800">🔔 Notifications</h1>
+      <p class="text-sm text-ink-subtle mt-0.5">Quotation responses, activations and other ops updates</p>
+    </div>
+    <div class="flex gap-2">
+      {% if unread_notifications %}
+      <a href="{{ url_for('portal.mark_read') }}" class="btn btn-ghost text-sm px-3 py-2">Mark all read</a>
+      {% endif %}
+      <a href="{{ url_for('admin.dashboard') }}" class="btn btn-ghost text-sm px-3 py-2">← Dashboard</a>
+    </div>
+  </div>
+
+  {% if notes %}
+  <div class="card divide-y" style="--tw-divide-opacity:1">
+    {% for n in notes %}
+    <div class="flex items-start gap-3 px-5 py-4 {% if not n.read %}bg-amber-50/40{% endif %}" style="border-bottom:1px solid var(--hair)">
+      <span class="mt-1.5 w-2 h-2 rounded-full flex-shrink-0 {% if not n.read %}bg-amber{% else %}bg-slate-300{% endif %}"></span>
+      <div class="min-w-0 flex-1">
+        <div class="font-semibold text-ink {% if not n.read %}{% else %}text-ink-subtle{% endif %}">{{ n.title }}</div>
+        {% if n.body %}<div class="text-sm text-ink-subtle mt-0.5">{{ n.body }}</div>{% endif %}
+        <div class="text-xs text-ink-tertiary mt-1">{{ n.created_at|datefmt }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card p-10 text-center text-ink-subtle">
+    <div class="text-4xl mb-2">🔕</div>
+    No notifications yet. Quotation responses and activations will show up here.
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

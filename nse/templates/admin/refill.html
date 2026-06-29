@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge %}
+{% block title %}{{ o.reference }} — Ops{% endblock %}
+{% block content %}
+<section class="max-w-3xl mx-auto px-4 py-10">
+  <a href="{{ url_for('admin.refills_list') }}" class="text-sm text-ink-subtle hover:text-primary transition">← Refill orders</a>
+
+  <div class="card p-6 mt-3">
+    <div class="flex items-start justify-between">
+      <div>
+        <h1 class="text-2xl font-extrabold text-ink">{{ o.reference }}</h1>
+        <p class="text-ink-subtle">Refill order · {{ o.created_at.strftime('%d %b %Y, %I:%M %p') }}</p>
+      </div>
+      {{ status_badge(o.status) }}
+    </div>
+    <div class="grid sm:grid-cols-2 gap-3 mt-4 text-sm">
+      <div class="bg-surface-2 rounded-lg p-3"><div class="text-xs text-ink-subtle">Name</div><div class="font-medium text-ink">{{ o.name }}</div></div>
+      <div class="bg-surface-2 rounded-lg p-3"><div class="text-xs text-ink-subtle">Phone</div><div class="font-medium text-ink"><a href="tel:{{ o.phone }}" class="text-primary">{{ o.phone }}</a></div></div>
+      <div class="bg-surface-2 rounded-lg p-3"><div class="text-xs text-ink-subtle">Area</div><div class="font-medium text-ink">{{ o.area or '—' }}</div></div>
+      <div class="bg-surface-2 rounded-lg p-3"><div class="text-xs text-ink-subtle">Handling</div><div class="font-medium text-ink">{{ 'Pick up & return' if o.service_mode=='pickup' else 'Service on-site' }}</div></div>
+    </div>
+    {% if o.address %}<p class="text-sm text-ink-muted mt-3">{{ o.address }}</p>{% endif %}
+
+    <table class="w-full text-sm mt-5">
+      <thead class="text-ink-subtle text-left text-xs uppercase border-b border-hairline">
+        <tr><th class="py-2">Type</th><th class="py-2">Capacity</th><th class="py-2 text-right">Qty</th></tr>
+      </thead>
+      <tbody>
+      {% for it in o.items %}
+        <tr class="border-b border-hairline">
+          <td class="py-2 text-ink">{{ it.ext_type }}</td>
+          <td class="py-2 text-ink-muted">{{ it.capacity or '—' }}</td>
+          <td class="py-2 text-right font-medium text-ink">{{ it.quantity }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% if o.notes %}<div class="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-ink-muted"><strong>Notes:</strong> {{ o.notes }}</div>{% endif %}
+  </div>
+
+  <form method="post" class="card p-6 mt-5 space-y-4">
+    <h2 class="font-bold text-ink">Schedule &amp; update</h2>
+    <div class="grid sm:grid-cols-2 gap-3">
+      <label class="block"><span class="text-sm font-medium text-ink-muted">Status</span>
+        <select name="status" class="mt-1.5 w-full px-3 py-2.5">
+          {% for s in ['new','scheduled','picked_up','in_progress','completed','cancelled'] %}
+          <option value="{{ s }}" {{ 'selected' if o.status==s }}>{{ s.replace('_',' ')|title }}</option>{% endfor %}
+        </select></label>
+      <label class="block"><span class="text-sm font-medium text-ink-muted">Scheduled date/time</span>
+        <input type="datetime-local" name="scheduled_date" value="{{ o.scheduled_date.strftime('%Y-%m-%dT%H:%M') if o.scheduled_date }}" class="mt-1.5 w-full px-3 py-2.5"></label>
+      <label class="block"><span class="text-sm font-medium text-ink-muted">Team ETA (text)</span>
+        <input name="team_eta" value="{{ o.team_eta or '' }}" placeholder="e.g. tomorrow 11 AM" class="mt-1.5 w-full px-3 py-2.5"></label>
+      <label class="block"><span class="text-sm font-medium text-ink-muted">Final amount (₹)</span>
+        <input type="number" name="amount" value="{{ o.amount }}" class="mt-1.5 w-full px-3 py-2.5"></label>
+      <label class="block"><span class="text-sm font-medium text-ink-muted">Pay mode</span>
+        <select name="payment_mode" class="mt-1.5 w-full px-3 py-2.5">
+          <option value="cash" {{ 'selected' if o.payment_mode=='cash' }}>Cash</option>
+          <option value="online" {{ 'selected' if o.payment_mode=='online' }}>Online</option>
+        </select></label>
+      <label class="block"><span class="text-sm font-medium text-ink-muted">Pay status</span>
+        <select name="payment_status" class="mt-1.5 w-full px-3 py-2.5">
+          <option value="pending" {{ 'selected' if o.payment_status=='pending' }}>Pending</option>
+          <option value="paid" {{ 'selected' if o.payment_status=='paid' }}>Paid</option>
+        </select></label>
+    </div>
+    <button class="btn btn-primary w-full">Update order</button>
+    {% if o.customer_id %}<p class="text-xs text-ink-subtle text-center">The customer will be notified of status &amp; ETA updates in their portal.</p>{% endif %}
+  </form>
+</section>
+{% endblock %}

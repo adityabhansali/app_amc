@@ -3,7 +3,7 @@
   "configurations": [
     {
       "name": "nse-amc",
-      "runtimeExecutable": "/Users/cc/Downloads/App_AMC/.venv/bin/python",
+      "runtimeExecutable": "/usr/bin/python3",
       "runtimeArgs": ["run.py"],
       "port": 5055
     }

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Thank you! — Northern Star Engineering{% endblock %}
+{% block content %}
+<section class="max-w-md mx-auto px-4 py-24 text-center">
+  <div class="text-6xl mb-4">🙏</div>
+  <h1 class="text-2xl font-extrabold text-ink">Thank you for your feedback!</h1>
+  <p class="text-ink-subtle mt-3 leading-relaxed">
+    Your rating helps us continuously improve our service and recognise our best technicians.
+    {% if fb.rating_overall and fb.rating_overall >= 4 %}
+    We are thrilled you had a great experience!
+    {% else %}
+    We take all feedback seriously and will work to improve.
+    {% endif %}
+  </p>
+  <div class="mt-6 flex justify-center gap-1">
+    {% for i in range(1, 6) %}
+    <span class="text-3xl" style="color:{{ '#f59e0b' if fb.rating_overall and i <= fb.rating_overall else '#d1d5db' }}">★</span>
+    {% endfor %}
+  </div>
+  <a href="{{ url_for('public.home') }}" class="btn btn-primary mt-8">Back to Northern Star Engineering</a>
+</section>
+{% endblock %}

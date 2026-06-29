@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Updates — {{ COMPANY_NAME }}{% endblock %}
+{% block content %}
+<section class="max-w-3xl mx-auto px-4 py-10">
+  <div class="flex items-center justify-between flex-wrap gap-3 mb-6">
+    <div>
+      <h1 class="text-2xl font-extrabold text-navy-800">🔔 Updates</h1>
+      <p class="text-sm text-ink-subtle mt-0.5">Quotations, visit schedules and other updates on your account</p>
+    </div>
+    <div class="flex gap-2">
+      {% if unread_notifications %}
+      <a href="{{ url_for('portal.mark_read') }}" class="btn btn-ghost text-sm px-3 py-2">Mark all read</a>
+      {% endif %}
+      <a href="{{ url_for('portal.dashboard') }}" class="btn btn-ghost text-sm px-3 py-2">← Portal</a>
+    </div>
+  </div>
+
+  {% if notes %}
+  <div class="space-y-2">
+    {% for n in notes %}
+    <a href="{{ n.link or '#' }}"
+       class="block rounded-xl border px-5 py-4 transition hover:border-primary {% if not n.read %}border-primary bg-amber-50/40{% else %}border-slate-200 bg-white{% endif %}">
+      <div class="flex items-start gap-3">
+        <span class="mt-1.5 w-2 h-2 rounded-full flex-shrink-0 {% if not n.read %}bg-amber{% else %}bg-slate-300{% endif %}"></span>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-semibold text-navy-800">{{ n.title }}</span>
+            <span class="text-xs text-ink-tertiary whitespace-nowrap">{{ n.created_at|datefmt }}</span>
+          </div>
+          {% if n.body %}<p class="text-sm text-ink-subtle mt-0.5">{{ n.body }}</p>{% endif %}
+          {% if n.link %}<span class="text-xs text-primary mt-1 inline-block">Open →</span>{% endif %}
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card p-10 text-center text-ink-subtle">
+    <div class="text-4xl mb-2">🔕</div>
+    No updates yet. We'll let you know when there's news on your quotations or visits.
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,19 +1,39 @@
 {% extends "base.html" %}
 {% block title %}Request received — {{ COMPANY_NAME }}{% endblock %}
 {% block content %}
-<section class="max-w-xl mx-auto px-4 py-16 text-center">
-  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
-    <div class="w-16 h-16 rounded-full bg-green-100 grid place-items-center mx-auto text-3xl">✅</div>
-    <h1 class="text-2xl font-extrabold text-navy-800 mt-4">{{ kind }} received</h1>
-    <p class="text-slate-600 mt-2">{{ message }}</p>
-    <div class="mt-5 inline-block bg-navy-50 border border-navy-100 rounded-xl px-5 py-3">
-      <div class="text-xs text-slate-500">Your reference</div>
-      <div class="text-xl font-bold text-navy-800 tracking-wide">{{ reference }}</div>
+<section class="max-w-xl mx-auto px-4 py-20 text-center">
+  <div class="card p-9">
+    <div class="w-16 h-16 rounded-full bg-navy-50 grid place-items-center mx-auto text-primary">
+      <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
     </div>
-    <p class="text-xs text-slate-500 mt-3">Save this reference. Log in with your phone number to track updates in your portal.</p>
-    <div class="mt-6 flex flex-wrap gap-3 justify-center">
-      <a href="{{ url_for('public.home') }}" class="bg-navy-800 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-navy-700">Back to home</a>
-      <a href="{{ url_for('auth.login') }}" class="bg-star-500 text-navy-900 px-5 py-2.5 rounded-xl font-medium hover:bg-star-400">Go to my portal</a>
+    <h1 class="text-2xl font-extrabold text-ink mt-5">{{ kind }} received</h1>
+    <p class="text-ink-subtle mt-2">{{ message }}</p>
+    <div class="mt-6 flex flex-wrap justify-center gap-3">
+      <div class="inline-block bg-navy-50 border border-navy-100 rounded-xl px-6 py-3.5">
+        <div class="text-xs text-ink-subtle">Application reference</div>
+        <div class="text-xl font-bold text-primary tracking-wide">{{ reference }}</div>
+      </div>
+      {% if sq_ref %}
+      <div class="inline-block bg-green-50 border border-green-200 rounded-xl px-6 py-3.5">
+        <div class="text-xs text-green-700 font-medium">Your quotation is ready</div>
+        <div class="text-xl font-bold text-green-700 tracking-wide">{{ sq_ref }}</div>
+      </div>
+      {% endif %}
+    </div>
+    {% if sq_ref %}
+    <div class="mt-5 bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 text-left">
+      <strong>Next step:</strong> Log in with your phone number to view your quotation,
+      see the full price breakdown, and either <strong>accept</strong> it or
+      <strong>request a negotiation</strong> with our sales team.
+    </div>
+    {% else %}
+    <p class="text-xs text-ink-subtle mt-3">Save this reference. Log in with your phone number to track updates in your portal.</p>
+    {% endif %}
+    <div class="mt-7 flex flex-wrap gap-3 justify-center">
+      <a href="{{ url_for('public.home') }}" class="btn btn-ghost">Back to home</a>
+      <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
+        {% if sq_ref %}View my quotation{% else %}Go to my portal{% endif %}
+      </a>
     </div>
   </div>
 </section>

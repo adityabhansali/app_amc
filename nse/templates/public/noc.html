@@ -1,31 +1,73 @@
 {% extends "base.html" %}
-{% from "_macros.html" import field %}
-{% block title %}NOC Request — {{ COMPANY_NAME }}{% endblock %}
+{% from "_macros.html" import field, voice_note_widget, photo_upload_widget %}
+{% block title %}Fire NOC Request — {{ COMPANY_NAME }}{% endblock %}
 {% block content %}
-<section class="max-w-3xl mx-auto px-4 py-12">
-  <h1 class="text-3xl font-extrabold text-navy-800">📄 Fire NOC Request</h1>
-  <p class="text-slate-600 mt-2">Need a fire NOC (No Objection Certificate) for your premises? {{ COMPANY_NAME }} handles the full process — from design and provisioning to final clearance. Tell us about your requirement and our team will guide you.</p>
+<section class="max-w-3xl mx-auto px-4 py-16">
+  <span class="eyebrow">Fire NOC</span>
+  <h1 class="text-3xl md:text-4xl font-extrabold text-ink mt-3">Fire NOC Request</h1>
+  <p class="text-ink-subtle mt-3 text-lg">Need a fire NOC (No Objection Certificate) for your premises? {{ COMPANY_NAME }} handles the full process — design, provisioning to final clearance. Tell us what you need; our team will guide you.</p>
 
-  <form method="post" class="mt-8 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+  <!-- What you need info -->
+  <div class="card p-5 mt-6 bg-navy-50 border-navy-100">
+    <h3 class="font-semibold text-ink text-sm mb-3">What to keep ready for a fire NOC</h3>
+    <div class="grid sm:grid-cols-2 gap-2 text-sm text-ink-muted">
+      {% for item in ['Building plan / layout drawing','Occupancy certificate','Number of floors &amp; built-up area','Type of use (residential/commercial/industrial)','Existing fire systems (if any)','Old NOC (for renewal)'] %}
+      <div class="flex gap-2 items-start">
+        <svg class="w-4 h-4 text-primary flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        <span>{{ item }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="card p-7 mt-6 space-y-6">
     <div class="grid sm:grid-cols-2 gap-4">
       {{ field('Your name', 'name', required=true) }}
       {{ field('Phone number', 'phone', type='tel', required=true) }}
       {{ field('Email', 'email', type='email') }}
-      {{ field('Area', 'area', placeholder='e.g. Udhna, Pal, Piplod…') }}
+      {{ field('Area / locality', 'area', placeholder='e.g. Udhna, Pal, Piplod…') }}
     </div>
     {{ field('Premises address', 'location', required=true, placeholder='Building, street, landmark, Surat') }}
-    <label class="block">
-      <span class="text-sm font-medium text-slate-700">Describe your NOC requirement <span class="text-red-500">*</span></span>
-      <textarea name="description" rows="4" required class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-star-400" placeholder="Type of building, built-up area, number of floors, occupancy, new or renewal NOC, deadline if any…"></textarea>
-    </label>
+
+    <!-- NOC description — text or voice -->
+    <div class="space-y-3">
+      <label class="block">
+        <span class="text-sm font-medium text-ink-muted">Describe your NOC requirement <span class="text-danger">*</span></span>
+        <textarea name="description" rows="3" class="mt-1.5 w-full px-3 py-2.5"
+                  placeholder="Type of building, built-up area, floors, occupancy, new or renewal NOC, deadline…"></textarea>
+      </label>
+      <!-- Voice note alternative -->
+      {{ voice_note_widget('voice_note', 'Or describe by voice — we will transcribe it') }}
+      <p class="text-xs text-ink-subtle">Your spoken description is automatically converted to text and sent to our team in English.</p>
+    </div>
+
+    <!-- Old NOC upload (for renewals) -->
     <div>
-      <span class="text-sm font-medium text-slate-700">Preferred payment</span>
-      <div class="mt-2 flex gap-4">
-        <label class="flex items-center gap-2 border border-slate-300 rounded-lg px-4 py-2 cursor-pointer"><input type="radio" name="payment_mode" value="cash" checked> 💵 Cash</label>
-        <label class="flex items-center gap-2 border border-slate-300 rounded-lg px-4 py-2 cursor-pointer"><input type="radio" name="payment_mode" value="online"> 💳 Online</label>
+      <span class="text-sm font-medium text-ink-muted">Upload your old / existing NOC (for renewals)</span>
+      <label class="mt-1.5 flex items-center gap-3 border border-hairline-strong rounded-xl px-4 py-3 cursor-pointer hover:border-primary transition">
+        <svg class="w-5 h-5 text-ink-tertiary flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <path d="M14 2v6h6M9 15l2 2 4-4"/>
+        </svg>
+        <span class="text-sm text-ink-subtle" id="noc-file-label">Click to upload PDF or image</span>
+        <input type="file" name="noc_document" accept=".pdf,image/*" class="hidden"
+               onchange="document.getElementById('noc-file-label').textContent = this.files[0]?.name || 'Click to upload PDF or image'">
+      </label>
+      <p class="text-xs text-ink-subtle mt-1">PDF, JPG or PNG. Max 16 MB. Optional — upload if you have it.</p>
+    </div>
+
+    <!-- Site photos -->
+    {{ photo_upload_widget('site_photos', 'Upload site photos for reference (optional)') }}
+
+    <div>
+      <span class="text-sm font-medium text-ink-muted">Preferred payment</span>
+      <div class="mt-2 flex flex-wrap gap-3">
+        <label class="flex items-center gap-2.5 border border-hairline-strong rounded-lg px-4 py-2.5 cursor-pointer hover:border-primary transition"><input type="radio" name="payment_mode" value="cash" checked> Cash</label>
+        <label class="flex items-center gap-2.5 border border-hairline-strong rounded-lg px-4 py-2.5 cursor-pointer hover:border-primary transition"><input type="radio" name="payment_mode" value="online"> Online</label>
       </div>
     </div>
-    <button class="w-full bg-navy-800 text-white font-semibold py-3 rounded-xl hover:bg-navy-700">Submit NOC request</button>
+
+    <button class="btn btn-primary w-full">Submit NOC request</button>
   </form>
 </section>
 {% endblock %}

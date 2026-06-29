@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}My Journey — Portal{% endblock %}
+{% block content %}
+<section class="max-w-2xl mx-auto px-4 py-10">
+  <a href="{{ url_for('portal.dashboard') }}" class="text-sm text-ink-subtle hover:text-ink">← Dashboard</a>
+  <h1 class="text-2xl font-extrabold text-ink mt-2 mb-6">My Service Journey</h1>
+
+  {% if events %}
+  <div class="relative">
+    <!-- Vertical line -->
+    <div class="absolute left-5 top-0 bottom-0 w-0.5 bg-hairline"></div>
+
+    <div class="space-y-4 pl-14">
+      {% for ev in events %}
+      {% set icon, color = ev.icon_color %}
+      {% set bg = {'green':'bg-green-100 border-green-300 text-green-700',
+                   'blue':'bg-blue-50 border-blue-200 text-blue-700',
+                   'navy':'bg-navy-50 border-navy-100 text-navy-700',
+                   'amber':'bg-amber-50 border-amber-200 text-amber-800',
+                   'red':'bg-red-50 border-red-200 text-red-700',
+                   'slate':'bg-slate-100 border-slate-200 text-slate-600'}.get(color, 'bg-slate-100 border-slate-200 text-slate-600') %}
+      <div class="relative">
+        <!-- Dot -->
+        <div class="absolute -left-9 top-3 w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm font-bold {{ bg }}">{{ icon }}</div>
+        <div class="card p-4">
+          <div class="text-ink font-medium text-sm leading-snug">{{ ev.description }}</div>
+          <div class="text-xs text-ink-subtle mt-1">{{ ev.created_at.strftime('%d %b %Y at %H:%M') }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+  <div class="card p-12 text-center text-ink-subtle">
+    <div class="text-5xl mb-4">🗺</div>
+    <p class="font-medium">Your journey log is empty.</p>
+    <p class="text-sm mt-1">Events like quotations, approvals, visits and payments will appear here.</p>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
