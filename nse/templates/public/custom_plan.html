@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Get a Customised AMC Plan — {{ COMPANY_NAME }}{% endblock %}
+{% block content %}
+<section class="max-w-3xl mx-auto px-4 py-14">
+
+  <a href="{{ url_for('public.plans') }}" class="text-sm text-ink-subtle hover:text-ink inline-flex items-center gap-1">
+    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    Back to plans
+  </a>
+
+  <div class="mt-6 mb-8">
+    <span class="eyebrow">Custom Plan</span>
+    <h1 class="text-3xl font-extrabold text-ink mt-2">Tell us about your site</h1>
+    <p class="text-ink-subtle mt-3 text-base">Every building is different. Share your details and we will design a fire safety maintenance plan that fits your specific requirements and budget.</p>
+  </div>
+
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in msgs %}
+  <div class="mb-5 px-4 py-3 rounded-xl text-sm font-medium border
+    {% if 'success' in cat %}bg-green-50 border-green-200 text-green-800
+    {% elif 'danger' in cat %}bg-red-50 border-red-200 text-red-800
+    {% else %}bg-amber-50 border-amber-200 text-amber-800{% endif %}">{{ msg }}</div>
+  {% endfor %}
+  {% endwith %}
+
+  <form method="post" class="space-y-7">
+
+    <!-- Contact details -->
+    <div class="card p-6">
+      <h2 class="font-bold text-ink mb-4">Your contact details</h2>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <label class="block">
+          <span class="text-sm font-medium text-ink-muted">Full name <span class="text-red-500">*</span></span>
+          <input name="name" required placeholder="e.g. Rajesh Mehta"
+                 class="mt-1 w-full px-3 py-2.5 rounded-lg border border-hairline-strong text-sm focus:border-primary outline-none">
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-ink-muted">Mobile number <span class="text-red-500">*</span></span>
+          <input name="phone" type="tel" required placeholder="10-digit mobile"
+                 class="mt-1 w-full px-3 py-2.5 rounded-lg border border-hairline-strong text-sm focus:border-primary outline-none">
+        </label>
+        <label class="block sm:col-span-2">
+          <span class="text-sm font-medium text-ink-muted">Email address</span>
+          <input name="email" type="email" placeholder="Optional — for quotation PDF"
+                 class="mt-1 w-full px-3 py-2.5 rounded-lg border border-hairline-strong text-sm focus:border-primary outline-none">
+        </label>
+      </div>
+    </div>
+
+    <!-- Property details -->
+    <div class="card p-6">
+      <h2 class="font-bold text-ink mb-4">Property details</h2>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <label class="block">
+          <span class="text-sm font-medium text-ink-muted">Property type <span class="text-red-500">*</span></span>
+          <select name="property_type" required
+                  class="mt-1 w-full px-3 py-2.5 rounded-lg border border-hairline-strong text-sm focus:border-primary outline-none bg-white">
+            <option value="">Select type…</option>
+            <option>Residential Society / Apartment</option>
+            <option>Commercial Complex / Mall</option>
+            <option>Office Building</option>
+            <option>Industrial / Warehouse / Factory</option>
+            <option>Hospital / Healthcare</option>
+            <option>School / College / Institution</option>
+            <option>Hotel / Banquet Hall</option>
+            <option>Petrol Pump / Fuel Station</option>
+            <option>Other</option>
+          </select>
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-ink-muted">Number of floors</span>
+          <input name="floors" type="number" min="1" placeholder="e.g. 12"
+                 class="mt-1 w-full px-3 py-2.5 rounded-lg border border-hairline-strong text-sm focus:border-primary outline-none">
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-ink-muted">Total built-up area (sq ft)</span>
+          <input name="area_sqft" type="number" min="0" placeholder="e.g. 25000"
+                 class="mt-1 w-full px-3 py-2.5 rounded-lg border border-hairline-strong text-sm focus:border-primary outline-none">
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-ink-muted">Approx. fire extinguishers on site</span>
+          <input name="extinguishers" type="number" min="0" placeholder="e.g. 40"
+                 class="mt-1 w-full px-3 py-2.5 rounded-lg border border-hairline-strong text-sm focus:border-primary outline-none">
+        </label>
+      </div>
+    </div>
+
+    <!-- Services required -->
+    <div class="card p-6">
+      <h2 class="font-bold text-ink mb-1">Services you need</h2>
+      <p class="text-xs text-ink-subtle mb-4">Select all that apply — we will tailor the plan accordingly.</p>
+      <div class="grid sm:grid-cols-2 gap-3">
+        {% for svc in [
+          ('Fire Extinguisher AMC', 'svg-ext'),
+          ('Hydrant System Maintenance', 'svg-hyd'),
+          ('Sprinkler System', 'svg-spr'),
+          ('Fire Alarm & Detection', 'svg-alm'),
+          ('Emergency Response Cover', 'svg-emer'),
+          ('Fire NOC Assistance', 'svg-noc'),
+          ('FSHCR (Health Checkup Report)', 'svg-rep'),
+          ('Staff Fire Safety Training', 'svg-trn'),
+        ] %}
+        <label class="flex items-center gap-3 border border-hairline-strong rounded-xl px-4 py-3 cursor-pointer hover:border-primary hover:bg-surface-2 transition has-[:checked]:border-primary has-[:checked]:bg-navy-50">
+          <input type="checkbox" name="services" value="{{ svc[0] }}" class="w-4 h-4 accent-primary">
+          <span class="text-sm font-medium text-ink">{{ svc[0] }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Additional requirements -->
+    <div class="card p-6">
+      <h2 class="font-bold text-ink mb-3">Anything else to tell us?</h2>
+      <textarea name="requirements" rows="3"
+                placeholder="Special equipment, existing fire system brand, budget range, preferred visit schedule, etc."
+                class="w-full px-3 py-2.5 rounded-lg border border-hairline-strong text-sm focus:border-primary outline-none resize-none"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary w-full py-3 text-base font-semibold">Submit — Get My Custom Plan</button>
+    <p class="text-center text-xs text-ink-subtle">One of our safety consultants will call you within 24 hours with a tailored proposal.</p>
+
+  </form>
+</section>
+{% endblock %}

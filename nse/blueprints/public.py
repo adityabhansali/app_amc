@@ -1,11 +1,14 @@
-from flask import (Blueprint, render_template, request, redirect, url_for, flash)
+from datetime import datetime
+
+from flask import (Blueprint, render_template, request, redirect, url_for,
+                   flash, current_app)
 from flask_login import current_user
 
 from ..extensions import db
 from ..models import (AMCPlan, Contract, ServiceRequest, Enquiry, User,
                       RefillOrder, RefillItem, FormAttachment, VisitFeedback,
                       CustomerJourneyEvent, ServiceQuotation, ServiceQuotationItem)
-from ..utils import notify, save_upload
+from ..utils import notify, notify_staff, save_upload, upi_qr_data_uri
 
 public_bp = Blueprint("public", __name__)
 
@@ -26,7 +29,66 @@ def _save_attachments(files, ref_type, ref_id, att_type="photo"):
 @public_bp.route("/")
 def home():
     plans = AMCPlan.query.filter_by(active=True).order_by(AMCPlan.price).all()
-    return render_template("public/home.html", plans=plans)
+
+    # Hero dashboard card personalisation:
+    #   • logged-in customer WITH a contract → show their real data
+    #   • logged-in customer with NO contract (new) → hide the card
+    #   • anonymous visitor / staff → show the marketing demo card (default)
+    hero_contract = None
+    hero_hide = False
+    if current_user.is_authenticated and getattr(current_user, "role", None) == "customer":
+        # Prefer an active contract linked by customer_id
+        active = Contract.query.filter_by(
+            customer_id=current_user.id, status="active").order_by(
+            Contract.created_at.desc()).first()
+        # Fall back to any contract linked by customer_id
+        by_id = (Contract.query
+                 .filter_by(customer_id=current_user.id)
+                 .order_by(Contract.created_at.desc())
+                 .first())
+        hero_contract = active or by_id
+        # Also look for pending contracts matched only by phone (applied before
+        # the customer account existed — applicant_phone set but customer_id not)
+        if not hero_contract and current_user.phone:
+            by_phone = (Contract.query
+                        .filter_by(applicant_phone=current_user.phone)
+                        .filter(Contract.customer_id.is_(None))
+                        .order_by(Contract.created_at.desc())
+                        .first())
+            hero_contract = by_phone
+        if not hero_contract:
+            hero_hide = True
+
+    hero_ctx = {}
+    if hero_contract:
+        c = hero_contract
+        total = c.total_visits or 0
+        done = c.completed_visits
+        compliance = int(round(done / total * 100)) if total else 100
+        cid = c.customer_id or (current_user.id if current_user.is_authenticated else None)
+        open_reqs = (ServiceRequest.query.filter(
+            ServiceRequest.customer_id == cid,
+            ServiceRequest.status.notin_(["completed", "cancelled"])).count()
+            if cid else 0)
+        last_done = max(
+            (v for v in c.visits if v.status == "completed" and v.completed_date),
+            key=lambda v: v.completed_date, default=None)
+        hero_ctx = {
+            "title": c.site_name or c.applicant_name or "Your site",
+            "subtitle": (c.plan.name if c.plan else "Annual Maintenance Contract")
+                        + (f" · {c.start_date.year}" if c.start_date else ""),
+            "status": c.status,
+            "compliance": compliance,
+            "done": done, "total": total,
+            "next_visit": c.next_visit,
+            "equipment_count": len(c.equipment),
+            "last_report": last_done,
+            "open_requests": open_reqs,
+        }
+
+    return render_template("public/home.html", plans=plans,
+                           hero_contract=hero_contract, hero_hide=hero_hide,
+                           hero=hero_ctx)
 
 
 @public_bp.route("/plans")
@@ -279,8 +341,8 @@ def about():
 
 @public_bp.route("/qr")
 def qr():
-    """Wave 3 — mobile QR code page: scan to open the app on any phone on the same WiFi."""
-    import socket
+    """Mobile QR code page — QR generated server-side (no CDN dependency)."""
+    import socket, io, base64
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
@@ -291,7 +353,24 @@ def qr():
     from flask import current_app
     port = current_app.config.get("PORT", 5055)
     url  = f"http://{local_ip}:{port}"
-    return render_template("public/qr.html", url=url, local_ip=local_ip, port=port)
+
+    # Generate QR code as base64 PNG (qrcode is installed in .venv)
+    qr_b64 = None
+    try:
+        import qrcode
+        qr = qrcode.QRCode(version=2, box_size=10, border=3,
+                           error_correction=qrcode.constants.ERROR_CORRECT_M)
+        qr.add_data(url)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="#16235b", back_color="white")
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        qr_b64 = base64.b64encode(buf.getvalue()).decode()
+    except Exception:
+        pass
+
+    return render_template("public/qr.html", url=url, local_ip=local_ip,
+                           port=port, qr_b64=qr_b64)
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -331,3 +410,171 @@ def visit_feedback(token):
         return render_template("public/feedback_done.html", fb=fb)
 
     return render_template("public/feedback_form.html", fb=fb)
+
+
+# ─────────────────────────────────────────────────────────────────
+# Custom / tailored AMC plan enquiry
+# ─────────────────────────────────────────────────────────────────
+
+@public_bp.route("/custom-plan", methods=["GET", "POST"])
+def custom_plan():
+    """Enquiry form for clients who need a plan beyond the standard tiers."""
+    if request.method == "POST":
+        f = request.form
+        name     = f.get("name", "").strip()
+        phone    = f.get("phone", "").strip()
+        email    = f.get("email", "").strip()
+        services = ", ".join(f.getlist("services")) or "Not specified"
+        msg_parts = [
+            f"Name: {name}",
+            f"Phone: {phone}",
+            f"Email: {email}" if email else None,
+            f"Property type: {f.get('property_type', '')}",
+            f"Floors: {f.get('floors', '')}",
+            f"Area (sq ft): {f.get('area_sqft', '')}",
+            f"Extinguishers on site: {f.get('extinguishers', '')}",
+            f"Services required: {services}",
+            f"Additional notes: {f.get('requirements', '')}" if f.get('requirements', '').strip() else None,
+        ]
+        message = "\n".join(p for p in msg_parts if p)
+        e = Enquiry(name=name, phone=phone, email=email,
+                    subject="Custom AMC Plan Enquiry",
+                    message=message, status="new")
+        db.session.add(e)
+        db.session.commit()
+        flash("Thank you! Our team will contact you within 24 hours with a tailored plan.", "success")
+        return redirect(url_for("public.custom_plan"))
+    return render_template("public/custom_plan.html")
+
+
+# ─────────────────────────────────────────────────────────────────
+# No-login public quotation link  (/q/<token>)
+# The engineer WhatsApps this link; the client opens it with NO login,
+# NO OTP, NO app download — sees the quote and pays. Designed for
+# non-tech-savvy / elderly users: big text, 2-3 buttons, one task per screen.
+# ─────────────────────────────────────────────────────────────────
+
+def _ensure_customer_account(sq):
+    """Silently create (or link) the customer's account from quote details.
+
+    Returns the User or None. Mobile number is the login key; email is optional.
+    Never overwrites an existing account — links to it by phone, then email.
+    """
+    if sq.customer_id:
+        return sq.customer
+    user = None
+    phone = (sq.customer_phone or "").strip()
+    email = (sq.customer_email or "").strip()
+    if phone:
+        user = User.query.filter_by(phone=phone).first()
+    if not user and email:
+        user = User.query.filter_by(email=email).first()
+    if not user and phone:
+        user = User(
+            role="customer",
+            name=sq.customer_name or "Customer",
+            phone=phone,
+            email=email or None,
+            company_name=(sq.project_name or None),
+            address=(sq.customer_address or None),
+        )
+        db.session.add(user)
+        db.session.flush()
+    if user and not sq.customer_id:
+        sq.customer_id = user.id
+    return user
+
+
+def _get_sq_by_token(token):
+    sq = ServiceQuotation.query.filter_by(public_token=token).first()
+    if not sq:
+        from flask import abort
+        abort(404)
+    return sq
+
+
+@public_bp.route("/q/<token>")
+def public_quote(token):
+    """Senior-friendly, no-login view of a quotation."""
+    sq = _get_sq_by_token(token)
+    # Mark viewed (first open) — does not require a customer account.
+    if sq.status == "sent":
+        sq.status = "viewed"
+        sq.viewed_at = datetime.utcnow()
+        db.session.commit()
+    upi_configured = bool(current_app.config.get("COMPANY_UPI_ID"))
+    return render_template("public/quote_public.html", sq=sq,
+                           upi_configured=upi_configured)
+
+
+@public_bp.route("/q/<token>/pay", methods=["POST"])
+def public_quote_pay(token):
+    """Client picked a payment method. Accept the quote + auto-create account."""
+    sq = _get_sq_by_token(token)
+    method = request.form.get("method", "")
+    if method not in ("upi", "cash", "cheque"):
+        flash("Please choose a payment option.", "warning")
+        return redirect(url_for("public.public_quote", token=token))
+
+    _ensure_customer_account(sq)
+
+    # Choosing to pay = accepting the quotation.
+    if sq.status in ("sent", "viewed", "negotiation_requested"):
+        sq.status = "accepted"
+        sq.responded_at = datetime.utcnow()
+        if sq.customer_id:
+            db.session.add(CustomerJourneyEvent(
+                customer_id=sq.customer_id,
+                event_type="quote_accepted",
+                description=f"Accepted {sq.reference} (₹{sq.grand_total:,.0f}) via public link",
+                ref_type="service_quotation", ref_id=sq.id,
+            ))
+    sq.payment_method = method
+    db.session.commit()
+
+    notify_staff(
+        f"Quotation {sq.reference} accepted (pay by {sq.payment_method_label})",
+        f"{sq.customer_name} chose to pay ₹{sq.grand_total:,.0f} by {sq.payment_method_label}. "
+        f"{'Confirm payment once received.' if method != 'upi' else 'Verify the UPI payment.'}",
+        link=url_for("sq.detail_quotation", sq_id=sq.id))
+
+    if method == "upi":
+        return redirect(url_for("public.public_quote_upi", token=token))
+    return redirect(url_for("public.public_quote_thanks", token=token, m=method))
+
+
+@public_bp.route("/q/<token>/upi")
+def public_quote_upi(token):
+    """Show the UPI QR + amount so the client can scan & pay with GPay etc."""
+    sq = _get_sq_by_token(token)
+    vpa  = current_app.config.get("COMPANY_UPI_ID", "")
+    name = current_app.config.get("COMPANY_UPI_NAME") or current_app.config["COMPANY_NAME"]
+    upi_link_str, qr_uri = (None, None)
+    if vpa:
+        upi_link_str, qr_uri = upi_qr_data_uri(
+            vpa, name, sq.grand_total, note=f"{sq.reference}")
+    return render_template("public/quote_upi.html", sq=sq, vpa=vpa,
+                           upi_link=upi_link_str, qr_uri=qr_uri)
+
+
+@public_bp.route("/q/<token>/paid-claim", methods=["POST"])
+def public_quote_paid_claim(token):
+    """Client taps 'I have paid'. We don't auto-confirm (no gateway yet) — we
+    flag it for staff to verify and thank the client."""
+    sq = _get_sq_by_token(token)
+    if not sq.payment_reference:
+        sq.payment_reference = "Customer marked as paid via UPI — awaiting staff verification"
+    db.session.commit()
+    notify_staff(
+        f"UPI payment to verify — {sq.reference}",
+        f"{sq.customer_name} says they paid ₹{sq.grand_total:,.0f} by UPI. Please verify and confirm.",
+        link=url_for("sq.detail_quotation", sq_id=sq.id))
+    return redirect(url_for("public.public_quote_thanks", token=token, m="upi"))
+
+
+@public_bp.route("/q/<token>/thanks")
+def public_quote_thanks(token):
+    """Friendly confirmation screen after a payment choice."""
+    sq = _get_sq_by_token(token)
+    method = request.args.get("m", sq.payment_method or "")
+    return render_template("public/quote_thanks.html", sq=sq, method=method)

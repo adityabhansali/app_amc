@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block title %}{{ s.reference if s else 'New' }} — Site Checking List{% endblock %}
+{% block content %}
+<section class="max-w-6xl mx-auto px-4 py-8">
+  <a href="{{ url_for('admin.surveys') }}" class="text-sm text-ink-subtle hover:text-ink">← Site Checking Lists</a>
+  <h1 class="text-2xl font-extrabold text-ink mt-2 mb-1">
+    {{ s.reference if s else 'New Site Checking List' }}
+  </h1>
+  <p class="text-ink-subtle text-sm mb-6">Record every fire-safety component floor-by-floor, plus pump-room details. Works on a tablet on site.</p>
+
+  <form method="post" id="surveyForm" class="space-y-6">
+    <input type="hidden" name="data_json" id="data_json">
+
+    <!-- Site & client header -->
+    <div class="card p-6">
+      <h2 class="font-bold text-ink mb-4">Site &amp; client</h2>
+      <div class="grid sm:grid-cols-2 gap-4 text-sm">
+        <label class="block"><span class="text-ink-muted">Site / building name</span>
+          <input name="site_name" value="{{ s.site_name if s else '' }}" class="w-full mt-1 px-3 py-2 rounded-lg border border-hairline"></label>
+        <label class="block"><span class="text-ink-muted">Survey date</span>
+          <input type="date" name="survey_date" value="{{ s.survey_date.strftime('%Y-%m-%d') if s and s.survey_date else today.strftime('%Y-%m-%d') }}" class="w-full mt-1 px-3 py-2 rounded-lg border border-hairline"></label>
+        <label class="block sm:col-span-2"><span class="text-ink-muted">Site address</span>
+          <input name="site_address" value="{{ s.site_address if s else '' }}" class="w-full mt-1 px-3 py-2 rounded-lg border border-hairline"></label>
+        <label class="block"><span class="text-ink-muted">Client name</span>
+          <input name="client_name" value="{{ s.client_name if s else '' }}" class="w-full mt-1 px-3 py-2 rounded-lg border border-hairline"></label>
+        <label class="block"><span class="text-ink-muted">Client mobile</span>
+          <input name="client_phone" value="{{ s.client_phone if s else '' }}" class="w-full mt-1 px-3 py-2 rounded-lg border border-hairline"></label>
+        <label class="block"><span class="text-ink-muted">Client email</span>
+          <input name="client_email" value="{{ s.client_email if s else '' }}" class="w-full mt-1 px-3 py-2 rounded-lg border border-hairline"></label>
+        <label class="block"><span class="text-ink-muted">Link to contract (optional)</span>
+          <select name="contract_id" class="w-full mt-1 px-3 py-2 rounded-lg border border-hairline">
+            <option value="">— none —</option>
+            {% for c in contracts %}
+            <option value="{{ c.id }}" {{ 'selected' if (s and s.contract_id==c.id) or (contract and contract.id==c.id) }}>{{ c.reference }} — {{ c.site_name or c.applicant_name }}</option>
+            {% endfor %}
+          </select></label>
+      </div>
+    </div>
+
+    <!-- Floor selector -->
+    <div class="card p-6">
+      <h2 class="font-bold text-ink mb-1">Which floors does this building have?</h2>
+      <p class="text-ink-subtle text-sm mb-4">Tick the floors present. The checking grid below shows only these.</p>
+      <div class="flex flex-wrap gap-2">
+        {% set saved = (s.active_floors if s else ['Ground']) %}
+        {% for fl in model.FLOORS %}
+        <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-hairline cursor-pointer text-sm hover:border-primary">
+          <input type="checkbox" class="floorchk" value="{{ fl }}" {{ 'checked' if fl in saved }} onchange="onFloorToggle()">
+          <span>{{ fl }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Equipment matrix -->
+    <div class="card p-6">
+      <div class="flex items-center justify-between flex-wrap gap-3 mb-3">
+        <h2 class="font-bold text-ink">Equipment per floor</h2>
+        <button type="button" onclick="addCustomItem()" class="btn btn-ghost text-sm">+ Add custom item</button>
+      </div>
+      <div id="matrixWrap" class="overflow-x-auto"></div>
+      <p class="text-xs text-ink-subtle mt-2">Enter the quantity of each item on each floor. Tanks: enter litres.</p>
+    </div>
+
+    <!-- Pump room -->
+    <div class="card p-6">
+      <h2 class="font-bold text-ink mb-3">Pump room &amp; panel details</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm border border-hairline">
+          <thead class="bg-slate-50 text-xs uppercase text-ink-subtle">
+            <tr>
+              <th class="px-3 py-2 text-left border border-hairline">Pump / Panel</th>
+              {% for col in model.PUMP_COLUMNS %}<th class="px-3 py-2 text-left border border-hairline">{{ col }}</th>{% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% set pd = (s.pumps_data if s else {}) %}
+            {% for p in model.PUMPS %}
+            <tr>
+              <td class="px-3 py-2 border border-hairline font-medium text-ink whitespace-nowrap">{{ p }}</td>
+              {% for col in model.PUMP_COLUMNS %}
+              <td class="border border-hairline p-0">
+                <input class="pumpinp w-full px-2 py-2 text-sm bg-transparent" data-pump="{{ p }}" data-col="{{ col }}"
+                       value="{{ pd.get(p, {}).get(col, '') }}">
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Remarks + status -->
+    <div class="card p-6">
+      <label class="block text-sm"><span class="text-ink-muted">General remarks / observations</span>
+        <textarea name="general_remarks" rows="3" class="w-full mt-1 px-3 py-2 rounded-lg border border-hairline">{{ s.general_remarks if s else '' }}</textarea></label>
+      <label class="block text-sm mt-4"><span class="text-ink-muted">Status</span>
+        <select name="status" class="mt-1 px-3 py-2 rounded-lg border border-hairline">
+          <option value="draft" {{ 'selected' if s and s.status=='draft' }}>Draft (in progress)</option>
+          <option value="completed" {{ 'selected' if s and s.status=='completed' }}>Completed</option>
+        </select></label>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex flex-wrap gap-3">
+      <button type="submit" class="btn btn-primary">Save survey</button>
+      <button type="submit" name="save_and_quote" value="1" class="btn btn-ghost">Save &amp; create quotation</button>
+      {% if s and s.service_quotation_id %}
+      <a href="{{ url_for('sq.detail_quotation', sq_id=s.service_quotation_id) }}" class="btn btn-ghost">View linked quotation</a>
+      {% endif %}
+    </div>
+  </form>
+</section>
+
+<script>
+  window.SCL = {
+    items: {{ model.ITEMS|tojson }},
+    data: {{ (s.get_data() if s else {})|tojson }},
+  };
+  const M = window.SCL;
+  let MAT    = M.data.matrix || {};
+  let REM    = M.data.item_remarks || {};
+  let CUSTOM = M.data.custom_items || [];
+
+  function activeFloors(){
+    return [...document.querySelectorAll('.floorchk:checked')].map(c => c.value);
+  }
+  function allItems(){ return [...M.items, ...CUSTOM]; }
+
+  function syncInputsToMat(){
+    document.querySelectorAll('.cellinp').forEach(inp => {
+      const it = inp.dataset.item, fl = inp.dataset.floor, v = inp.value.trim();
+      MAT[it] = MAT[it] || {};
+      if (v) MAT[it][fl] = v; else delete MAT[it][fl];
+    });
+    document.querySelectorAll('.remarkinp').forEach(inp => {
+      const it = inp.dataset.item;
+      if (inp.value.trim()) REM[it] = inp.value.trim(); else delete REM[it];
+    });
+  }
+
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+
+  function renderMatrix(){
+    const floors = activeFloors();
+    if (!floors.length){
+      document.getElementById('matrixWrap').innerHTML =
+        '<p class="text-sm text-amber-700">Select at least one floor above to start.</p>';
+      return;
+    }
+    let h = '<table class="text-sm border border-hairline" style="min-width:100%"><thead class="bg-slate-50 text-xs uppercase text-ink-subtle"><tr>';
+    h += '<th class="px-3 py-2 text-left border border-hairline sticky left-0 bg-slate-50">Item</th>';
+    floors.forEach(f => h += '<th class="px-2 py-2 text-center border border-hairline whitespace-nowrap">'+esc(f)+'</th>');
+    h += '<th class="px-3 py-2 text-left border border-hairline">Remarks</th></tr></thead><tbody>';
+    allItems().forEach(it => {
+      h += '<tr><td class="px-3 py-1.5 border border-hairline font-medium text-ink whitespace-nowrap sticky left-0 bg-white">'+esc(it)+'</td>';
+      floors.forEach(f => {
+        const v = (MAT[it] && MAT[it][f] != null) ? esc(MAT[it][f]) : '';
+        h += '<td class="border border-hairline p-0"><input class="cellinp w-16 px-1 py-1.5 text-center text-sm bg-transparent" inputmode="numeric" data-item="'+esc(it)+'" data-floor="'+esc(f)+'" value="'+v+'"></td>';
+      });
+      const r = REM[it] ? esc(REM[it]) : '';
+      h += '<td class="border border-hairline p-0"><input class="remarkinp w-40 px-2 py-1.5 text-sm bg-transparent" data-item="'+esc(it)+'" value="'+r+'"></td></tr>';
+    });
+    h += '</tbody></table>';
+    document.getElementById('matrixWrap').innerHTML = h;
+  }
+
+  function onFloorToggle(){ syncInputsToMat(); renderMatrix(); }
+
+  function addCustomItem(){
+    const name = prompt('Custom item name (e.g. "Beam Detector"):');
+    if (name && name.trim()){ CUSTOM.push(name.trim()); syncInputsToMat(); renderMatrix(); }
+  }
+
+  document.getElementById('surveyForm').addEventListener('submit', function(){
+    syncInputsToMat();
+    const floors = activeFloors();
+    const matrix = {};
+    for (const it in MAT){
+      const row = {};
+      for (const f in MAT[it]){ if (floors.includes(f)) row[f] = MAT[it][f]; }
+      if (Object.keys(row).length) matrix[it] = row;
+    }
+    const pumps = {};
+    document.querySelectorAll('.pumpinp').forEach(inp => {
+      const p = inp.dataset.pump, c = inp.dataset.col, v = inp.value.trim();
+      if (v){ pumps[p] = pumps[p] || {}; pumps[p][c] = v; }
+    });
+    document.getElementById('data_json').value = JSON.stringify({
+      floors, matrix, custom_items: CUSTOM, item_remarks: REM, pumps
+    });
+  });
+
+  renderMatrix();
+</script>
+{% endblock %}

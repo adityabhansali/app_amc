@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}My Profile — {{ COMPANY_NAME }}{% endblock %}
+{% block content %}
+<section class="max-w-2xl mx-auto px-4 py-10">
+  <a href="{{ url_for('portal.dashboard') }}" class="text-sm text-slate-500 hover:text-navy-700">← Back to portal</a>
+
+  <h1 class="text-2xl font-extrabold text-navy-800 mt-3 mb-6">My Profile</h1>
+
+  {% if my_reminders %}
+  <div class="card p-5 mb-6 border-l-4 border-amber-400">
+    <div class="flex items-center gap-2 mb-2">
+      <svg class="w-5 h-5 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+      <h2 class="font-bold text-ink">Payments due</h2>
+    </div>
+    <div class="space-y-2">
+      {% for r in my_reminders %}
+      <div class="text-sm bg-amber-50 rounded-lg p-3">
+        <div class="font-semibold text-amber-900">{{ r.title }}</div>
+        <div class="text-amber-800">{{ r.detail }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    <p class="text-xs text-ink-subtle mt-3">Please clear pending dues. Need help? Call {{ COMPANY_PHONE }}.</p>
+  </div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" class="space-y-6">
+
+    <!-- Profile photo & ID upload -->
+    <div class="card p-6">
+      <h2 class="font-bold text-ink mb-4">Photo / ID Card</h2>
+      <div class="flex items-start gap-5">
+        <div class="w-20 h-20 rounded-xl border-2 border-dashed border-hairline-strong overflow-hidden flex-shrink-0 grid place-items-center bg-surface-2">
+          {% if current_user.photo_path %}
+          <img src="{{ current_user.photo_path|upload_url }}" class="w-full h-full object-cover">
+          {% else %}
+          <svg class="w-8 h-8 text-ink-subtle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          {% endif %}
+        </div>
+        <div class="flex-1 min-w-0">
+          <label class="block">
+            <span class="text-sm font-medium text-ink-muted">Upload photo / ID card / visiting card</span>
+            <input type="file" name="photo" accept="image/*,.pdf"
+                   class="mt-2 block w-full text-sm text-ink-muted file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-hairline-strong file:text-xs file:font-medium file:bg-surface-2 file:text-ink hover:file:bg-surface-3 cursor-pointer">
+          </label>
+          <p class="text-xs text-ink-tertiary mt-1">JPG, PNG or PDF. Used for ID verification and record keeping.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Personal details -->
+    <div class="card p-6 space-y-4">
+      <h2 class="font-bold text-ink">Personal Details</h2>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <label class="block">
+          <span class="text-sm font-medium text-ink-muted">Full name <span class="text-red-500">*</span></span>
+          <input name="name" value="{{ current_user.name }}" required
+                 class="mt-1 w-full px-3 py-2.5 rounded-lg border border-hairline-strong text-sm focus:border-primary outline-none">
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-ink-muted">Phone</span>
+          <input value="{{ current_user.phone or '' }}" readonly
+                 class="mt-1 w-full px-3 py-2.5 rounded-lg border border-hairline text-sm bg-surface-2 text-ink-subtle cursor-not-allowed" title="Phone cannot be changed (used for login)">
+          <span class="text-xs text-ink-tertiary">Login phone — cannot be changed</span>
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-ink-muted">Area / Locality</span>
+          <input name="area" value="{{ current_user.area or '' }}" placeholder="e.g. Vesu"
+                 class="mt-1 w-full px-3 py-2.5 rounded-lg border border-hairline-strong text-sm focus:border-primary outline-none">
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-ink-muted">City</span>
+          <input name="city" value="{{ current_user.city or 'Surat, Gujarat' }}"
+                 class="mt-1 w-full px-3 py-2.5 rounded-lg border border-hairline-strong text-sm focus:border-primary outline-none">
+        </label>
+        <label class="block sm:col-span-2">
+          <span class="text-sm font-medium text-ink-muted">Full address</span>
+          <textarea name="address" rows="2" placeholder="House / flat / building, street, area, city — pincode"
+                    class="mt-1 w-full px-3 py-2.5 rounded-lg border border-hairline-strong text-sm focus:border-primary outline-none resize-none">{{ current_user.address or '' }}</textarea>
+        </label>
+      </div>
+    </div>
+
+    <!-- Company / business details -->
+    <div class="card p-6 space-y-4">
+      <h2 class="font-bold text-ink">Company / Business Details</h2>
+      <p class="text-xs text-ink-subtle -mt-2">If this AMC is for a business premises, fill these in. They appear on quotations and invoices.</p>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <label class="block sm:col-span-2">
+          <span class="text-sm font-medium text-ink-muted">Company / Organisation name</span>
+          <input name="company_name" value="{{ current_user.company_name or '' }}" placeholder="e.g. Rajshree Builders Pvt. Ltd."
+                 class="mt-1 w-full px-3 py-2.5 rounded-lg border border-hairline-strong text-sm focus:border-primary outline-none">
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-ink-muted">GST number</span>
+          <input name="gst_number" value="{{ current_user.gst_number or '' }}" placeholder="e.g. 24XXXXX0000X1Z5"
+                 class="mt-1 w-full px-3 py-2.5 rounded-lg border border-hairline-strong text-sm font-mono uppercase focus:border-primary outline-none">
+        </label>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary w-full py-3">Save Profile</button>
+  </form>
+</section>
+{% endblock %}

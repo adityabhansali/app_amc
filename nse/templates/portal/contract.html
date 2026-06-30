@@ -28,6 +28,24 @@
     {% endif %}
   </div>
 
+  <!-- AMC agreement banner (active contracts only) -->
+  {% if c.status == 'active' %}
+    {% if not c.agreement_accepted %}
+    <div class="mt-6 border border-amber-300 rounded-2xl p-5 flex items-start justify-between flex-wrap gap-3" style="background:#fffbeb">
+      <div>
+        <h2 class="font-bold text-amber-900 text-sm">Action required — Maintenance Agreement</h2>
+        <p class="text-sm text-amber-800 mt-0.5">Please read and accept the terms &amp; conditions for {{ c.reference }} to activate your contract protections.</p>
+      </div>
+      <a href="{{ url_for('portal.agreement', contract_id=c.id) }}" class="btn btn-primary px-5 text-sm flex-shrink-0">Review &amp; Accept</a>
+    </div>
+    {% else %}
+    <div class="mt-6 bg-green-50 border border-green-200 rounded-2xl px-5 py-3 flex items-center justify-between flex-wrap gap-2">
+      <span class="text-sm text-green-800 font-medium">Agreement accepted on {{ c.agreement_accepted_at|datefmt }}</span>
+      <a href="{{ url_for('portal.agreement', contract_id=c.id) }}" class="text-sm text-green-700 hover:underline">View</a>
+    </div>
+    {% endif %}
+  {% endif %}
+
   <!-- Service roadmap -->
   <div class="mt-6">{{ workflow_track(c) }}</div>
 
@@ -89,6 +107,37 @@
   <p class="text-slate-500 text-sm bg-white border border-dashed border-slate-300 rounded-xl p-5">Your equipment list will appear here after the first visit.</p>
   {% endif %}
 
+  <!-- AMC Fire Safety Certificate -->
+  {% if c.certificate_issued %}
+  <div class="mt-8 rounded-2xl border-2 border-amber-400 overflow-hidden" style="background:linear-gradient(135deg,#16235b 0%,#1e3a8a 100%)">
+    <div class="px-6 py-5 flex items-center justify-between flex-wrap gap-4">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-xl grid place-items-center flex-shrink-0" style="background:rgba(200,168,75,0.2);border:1.5px solid #c8a84b">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="#c8a84b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
+        </div>
+        <div>
+          <div class="text-white font-bold text-base">AMC Fire Safety Certificate</div>
+          <div class="text-amber-300 text-sm mt-0.5">Issued {{ c.certificate_issued_at|datefmt }} — your premises are officially fire-safety maintained</div>
+        </div>
+      </div>
+      <div class="flex gap-2 flex-shrink-0">
+        <a href="{{ url_for('portal.amc_certificate', contract_id=c.id, view=1) }}" target="_blank"
+           class="px-4 py-2 text-sm rounded-lg border border-amber-400 text-amber-300 hover:bg-amber-400 hover:text-navy-900 transition font-medium">View</a>
+        <a href="{{ url_for('portal.amc_certificate', contract_id=c.id) }}"
+           class="px-4 py-2 text-sm rounded-lg font-semibold transition" style="background:#c8a84b;color:#16235b">Download Certificate</a>
+      </div>
+    </div>
+  </div>
+  {% elif c.status == 'active' %}
+  <div class="mt-8 bg-slate-50 border border-dashed border-slate-300 rounded-2xl px-5 py-4 flex items-center gap-4">
+    <svg class="w-6 h-6 text-slate-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
+    <div>
+      <div class="text-sm font-semibold text-slate-600">AMC Fire Safety Certificate</div>
+      <div class="text-xs text-slate-400 mt-0.5">Issued automatically after your 4th completed visit — {{ c.completed_visits }}/4 visits done so far.</div>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Fire health checkup reports -->
   {% if health_reports %}
   <h2 class="text-lg font-bold text-navy-800 mt-8 mb-3">Fire health checkup reports</h2>
@@ -96,7 +145,10 @@
     {% for hr in health_reports %}
     <div class="flex items-center justify-between bg-white rounded-xl border border-slate-200 px-4 py-3">
       <div><span class="font-semibold text-navy-800">{{ hr.reference }}</span> <span class="text-sm text-slate-500">· {{ hr.report_date|datefmt }}{% if hr.property_name %} · {{ hr.property_name }}{% endif %}</span></div>
-      <a href="{{ url_for('portal.health_report_pdf', report_id=hr.id) }}" class="text-sm bg-green-600 text-white px-4 py-1.5 rounded-lg hover:bg-green-500">Download PDF</a>
+      <div class="flex gap-2">
+        <a href="{{ url_for('portal.health_report_pdf', report_id=hr.id, view=1) }}" target="_blank" class="text-sm border border-slate-300 text-navy-800 px-4 py-1.5 rounded-lg hover:border-primary transition">View</a>
+        <a href="{{ url_for('portal.health_report_pdf', report_id=hr.id) }}" class="text-sm bg-navy-800 text-white px-4 py-1.5 rounded-lg hover:bg-navy-700 transition">Download</a>
+      </div>
     </div>
     {% endfor %}
   </div>
@@ -114,5 +166,87 @@
     {% endfor %}
   </div>
   {% endif %}
+
+  <!-- Referrals submitted against this contract -->
+  {% if c.referrals %}
+  <h2 class="text-lg font-bold text-navy-800 mt-8 mb-3">Your Referrals</h2>
+  <div class="space-y-2">
+    {% for ref in c.referrals %}
+    <div class="bg-white rounded-xl border border-slate-200 px-4 py-3">
+      <div class="flex items-center justify-between">
+        <div>
+          <span class="font-semibold text-sm text-navy-800">{{ ref.referee_name }}</span>
+          {% if ref.referee_company %}<span class="text-xs text-slate-500 ml-2">{{ ref.referee_company }}</span>{% endif %}
+        </div>
+        <span class="text-xs px-2 py-0.5 rounded-full font-medium
+          {% if ref.status == 'converted' %}bg-green-100 text-green-700
+          {% elif ref.status == 'contacted' %}bg-blue-100 text-blue-700
+          {% else %}bg-amber-100 text-amber-700{% endif %}">
+          {{ ref.status|title }}
+        </span>
+      </div>
+      <p class="text-xs text-slate-400 mt-1">Submitted {{ ref.created_at.strftime('%d %b %Y') }}</p>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Refer a contact (always shown for active contracts) -->
+  {% if c.status == 'active' %}
+  <div class="mt-8 bg-amber-50 border border-amber-200 rounded-2xl p-6">
+    <h2 class="font-bold text-amber-900 mb-1">Know someone who needs fire safety?</h2>
+    <p class="text-sm text-amber-800 mb-4">Refer them to Northern Star Engineering and help keep more people safe.</p>
+    <form method="post" action="{{ url_for('portal.submit_referral', contract_id=c.id) }}" class="space-y-3">
+      <div class="grid sm:grid-cols-2 gap-3">
+        <label class="block">
+          <span class="text-sm font-medium text-amber-900">Contact name <span class="text-red-500">*</span></span>
+          <input name="referee_name" required placeholder="Full name" class="mt-1 w-full px-3 py-2 text-sm rounded-lg border border-amber-300 bg-white focus:border-amber-500 outline-none">
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-amber-900">Phone</span>
+          <input name="referee_phone" type="tel" placeholder="Mobile number" class="mt-1 w-full px-3 py-2 text-sm rounded-lg border border-amber-300 bg-white focus:border-amber-500 outline-none">
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-amber-900">Company / Building</span>
+          <input name="referee_company" placeholder="Optional" class="mt-1 w-full px-3 py-2 text-sm rounded-lg border border-amber-300 bg-white focus:border-amber-500 outline-none">
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-amber-900">Area / City</span>
+          <input name="referee_area" placeholder="e.g. Vesu, Surat" class="mt-1 w-full px-3 py-2 text-sm rounded-lg border border-amber-300 bg-white focus:border-amber-500 outline-none">
+        </label>
+      </div>
+      <button class="btn btn-primary w-full py-3">Submit Referral</button>
+    </form>
+  </div>
+  {% endif %}
 </section>
+
+{% if request.args.get('celebrate') == '1' and c.certificate_issued %}
+<div id="cert-celebrate" style="display:flex;position:fixed;inset:0;z-index:80;background:rgba(0,0,0,0.65);align-items:center;justify-content:center">
+  <div id="cert-card" style="background:#fff;border-radius:20px;padding:36px 40px;max-width:420px;width:90%;text-align:center;transform:scale(.88);opacity:0;transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .3s ease">
+    <div style="font-size:52px;margin-bottom:8px">&#127881;</div>
+    <h2 style="font-size:1.4rem;font-weight:800;color:#16235b;margin:0 0 8px">Certificate Issued!</h2>
+    <p style="color:#555;font-size:0.92rem;line-height:1.55;margin:0 0 20px">
+      Your premises have successfully completed all {{ c.total_visits }} AMC maintenance visits.<br>
+      Your <strong>AMC Fire Safety Certificate</strong> is ready to download.
+    </p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <a href="{{ url_for('portal.amc_certificate', contract_id=c.id, view=1) }}" target="_blank"
+         style="padding:10px 20px;border-radius:10px;border:1.5px solid #c8a84b;color:#b45309;font-weight:600;font-size:0.9rem;text-decoration:none">View</a>
+      <a href="{{ url_for('portal.amc_certificate', contract_id=c.id) }}"
+         style="padding:10px 20px;border-radius:10px;background:#16235b;color:#fff;font-weight:600;font-size:0.9rem;text-decoration:none">Download</a>
+      <button onclick="document.getElementById('cert-celebrate').style.display='none'"
+              style="padding:10px 20px;border-radius:10px;border:1px solid #ddd;background:#f5f5f5;color:#555;font-size:0.9rem;cursor:pointer">Close</button>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var el = document.getElementById('cert-card');
+  setTimeout(function(){ el.style.transform='scale(1)'; el.style.opacity='1'; }, 80);
+  // Also play the chime if present
+  if(typeof nseChime === 'function') nseChime();
+})();
+</script>
+{% endif %}
 {% endblock %}

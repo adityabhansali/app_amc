@@ -17,7 +17,7 @@ from ..extensions import db
 from ..models import (ServiceQuotation, ServiceQuotationItem,
                       CustomerJourneyEvent, User, Contract,
                       RefillOrder, ServiceRequest, InventoryItem)
-from ..utils import staff_required, notify
+from ..utils import staff_required, notify, whatsapp_url, public_url
 from ..pdf_generator import generate_quotation_pdf
 from ..email_service import (send_quotation_email, send_quote_accepted_alert,
                               send_negotiation_alert)
@@ -99,12 +99,14 @@ def new_quotation():
             created_by_id    = current_user.id,
             status           = "draft",
         )
-        # Link to customer User if email matches
-        if sq.customer_email:
-            cu = User.query.filter_by(email=sq.customer_email, role="customer").first()
-            if cu:
-                sq.customer_id = cu.id
-
+        # Link to customer User by phone (primary login method) or email
+        cu = None
+        if sq.customer_phone:
+            cu = User.query.filter_by(phone=sq.customer_phone.strip(), role="customer").first()
+        if not cu and sq.customer_email:
+            cu = User.query.filter_by(email=sq.customer_email.strip(), role="customer").first()
+        if cu:
+            sq.customer_id = cu.id
         sq.generate_number()
         db.session.add(sq)
         db.session.flush()
@@ -258,7 +260,58 @@ def detail_quotation(sq_id):
                .order_by(CustomerJourneyEvent.created_at.asc())
                .all()) if sq.customer_id else []
 
-    return render_template("admin/sq_detail.html", sq=sq, journey=journey)
+    # Ensure a no-login share link exists, then build the WhatsApp message.
+    sq.ensure_token()
+    db.session.commit()
+    share_link = public_url("public.public_quote", token=sq.public_token)
+    wa_message = (
+        f"Namaste {sq.customer_name}, here is your fire-safety service quotation "
+        f"from Northern Star Engineering ({sq.reference}) — total ₹{sq.grand_total:,.0f}. "
+        f"Tap to view and pay easily (no login needed): {share_link}"
+    )
+    whatsapp_share = whatsapp_url(sq.customer_phone, wa_message)
+
+    return render_template("admin/sq_detail.html", sq=sq, journey=journey,
+                           share_link=share_link, whatsapp_share=whatsapp_share)
+
+
+# ─────────────────────────────────────────────────────────────────
+# Mark payment received (manual confirmation — gateway-ready)
+# ─────────────────────────────────────────────────────────────────
+
+@sq_bp.route("/<int:sq_id>/mark-paid", methods=["POST"])
+@login_required
+@staff_required
+def mark_paid(sq_id):
+    sq = db.session.get(ServiceQuotation, sq_id) or abort(404)
+    method = request.form.get("payment_method", sq.payment_method or "cash")
+    reference = request.form.get("payment_reference", "").strip()
+
+    sq.payment_status = "paid"
+    sq.payment_method = method
+    sq.payment_reference = reference or sq.payment_reference
+    sq.payment_marked_at = datetime.utcnow()
+    if sq.status in ("sent", "viewed", "negotiation_requested"):
+        sq.status = "accepted"
+        sq.responded_at = sq.responded_at or datetime.utcnow()
+
+    # Cascade to a linked AMC contract's payment status.
+    if sq.contract:
+        sq.contract.payment_status = "paid"
+        if hasattr(sq.contract, "payment_date"):
+            sq.contract.payment_date = datetime.utcnow()
+
+    _log_event(sq.customer_id, "payment_received",
+               f"Payment received for {sq.reference} (₹{sq.grand_total:,.0f}) via {sq.payment_method_label}",
+               "service_quotation", sq.id)
+    db.session.commit()
+
+    if sq.customer_id:
+        notify(sq.customer_id, "Payment received — thank you!",
+               f"We've recorded your payment of ₹{sq.grand_total:,.0f} for {sq.reference}.",
+               link=url_for("portal.service_quotation", sq_id=sq.id))
+    flash(f"{sq.reference} marked as paid ({sq.payment_method_label}).", "success")
+    return redirect(url_for("sq.detail_quotation", sq_id=sq.id))
 
 
 # ─────────────────────────────────────────────────────────────────

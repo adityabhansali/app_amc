@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Site Checking Lists — Ops Console{% endblock %}
+{% block content %}
+<section class="max-w-5xl mx-auto px-4 py-10">
+  <a href="{{ url_for('admin.amc_module') }}" class="text-sm text-ink-subtle hover:text-ink">← AMC Module</a>
+  <div class="flex items-center justify-between flex-wrap gap-3 mt-2 mb-6">
+    <div>
+      <h1 class="text-2xl font-extrabold text-ink">Site System Checking Lists</h1>
+      <p class="text-ink-subtle text-sm mt-1">Floor-by-floor inspection surveys filled on site — the basis for a quotation.</p>
+    </div>
+    <a href="{{ url_for('admin.survey') }}" class="btn btn-primary text-sm px-4 py-2">New survey</a>
+  </div>
+
+  {% if surveys %}
+  <div class="card overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-50 text-xs uppercase text-ink-subtle">
+        <tr>
+          <th class="px-4 py-2.5 text-left">Ref</th>
+          <th class="px-4 py-2.5 text-left">Site</th>
+          <th class="px-4 py-2.5 text-left">Client</th>
+          <th class="px-4 py-2.5 text-left">Date</th>
+          <th class="px-4 py-2.5 text-center">Floors</th>
+          <th class="px-4 py-2.5 text-center">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in surveys %}
+        <tr class="border-t border-hairline hover:bg-slate-50">
+          <td class="px-4 py-3"><a href="{{ url_for('admin.survey', survey_id=s.id) }}" class="font-semibold text-primary">{{ s.reference }}</a></td>
+          <td class="px-4 py-3 text-ink">{{ s.site_name or '—' }}</td>
+          <td class="px-4 py-3 text-ink-muted">{{ s.client_name or '—' }}</td>
+          <td class="px-4 py-3 text-ink-muted">{{ s.survey_date.strftime('%d %b %Y') if s.survey_date else '—' }}</td>
+          <td class="px-4 py-3 text-center text-ink-muted">{{ s.active_floors|length }}</td>
+          <td class="px-4 py-3 text-center">
+            <span class="px-2.5 py-1 rounded-full text-xs font-semibold {{ 'bg-green-50 text-green-800' if s.status=='completed' else 'bg-slate-100 text-slate-700' }}">{{ s.status|title }}</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card p-12 text-center text-ink-subtle">
+    <p class="font-medium text-ink">No surveys yet.</p>
+    <p class="text-sm mt-1">Create a site checking list when an engineer visits a building.</p>
+    <a href="{{ url_for('admin.survey') }}" class="btn btn-primary text-sm mt-4">New survey</a>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

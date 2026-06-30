@@ -149,3 +149,21 @@ def generate_service_report_pdf(visit) -> Optional[bytes]:
         **_company_ctx(),
     )
     return _html_to_pdf(html)
+
+
+def generate_amc_certificate_pdf(contract) -> Optional[bytes]:
+    """Render the AMC Fire Safety Compliance Certificate as a landscape PDF."""
+    from datetime import datetime as _dt
+    ctx = _company_ctx()
+    issued_date = (
+        contract.certificate_issued_at.strftime("%d %b %Y")
+        if contract.certificate_issued_at
+        else _dt.utcnow().strftime("%d %b %Y")
+    )
+    html = render_template(
+        "pdf/amc_certificate.html",
+        c=contract,
+        issued_date=issued_date,
+        **ctx,
+    )
+    return _html_to_pdf(html)

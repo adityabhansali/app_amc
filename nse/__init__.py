@@ -9,8 +9,10 @@ from .utils import rupees, upload_url
 
 
 def create_app(config_class=Config):
+    import os
     app = Flask(__name__)
     app.config.from_object(config_class)
+    app.config.setdefault("SERVER_PORT", int(os.getenv("PORT", "5055")))
 
     db.init_app(app)
     login_manager.init_app(app)
@@ -41,6 +43,7 @@ def create_app(config_class=Config):
         unread = 0
         recent_notifications = []
         sq_action_count = 0
+        reminder_count = 0
         if current_user and current_user.is_authenticated:
             unread = Notification.query.filter_by(
                 user_id=current_user.id, read=False).count()
@@ -58,6 +61,11 @@ def create_app(config_class=Config):
                     1 for q in pending_sq
                     if q.status == "negotiation_requested"
                     or q.contract is None or q.contract.status != "active")
+                try:
+                    from .reminders import payment_reminder_count
+                    reminder_count = payment_reminder_count()
+                except Exception:
+                    reminder_count = 0
         return {
             "COMPANY_NAME": app.config["COMPANY_NAME"],
             "COMPANY_CITY": app.config["COMPANY_CITY"],
@@ -66,10 +74,12 @@ def create_app(config_class=Config):
             "COMPANY_PHONE": app.config["COMPANY_PHONE"],
             "COMPANY_EMAIL": app.config["COMPANY_EMAIL"],
             "COMPANY_ADDRESS": app.config["COMPANY_ADDRESS"],
+            "COMPANY_UPI_ID": app.config.get("COMPANY_UPI_ID", ""),
             "AI_ENABLED": Config.ai_enabled(),
             "unread_notifications": unread,
             "recent_notifications": recent_notifications,
             "sq_action_count": sq_action_count,
+            "payment_reminder_count": reminder_count,
             "now": datetime.utcnow(),
             "today": date.today(),
         }

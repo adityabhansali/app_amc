@@ -80,6 +80,22 @@ class Config:
         "COMPANY_ADDRESS",
         "521-522, Western Business Park, opp. S.D. Jain School, Surat, Gujarat 395007")
 
+    # UPI VPA (Virtual Payment Address) the customer pays into when they tap
+    # "Pay by UPI / GPay" on a quotation link. Set COMPANY_UPI_ID in .env to the
+    # firm's real UPI handle (e.g. "northernstar@okhdfcbank"). Until set, the UPI
+    # button shows a "not configured" notice instead of a live QR.
+    COMPANY_UPI_ID   = os.getenv("COMPANY_UPI_ID", "")
+    COMPANY_UPI_NAME = os.getenv("COMPANY_UPI_NAME", COMPANY_NAME)
+
+    # Public base URL used when building shareable links (quotation WhatsApp links,
+    # email links, etc.) that must be clickable on a client's phone.
+    # Options:
+    #   • Same WiFi  → http://192.168.X.X:5055   (auto-detected if left blank, dev only)
+    #   • ngrok      → https://xxxx.ngrok-free.app
+    #   • Vercel     → https://your-app.vercel.app
+    # Leave blank in dev — the app will use the Mac's LAN IP automatically.
+    BASE_URL = os.getenv("BASE_URL", "").rstrip("/")
+
     @staticmethod
     def ai_enabled():
         key = os.getenv("OPENROUTER_API_KEY", "")

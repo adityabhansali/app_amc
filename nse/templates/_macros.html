@@ -28,19 +28,19 @@
 {% macro workflow_track(c) %}
 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
   <h3 class="text-sm font-bold text-navy-800 mb-4">Your service roadmap</h3>
-  <div class="flex items-start overflow-x-auto pb-1">
+  <div class="flex items-start overflow-x-auto pb-2">
     {% set steps = c.workflow_steps %}
     {% for s in steps %}
-    <div class="flex flex-col items-center text-center min-w-[78px] relative">
+    <div class="flex flex-col items-center text-center flex-1 min-w-[92px] relative px-2">
       {% if not loop.first %}
       <div class="absolute top-3 right-1/2 w-full h-1 {{ 'bg-green-500' if s.done else 'bg-slate-200' }}" style="z-index:0"></div>
       {% endif %}
-      <div class="relative w-7 h-7 rounded-full grid place-items-center text-xs font-bold
+      <div class="relative w-7 h-7 rounded-full grid place-items-center text-xs font-bold flex-shrink-0
                   {{ 'bg-green-500 text-white' if s.done else ('bg-amber-400 text-white ring-4 ring-amber-100' if s.active else 'bg-slate-200 text-slate-500') }}"
            style="z-index:1">
         {{ '✓' if s.done else ('●' if s.active else loop.index) }}
       </div>
-      <span class="mt-2 text-[11px] leading-tight {{ 'text-navy-800 font-semibold' if (s.done or s.active) else 'text-slate-400' }}">{{ s.label }}</span>
+      <span class="mt-2 text-[11px] leading-snug w-full {{ 'text-navy-800 font-semibold' if (s.done or s.active) else 'text-slate-400' }}">{{ s.label }}</span>
     </div>
     {% endfor %}
   </div>

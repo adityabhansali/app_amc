@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Payment Reminders — Ops Console{% endblock %}
+{% block content %}
+<section class="max-w-4xl mx-auto px-4 py-10">
+  <a href="{{ url_for('admin.amc_module') }}" class="text-sm text-ink-subtle hover:text-ink">← AMC Module</a>
+  <div class="flex items-center justify-between flex-wrap gap-3 mt-2 mb-6">
+    <h1 class="text-2xl font-extrabold text-ink">Payment Reminders</h1>
+    <span class="px-3 py-1 rounded-full text-sm font-semibold {{ 'bg-amber-50 text-amber-800' if items else 'bg-green-50 text-green-800' }}">
+      {{ items|length }} outstanding
+    </span>
+  </div>
+
+  {% if items %}
+  <div class="space-y-3">
+    {% for r in items %}
+    {% set sev = {'high':'p-high','medium':'p-medium','low':'p-low'}.get(r.severity, 'p-info') %}
+    <a href="{{ r.link }}" class="priority-card {{ sev }} card card-hover p-4 flex items-start justify-between gap-4">
+      <div>
+        <div class="font-bold text-ink">{{ r.title }}</div>
+        <div class="text-sm text-ink-muted mt-0.5">{{ r.detail }}</div>
+        {% if r.customer_name %}<div class="text-xs text-ink-subtle mt-1">{{ r.customer_name }}</div>{% endif %}
+      </div>
+      <svg class="w-5 h-5 text-ink-subtle flex-none mt-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card p-12 text-center text-ink-subtle">
+    <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-green-50 grid place-items-center">
+      <svg class="w-7 h-7 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    </div>
+    <p class="font-medium text-ink">All payments are up to date.</p>
+    <p class="text-sm mt-1">Reminders appear here when an AMC fee, material quote, or accepted quotation is unpaid.</p>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -12,8 +12,14 @@
       then scan the QR code below.
     </p>
 
-    <!-- QR code rendered by qrcode.js CDN -->
-    <div id="qrcode" class="mx-auto w-fit p-3 bg-white rounded-2xl border border-hairline shadow-sm"></div>
+    <!-- QR code: server-generated PNG, no CDN needed -->
+    <div class="mx-auto w-fit p-3 bg-white rounded-2xl border border-hairline shadow-sm">
+      {% if qr_b64 %}
+      <img src="data:image/png;base64,{{ qr_b64 }}" alt="QR code for {{ url }}" width="220" height="220" style="display:block">
+      {% else %}
+      <p class="text-sm text-red-600 p-4">Could not generate QR code.<br>Navigate to <strong>{{ url }}</strong> manually on your phone.</p>
+      {% endif %}
+    </div>
 
     <p class="mt-5 text-xs text-ink-tertiary font-mono break-all">{{ url }}</p>
 
@@ -26,28 +32,11 @@
       </div>
     </div>
 
-    <a href="{{ url }}" target="_blank"
-       class="btn btn-ghost w-full mt-5 text-sm">
+    <a href="{{ url }}" target="_blank" class="btn btn-ghost w-full mt-5 text-sm">
       Open in browser →
     </a>
   </div>
 
   <p class="mt-4 text-xs text-ink-tertiary">This link only works on your local network. For external access, deploy to Vercel.</p>
 </section>
-{% endblock %}
-
-{% block scripts %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
-        integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4zsX7sZ7bXGSqHYif/uFQ=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script>
-new QRCode(document.getElementById("qrcode"), {
-  text: "{{ url }}",
-  width: 220,
-  height: 220,
-  colorDark: "#16235b",
-  colorLight: "#ffffff",
-  correctLevel: QRCode.CorrectLevel.M
-});
-</script>
 {% endblock %}

@@ -14,10 +14,6 @@
       </div>
       <div class="flex items-center gap-3">
         {{ status_badge(q.status) }}
-        <a href="{{ url_for('portal.quotation_pdf', quote_id=q.id) }}"
-           class="text-sm bg-navy-800 text-white px-4 py-2 rounded-lg hover:bg-navy-700 flex items-center gap-1.5">
-          ⬇ Download PDF
-        </a>
       </div>
     </div>
 
@@ -83,11 +79,33 @@
     </div>
   </div>
   {% elif q.status == 'approved' %}
-  <div class="bg-green-50 border border-green-200 rounded-2xl p-5 mt-5 text-green-800">✓ Approved on {{ q.decided_at|datefmt }} · Payment: {{ q.payment_mode|title }} ({{ 'Paid' if q.is_paid else 'payment pending' }}). We'll schedule the replacement visit shortly.</div>
-  {% else %}
-  <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 mt-5 text-slate-600">
-    You declined this quotation on {{ q.decided_at|datefmt }}.
-    {% if q.rejection_acknowledged %}<span class="block text-xs text-slate-500 mt-1">Liability waiver accepted — the next visit proceeds as scheduled.</span>{% endif %}
+  <div class="bg-green-50 border border-green-200 rounded-2xl p-5 mt-5">
+    <p class="text-green-800 font-semibold">Approved on {{ q.decided_at|datefmt }}</p>
+    <p class="text-sm text-green-700 mt-1">Payment: {{ q.payment_mode|title }} —
+      {% if q.is_paid %}<strong class="text-green-900">Paid on {{ q.payment_date|datefmt }}</strong>
+      {% else %}pending collection by our technician{% endif %}
+    </p>
+    <p class="text-sm text-green-700 mt-1">We will schedule the replacement visit shortly.</p>
+  </div>
+  {% elif q.status == 'rejected' %}
+  <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 mt-5">
+    <p class="text-slate-700 font-semibold">You declined this quotation on {{ q.decided_at|datefmt }}.</p>
+    {% if q.rejection_acknowledged %}<p class="text-xs text-slate-500 mt-1">Liability waiver accepted — the next visit proceeds as scheduled.</p>{% endif %}
+    {% if q.negotiation_note %}<p class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-3">Your request: "{{ q.negotiation_note }}"<br><span class="text-xs text-amber-600">Our team will get in touch shortly.</span></p>{% endif %}
+  </div>
+
+  <!-- Re-open / negotiate section -->
+  <div class="bg-white rounded-2xl border border-amber-200 p-6 mt-5">
+    <h2 class="font-bold text-amber-800">Changed your mind?</h2>
+    <p class="text-sm text-slate-600 mt-1">You can request a revised quotation or negotiate the price with our team.</p>
+    <form method="post" action="{{ url_for('portal.quotation_reopen', quote_id=q.id) }}" class="mt-4 space-y-3">
+      <label class="block">
+        <span class="text-sm font-medium text-slate-700">Message to our team <span class="text-slate-400 font-normal">(optional)</span></span>
+        <textarea name="negotiation_note" rows="2" placeholder="e.g. Can you reduce the rate for item 2? Or I am ready to proceed now."
+                  class="mt-1 w-full px-3 py-2 text-sm rounded-xl border border-slate-300 focus:border-amber-400 outline-none"></textarea>
+      </label>
+      <button class="w-full btn btn-primary py-3">Request Re-quote / Negotiate</button>
+    </form>
   </div>
   {% endif %}
 </section>

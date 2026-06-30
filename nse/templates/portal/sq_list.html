@@ -19,7 +19,7 @@
         <div class="text-right">
           <div class="text-xl font-extrabold text-ink">{{ sq.grand_total|rupees }}</div>
           <div class="text-xs text-ink-subtle mt-1">incl. {{ sq.gst_percent }}% GST</div>
-          {% set sl = {'draft':'Draft','sent':'⚡ New — Review now','viewed':'Awaiting your decision','negotiation_requested':'Negotiation requested','accepted':'✅ Accepted','rejected':'Rejected'}.get(sq.status, sq.status) %}
+          {% set sl = {'draft':'Draft','sent':'New — Review now','viewed':'Awaiting your decision','negotiation_requested':'Negotiation requested','accepted':'Accepted','rejected':'Rejected'}.get(sq.status, sq.status) %}
           <div class="mt-2 text-xs font-semibold {{ 'text-blue-700' if sq.status=='sent' else 'text-ink-subtle' }}">{{ sl }}</div>
         </div>
       </div>
@@ -28,7 +28,7 @@
   </div>
   {% else %}
   <div class="card p-12 text-center text-ink-subtle">
-    <div class="text-5xl mb-4">📋</div>
+    <div class="mb-4 text-ink-tertiary"><svg class="w-10 h-10 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/></svg></div>
     <p class="font-medium">No quotations yet.</p>
     <p class="text-sm mt-1">When our team prepares a quotation for you, it will appear here.</p>
   </div>

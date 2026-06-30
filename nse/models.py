@@ -24,6 +24,10 @@ class User(UserMixin, db.Model):
     address = db.Column(db.String(255))
     area = db.Column(db.String(120))
     city = db.Column(db.String(120), default="Surat, Gujarat")
+    # Extended profile fields (added post-Wave-6)
+    company_name = db.Column(db.String(200))
+    gst_number   = db.Column(db.String(50))
+    photo_path   = db.Column(db.String(255))   # profile photo / ID card upload
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     contracts = db.relationship("Contract", backref="customer", lazy=True,
@@ -120,6 +124,15 @@ class Contract(db.Model):
     payment_date = db.Column(db.Date)                          # when contract fee received
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # AMC agreement (T&C click-through accepted by the customer in-app)
+    agreement_accepted = db.Column(db.Boolean, default=False)
+    agreement_accepted_at = db.Column(db.DateTime)
+    agreement_version = db.Column(db.String(20))
+
+    # AMC certificate (issued after 4th completed visit)
+    certificate_issued = db.Column(db.Boolean, default=False)
+    certificate_issued_at = db.Column(db.DateTime)
+
     plan = db.relationship("AMCPlan")
     visits = db.relationship("Visit", backref="contract", lazy=True,
                              cascade="all, delete-orphan", order_by="Visit.visit_number")
@@ -133,7 +146,7 @@ class Contract(db.Model):
 
     @property
     def reference(self):
-        return f"AMC-{self.id:05d}"
+        return f"NSE-AMC-{self.id:04d}"
 
     @property
     def completed_visits(self):
@@ -375,6 +388,8 @@ class Quotation(db.Model):
     # Wave 6 — liability waiver acknowledged when the client rejects a quote
     rejection_acknowledged = db.Column(db.Boolean, default=False)
     waiver_text = db.Column(db.Text)
+    # Client can request a re-quote / negotiation after rejecting
+    negotiation_note = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     decided_at = db.Column(db.DateTime)
 
@@ -659,6 +674,19 @@ class ServiceQuotation(db.Model):
     negotiation_note   = db.Column(db.Text)   # customer counter-offer / message
     staff_response     = db.Column(db.Text)   # staff reply to negotiation
 
+    # Hassle-free no-login link: the engineer WhatsApps /q/<public_token> to the
+    # client, who opens it without any login/OTP. Generated on first share.
+    public_token   = db.Column(db.String(40), unique=True, index=True)
+
+    # Payment (manual now / gateway-ready). payment_status: pending / paid.
+    # payment_method: upi / cash / cheque. payment_reference holds a UTR / cheque
+    # number / note. payment_marked_at is when staff (or a future gateway webhook)
+    # confirmed the money was received.
+    payment_status    = db.Column(db.String(20), default="pending")
+    payment_method    = db.Column(db.String(20))
+    payment_reference = db.Column(db.String(120))
+    payment_marked_at = db.Column(db.DateTime, nullable=True)
+
     # Financial
     gst_percent = db.Column(db.Float, default=18.0)
     valid_days  = db.Column(db.Integer, default=7)
@@ -741,6 +769,26 @@ class ServiceQuotation(db.Model):
         # so staff can revise rates and re-send a fresh quote for acceptance.
         return self.status in ("draft", "negotiation_requested")
 
+    # ---------------------------------------------------------------- no-login link
+    def ensure_token(self):
+        """Assign a URL-safe public token (idempotent) for the share link."""
+        if not self.public_token:
+            import secrets
+            self.public_token = secrets.token_urlsafe(12)
+        return self.public_token
+
+    @property
+    def is_paid(self):
+        return self.payment_status == "paid"
+
+    @property
+    def payment_method_label(self):
+        return {
+            "upi":    "UPI / GPay",
+            "cash":   "Cash",
+            "cheque": "Cheque",
+        }.get(self.payment_method, (self.payment_method or "").title())
+
 
 class ServiceQuotationItem(db.Model):
     __tablename__ = "service_quotation_items"
@@ -819,23 +867,27 @@ class CustomerJourneyEvent(db.Model):
     customer   = db.relationship("User", foreign_keys=[customer_id])
     created_by = db.relationship("User", foreign_keys=[created_by_id])
 
+    # icon_key maps to (svg_path_d, color) — rendered as SVG in journey.html
     EVENT_ICONS = {
-        "quote_requested":       ("📋", "blue"),
-        "quote_sent":            ("📤", "navy"),
-        "quote_viewed":          ("👁",  "slate"),
-        "negotiation_requested": ("💬", "amber"),
-        "quote_accepted":        ("✅", "green"),
-        "quote_rejected":        ("❌", "red"),
-        "contract_activated":    ("🔐", "green"),
-        "visit_scheduled":       ("📅", "blue"),
-        "visit_completed":       ("✔",  "green"),
-        "payment_received":      ("💰", "green"),
-        "feedback_given":        ("⭐", "amber"),
+        "quote_requested":       ("doc",      "blue"),
+        "quote_sent":            ("send",     "navy"),
+        "quote_viewed":          ("eye",      "slate"),
+        "negotiation_requested": ("chat",     "amber"),
+        "quote_accepted":        ("check",    "green"),
+        "quote_rejected":        ("x",        "red"),
+        "contract_activated":    ("shield",   "green"),
+        "agreement_accepted":    ("sign",     "green"),
+        "visit_scheduled":       ("calendar", "blue"),
+        "visit_completed":       ("check",    "green"),
+        "visit_rescheduled":     ("calendar", "amber"),
+        "payment_received":      ("coin",     "green"),
+        "feedback_given":        ("star",     "amber"),
+        "referral_submitted":    ("users",    "blue"),
     }
 
     @property
     def icon_color(self):
-        return self.EVENT_ICONS.get(self.event_type, ("•", "slate"))
+        return self.EVENT_ICONS.get(self.event_type, ("dot", "slate"))
 
 
 # --------------------------------------------------------------------------- #
@@ -1008,3 +1060,159 @@ class HealthCheckReport(db.Model):
         ("ex_pa",     "Public Addressing System"),
         ("ex_lifts",  "External Lifts"),
     ]
+
+
+# --------------------------------------------------------------------------- #
+# Referrals (client recommends NSE to someone after good AMC experience)
+# --------------------------------------------------------------------------- #
+class Referral(db.Model):
+    __tablename__ = "referrals"
+
+    id               = db.Column(db.Integer, primary_key=True)
+    contract_id      = db.Column(db.Integer, db.ForeignKey("contracts.id"), nullable=False)
+    submitted_by_id  = db.Column(db.Integer, db.ForeignKey("users.id"),    nullable=False)
+
+    referee_name     = db.Column(db.String(120), nullable=False)
+    referee_phone    = db.Column(db.String(20))
+    referee_company  = db.Column(db.String(200))
+    referee_area     = db.Column(db.String(120))
+    notes            = db.Column(db.Text)
+    # Status: new → contacted → converted (tracking by ops team)
+    status           = db.Column(db.String(20), default="new")
+
+    created_at       = db.Column(db.DateTime, default=datetime.utcnow)
+
+    contract      = db.relationship("Contract", backref="referrals")
+    submitted_by  = db.relationship("User", foreign_keys=[submitted_by_id])
+
+
+# --------------------------------------------------------------------------- #
+# Site System Checking List — the floor-by-floor inspection survey an engineer
+# fills on site (tablet) BEFORE raising a quotation. A quantity matrix of every
+# fire-safety component per floor, plus a pump-room details table. Mirrors NSE's
+# printed "system checking list" and feeds the quotation.
+# --------------------------------------------------------------------------- #
+class SystemCheckList(db.Model):
+    __tablename__ = "system_checklists"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Site & client header (client fields let the survey flow straight into a quote)
+    site_name     = db.Column(db.String(200))
+    site_address  = db.Column(db.Text)
+    client_name   = db.Column(db.String(200))
+    client_phone  = db.Column(db.String(20))
+    client_email  = db.Column(db.String(200))
+
+    survey_date   = db.Column(db.Date, default=date.today)
+    surveyed_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    status        = db.Column(db.String(20), default="draft")   # draft / completed
+
+    # Optional links
+    contract_id   = db.Column(db.Integer, db.ForeignKey("contracts.id"), nullable=True)
+    service_quotation_id = db.Column(db.Integer, db.ForeignKey("service_quotations.id"), nullable=True)
+
+    general_remarks = db.Column(db.Text)
+    # All survey data in one JSON blob:
+    #   {"floors": [..active floor names..],
+    #    "matrix": {item: {floor: qty}},
+    #    "custom_items": [names],
+    #    "pumps": {pump: {col: value}},
+    #    "item_remarks": {item: text}}
+    data          = db.Column(db.Text)
+
+    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at    = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    surveyed_by   = db.relationship("User", foreign_keys=[surveyed_by_id])
+    contract      = db.relationship("Contract", foreign_keys=[contract_id])
+
+    # ----- standard structure (matches the printed format, with additions) ----
+    # The original 26 items from NSE's sheet, plus a few common additions at the
+    # end (marked) — engineers can also free-add custom rows in the form.
+    ITEMS = [
+        "Hydrant Valve", "Hose Box", "Branch Pipe", "RRL", "Hose Reel",
+        "Shutt-off Nozzle", "Hose Reel Ball Valve", "Alarm Panel", "MCP",
+        "Hooter", "Smoke Detector", "Sprinkler", "ABC (F.E)", "CO2 (F.E)",
+        "Modular", "NRV", "Butterfly Valve", "Ball Valve", "Air Release Valve",
+        "Rubber Bellow", "Strainer", "Pressure Gauge", "Pressure Switch",
+        "Underground Tank (Ltr)", "Upperground Tank (Ltr)", "Terrace Tank (Ltr)",
+        # ---- additions ----
+        "Heat Detector", "Foam (F.E)", "Clean Agent (F.E)", "Water-CO2 (F.E)",
+        "Landing Valve", "Emergency Light", "Exit Signage", "Fire Door",
+        "Fire Damper",
+    ]
+
+    FLOORS = [
+        "Basement 3", "Basement 2", "Basement 1", "Ground",
+        "1st Floor", "2nd Floor", "3rd Floor", "4th Floor", "5th Floor",
+        "6th Floor", "7th Floor", "8th Floor", "9th Floor", "10th Floor",
+        "11th Floor", "12th Floor", "13th Floor", "14th Floor", "15th Floor",
+        "16th Floor", "17th Floor", "18th Floor", "19th Floor", "20th Floor",
+        "21st Floor", "22nd Floor", "23rd Floor", "24th Floor", "Terrace",
+    ]
+
+    PUMPS = [
+        "Hydrant Pump", "Sprinkler Pump", "Jockey Pump 1", "Jockey Pump 2",
+        "Diesel Engine", "Booster Pump", "Fire Electrical Panel",
+    ]
+    PUMP_COLUMNS = ["Qty", "HP", "LPM", "Make", "Condition", "Area"]
+
+    @property
+    def reference(self):
+        return f"SCL-{self.id:04d}"
+
+    # ----- JSON helpers -------------------------------------------------------
+    def get_data(self):
+        import json
+        if not self.data:
+            return {}
+        try:
+            return json.loads(self.data)
+        except Exception:
+            return {}
+
+    def set_data(self, payload):
+        import json
+        self.data = json.dumps(payload)
+
+    @property
+    def active_floors(self):
+        d = self.get_data()
+        return d.get("floors") or ["Ground"]
+
+    @property
+    def all_items(self):
+        """Standard items + any custom rows the engineer added."""
+        d = self.get_data()
+        return list(self.ITEMS) + [c for c in d.get("custom_items", []) if c]
+
+    @property
+    def matrix(self):
+        return self.get_data().get("matrix", {})
+
+    @property
+    def pumps_data(self):
+        return self.get_data().get("pumps", {})
+
+    @property
+    def item_remarks(self):
+        return self.get_data().get("item_remarks", {})
+
+    @property
+    def item_totals(self):
+        """Total count of each item across all active floors (skips tank litres)."""
+        out = {}
+        mat = self.matrix
+        for item in self.all_items:
+            if "Tank" in item:   # tanks store litres, not a count
+                continue
+            total = 0
+            for _floor, val in (mat.get(item) or {}).items():
+                try:
+                    total += float(val)
+                except (TypeError, ValueError):
+                    pass
+            if total:
+                out[item] = int(total) if total == int(total) else total
+        return out

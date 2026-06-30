@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4 landscape; margin: 20mm 22mm; }
+  body  { font-family: Helvetica, Arial, sans-serif; font-size: 10pt; color: #1a1a2e; margin: 0; }
+
+  /* ── Outer border frame ── */
+  .frame {
+    border: 6px double #16235b;
+    padding: 28px 36px;
+    position: relative;
+    min-height: 156mm;
+  }
+  .frame-inner {
+    border: 1.5px solid #c8a84b;
+    padding: 22px 30px;
+    min-height: 148mm;
+    position: relative;
+  }
+
+  /* ── Header ── */
+  .cert-header {
+    width: 100%;
+    border-collapse: collapse;
+    border-bottom: 2px solid #16235b;
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+  }
+  .cert-header td { vertical-align: middle; }
+  .logo-cell { width: 70px; }
+  .logo-cell img { height: 62px; }
+  .co-cell { padding-left: 14px; }
+  .co-name {
+    font-size: 15pt;
+    font-weight: bold;
+    color: #16235b;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .co-tagline { font-size: 8.5pt; color: #555; margin-top: 2px; }
+  .co-contact { font-size: 7.5pt; color: #777; margin-top: 3px; }
+  .cert-label-cell { text-align: right; padding-right: 4px; }
+  .cert-label {
+    font-size: 9pt;
+    font-weight: bold;
+    color: #16235b;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border: 1.5px solid #16235b;
+    padding: 4px 10px;
+    display: inline-block;
+  }
+
+  /* ── Title block ── */
+  .cert-title-block { text-align: center; margin: 18px 0 10px; }
+  .cert-kicker {
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: #c8a84b;
+    font-weight: bold;
+    margin-bottom: 6px;
+  }
+  .cert-title {
+    font-size: 22pt;
+    font-weight: bold;
+    color: #16235b;
+    letter-spacing: 0.02em;
+  }
+  .cert-subtitle {
+    font-size: 11pt;
+    color: #444;
+    margin-top: 4px;
+  }
+
+  /* ── Gold rule ── */
+  .gold-rule {
+    height: 2px;
+    background-color: #c8a84b;
+    margin: 12px 0;
+  }
+
+  /* ── Body text ── */
+  .cert-body {
+    font-size: 11pt;
+    line-height: 1.65;
+    color: #222;
+    text-align: center;
+    margin: 10px 20px;
+  }
+  .cert-body .highlight {
+    font-weight: bold;
+    font-size: 13pt;
+    color: #16235b;
+  }
+  .cert-body .site-name {
+    font-weight: bold;
+    font-size: 13pt;
+    color: #b45309;
+  }
+
+  /* ── Details grid ── */
+  .details-table {
+    width: 90%;
+    margin: 14px auto;
+    border-collapse: collapse;
+  }
+  .details-table td {
+    padding: 5px 14px;
+    font-size: 9pt;
+    border: 1px solid #ddd;
+    background-color: #f8f7f3;
+  }
+  .details-table .lbl {
+    font-weight: bold;
+    color: #16235b;
+    width: 140px;
+    background-color: #eef0f7;
+  }
+
+  /* ── Signature block ── */
+  .sig-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  .sig-table td { width: 33%; text-align: center; vertical-align: bottom; padding: 0 10px; }
+  .sig-line { border-top: 1.5px solid #16235b; padding-top: 5px; margin-top: 26px; }
+  .sig-name { font-size: 9pt; font-weight: bold; color: #16235b; }
+  .sig-role { font-size: 7.5pt; color: #666; }
+
+  /* ── Footer ── */
+  .cert-footer {
+    text-align: center;
+    font-size: 7pt;
+    color: #888;
+    margin-top: 16px;
+    border-top: 1px solid #e0e0e0;
+    padding-top: 8px;
+  }
+
+  /* ── Star decorations ── */
+  .star-corner { font-size: 14pt; color: #c8a84b; }
+</style>
+</head>
+<body>
+
+<div class="frame">
+<div class="frame-inner">
+
+  <!-- Header -->
+  <table class="cert-header" cellpadding="0" cellspacing="0">
+    <tr>
+      <td class="logo-cell">
+        {% if logo_url %}<img src="{{ logo_url }}" alt="{{ company_name }}">{% endif %}
+      </td>
+      <td class="co-cell">
+        <div class="co-name">{{ company_name }}</div>
+        <div class="co-tagline">Enlightening Safety &nbsp;|&nbsp; Fire Protection &amp; AMC Specialists</div>
+        <div class="co-contact">{{ company_address }} &nbsp;|&nbsp; {{ company_phone }} &nbsp;|&nbsp; {{ company_email }}</div>
+      </td>
+      <td class="cert-label-cell">
+        <span class="cert-label">Certificate of<br>Fire Safety</span>
+      </td>
+    </tr>
+  </table>
+
+  <!-- Title -->
+  <div class="cert-title-block">
+    <div class="cert-kicker">&#9733; &nbsp; Annual Maintenance Contract &nbsp; &#9733;</div>
+    <div class="cert-title">FIRE SAFETY COMPLIANCE CERTIFICATE</div>
+    <div class="cert-subtitle">This certifies that the premises listed below are under active fire safety maintenance</div>
+  </div>
+
+  <div class="gold-rule"></div>
+
+  <!-- Body -->
+  <div class="cert-body">
+    <p>
+      This is to certify that the premises of
+      <span class="site-name">{{ c.site_name or (c.customer.name if c.customer else c.applicant_name) }}</span>
+      {% if c.site_address %}<br><span style="font-size:9pt;color:#555">{{ c.site_address }}</span>{% endif %}
+    </p>
+    <p>
+      are covered under <span class="highlight">Annual Maintenance Contract {{ c.reference }}</span>
+      with Northern Star Engineering and have successfully completed all
+      <span class="highlight">{{ c.total_visits }} scheduled fire safety maintenance visits</span>
+      during the contract period.
+    </p>
+    <p style="font-size:9pt;color:#555">
+      All fire fighting equipment at this premises has been inspected, tested, and maintained
+      in accordance with National Building Code (NBC), BIS standards, and IS/NFPA guidelines.
+    </p>
+  </div>
+
+  <!-- Details table -->
+  <table class="details-table" cellpadding="0" cellspacing="0">
+    <tr>
+      <td class="lbl">Contract No.</td>
+      <td>{{ c.reference }}</td>
+      <td class="lbl">Valid Period</td>
+      <td>{% if c.start_date %}{{ c.start_date.strftime('%d %b %Y') }}{% endif %} to {% if c.end_date %}{{ c.end_date.strftime('%d %b %Y') }}{% endif %}</td>
+    </tr>
+    <tr>
+      <td class="lbl">Client Name</td>
+      <td>{{ c.customer.name if c.customer else c.applicant_name }}</td>
+      <td class="lbl">Certificate Date</td>
+      <td>{{ issued_date }}</td>
+    </tr>
+    <tr>
+      <td class="lbl">Service Plan</td>
+      <td>{{ c.plan.name if c.plan else 'Custom AMC Plan' }}</td>
+      <td class="lbl">Visits Completed</td>
+      <td>{{ c.completed_visits }} / {{ c.total_visits }}</td>
+    </tr>
+    <tr>
+      <td class="lbl">GST No. (NSE)</td>
+      <td>{{ company_gst }}</td>
+      <td class="lbl">Certificate No.</td>
+      <td>NSE-CERT-{{ c.id:04d }}</td>
+    </tr>
+  </table>
+
+  <!-- Signatures -->
+  <table class="sig-table" cellpadding="0" cellspacing="0">
+    <tr>
+      <td>
+        <div class="sig-line">
+          <div class="sig-name">Authorised Signatory</div>
+          <div class="sig-role">Northern Star Engineering</div>
+        </div>
+      </td>
+      <td>
+        <div style="text-align:center;margin-bottom:4px">
+          <span style="font-size:26pt;color:#c8a84b">&#9733;</span>
+        </div>
+        <div style="font-size:8pt;color:#888;text-align:center">Official Seal</div>
+      </td>
+      <td>
+        <div class="sig-line">
+          <div class="sig-name">{{ c.customer.name if c.customer else c.applicant_name }}</div>
+          <div class="sig-role">Client / Property Owner</div>
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- Footer -->
+  <div class="cert-footer">
+    This certificate is issued in good faith based on the maintenance records of Northern Star Engineering.
+    It does not substitute statutory NOC requirements from the Fire Department.
+    Certificate No. NSE-CERT-{{ c.id:04d }} &nbsp;|&nbsp; Generated {{ issued_date }} &nbsp;|&nbsp; {{ company_email }}
+  </div>
+
+</div><!-- /frame-inner -->
+</div><!-- /frame -->
+
+</body>
+</html>

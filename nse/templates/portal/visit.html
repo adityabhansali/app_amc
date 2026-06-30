@@ -1,26 +1,38 @@
 {% extends "base.html" %}
 {% from "_macros.html" import status_badge, star_rating_inputs %}
 {% block title %}{{ v.label }} — {{ v.contract.reference }}{% endblock %}
+
 {% block content %}
 <section class="max-w-4xl mx-auto px-4 py-10">
   <a href="{{ url_for('portal.contract', contract_id=v.contract_id) }}" class="text-sm text-slate-500 hover:text-navy-700">← Back to {{ v.contract.reference }}</a>
 
   {% set fb = v.feedback %}
 
-  <!-- Congratulations banner (completed, not yet approved/rated) -->
+  <!-- Congratulations banner (completed, not yet rated) -->
   {% if v.status == 'completed' and not v.customer_approved %}
-  <div class="bg-gradient-to-r from-green-50 to-amber-50 border border-green-200 rounded-2xl p-6 mt-3 text-center">
-    <div class="text-3xl">🎉</div>
-    <h2 class="text-xl font-extrabold text-navy-800 mt-1">Congratulations — your {{ v.label }} is done!</h2>
-    <p class="text-slate-600 text-sm mt-1">Please check your service report, then approve and rate the service.</p>
-    <div class="mt-4 flex flex-wrap gap-3 justify-center">
-      <a href="{{ url_for('portal.service_report_pdf', visit_id=v.id) }}" class="bg-green-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-green-500">⬇ Download report</a>
-      <button onclick="document.getElementById('rate-modal').style.display='flex'" class="bg-amber-500 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-amber-600">★ Approve &amp; rate visit</button>
+  <div class="mt-4 rounded-2xl overflow-hidden border border-green-200" style="background:linear-gradient(135deg,#f0fdf4 0%,#fefce8 100%)">
+    <div class="p-8 text-center">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
+        <svg class="w-8 h-8 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+      <h2 class="text-2xl font-extrabold text-navy-800">{{ v.label }} is complete</h2>
+      <p class="text-slate-600 text-sm mt-2 mb-6">Your service report is ready. Please review it, then approve and rate our technician.</p>
+      <div class="flex flex-wrap gap-3 justify-center">
+        <a href="{{ url_for('portal.service_report_pdf', visit_id=v.id, view=1) }}" target="_blank"
+           class="px-5 py-2.5 rounded-xl border border-slate-300 text-navy-800 font-medium text-sm hover:border-primary hover:text-primary transition">View Report</a>
+        <a href="{{ url_for('portal.service_report_pdf', visit_id=v.id) }}"
+           class="px-5 py-2.5 rounded-xl bg-navy-800 text-white font-medium text-sm hover:bg-navy-700 transition">Download Report</a>
+        <button onclick="document.getElementById('rate-modal').style.display='flex'"
+                class="px-5 py-2.5 rounded-xl font-semibold text-sm text-white transition" style="background:var(--amber)">
+          Approve &amp; Rate Visit
+        </button>
+      </div>
     </div>
   </div>
   {% endif %}
 
-  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mt-3">
+  <!-- Visit detail card -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mt-5">
     <div class="flex items-start justify-between flex-wrap gap-3">
       <div>
         <h1 class="text-2xl font-extrabold text-navy-800">{{ v.label }}</h1>
@@ -29,54 +41,103 @@
       {{ status_badge(v.status) }}
     </div>
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-5 text-sm">
-      <div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500">Scheduled</div><div class="font-semibold text-navy-800">{{ v.scheduled_date|datefmt }}</div></div>
-      <div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500">Completed</div><div class="font-semibold text-navy-800">{{ v.completed_date|datefmt }}</div></div>
-      <div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500">Technician</div><div class="font-semibold text-navy-800">{{ v.technician.name if v.technician else '—' }}</div></div>
+      <div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 uppercase tracking-wide">Scheduled</div><div class="font-semibold text-navy-800 mt-1">{{ v.scheduled_date|datefmt }}</div></div>
+      <div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 uppercase tracking-wide">Completed</div><div class="font-semibold text-navy-800 mt-1">{{ v.completed_date|datefmt }}</div></div>
+      <div class="bg-slate-50 rounded-lg p-3"><div class="text-xs text-slate-500 uppercase tracking-wide">Technician</div><div class="font-semibold text-navy-800 mt-1">{{ v.technician.name if v.technician else '—' }}</div></div>
     </div>
   </div>
 
   {% if v.work_done %}
   <div class="bg-white rounded-2xl border border-slate-200 p-6 mt-5">
-    <h2 class="font-bold text-navy-800 mb-2">Work done</h2>
-    <p class="text-slate-700 text-sm whitespace-pre-line">{{ v.work_done }}</p>
+    <h2 class="font-bold text-navy-800 mb-2 text-sm uppercase tracking-wide">Work Carried Out</h2>
+    <p class="text-slate-700 text-sm whitespace-pre-line leading-relaxed">{{ v.work_done }}</p>
   </div>
   {% endif %}
 
   {% if v.checklist_summary %}
   <div class="bg-white rounded-2xl border border-slate-200 p-6 mt-5">
-    <h2 class="font-bold text-navy-800 mb-2">Maintenance checklist</h2>
-    <p class="text-sm text-slate-600">{{ v.checklist_summary.total }} items checked · <span class="text-green-700 font-medium">{{ v.checklist_summary.ok }} OK</span>{% if v.checklist_summary.issues %} · <span class="text-red-600 font-medium">{{ v.checklist_summary.issues }} issue(s)</span>{% endif %}</p>
+    <h2 class="font-bold text-navy-800 mb-2 text-sm uppercase tracking-wide">Maintenance Checklist</h2>
+    <p class="text-sm text-slate-600">{{ v.checklist_summary.total }} items checked &nbsp;·&nbsp;
+      <span class="text-green-700 font-medium">{{ v.checklist_summary.ok }} OK</span>
+      {% if v.checklist_summary.issues %}&nbsp;·&nbsp;<span class="text-red-600 font-medium">{{ v.checklist_summary.issues }} issue(s)</span>{% endif %}
+    </p>
   </div>
   {% endif %}
 
-  <!-- Service report downloads -->
-  {% if v.status == 'completed' %}
-  <div class="bg-green-50 border border-green-200 rounded-2xl p-5 mt-5 flex items-center justify-between flex-wrap gap-3">
-    <div><h2 class="font-bold text-green-800">Service report</h2><p class="text-sm text-green-700">Your branded report for this visit.</p></div>
-    <div class="flex gap-2">
-      <a href="{{ url_for('portal.service_report_pdf', visit_id=v.id) }}" class="bg-green-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-green-500">⬇ Branded PDF</a>
-      {% if v.service_report_path %}<a href="{{ url_for('portal.report', visit_id=v.id) }}" class="bg-white border border-green-300 text-green-700 px-4 py-2.5 rounded-xl font-medium hover:bg-green-50">Uploaded file</a>{% endif %}
+  <!-- Material quotations linked to this visit -->
+  {% if v.material_quotes %}
+  <div class="bg-white rounded-2xl border border-slate-200 p-6 mt-5">
+    <h2 class="font-bold text-navy-800 mb-3 text-sm uppercase tracking-wide">Material Quotations</h2>
+    <div class="space-y-3">
+      {% for q in v.material_quotes %}
+      <a href="{{ url_for('portal.quotation', quote_id=q.id) }}"
+         class="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3 hover:border-primary transition">
+        <div>
+          <span class="font-semibold text-navy-800 text-sm">{{ q.reference }}</span>
+          <span class="text-xs text-slate-500 ml-2">{{ q.items|length }} item(s) · {{ q.created_at|datefmt }}</span>
+          {% if q.status == 'approved' %}
+          <span class="block text-xs mt-0.5 {{ 'text-green-700' if q.is_paid else 'text-amber-700' }}">
+            Payment: {{ 'Paid' if q.is_paid else 'Pending collection' }}
+          </span>
+          {% endif %}
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="font-semibold text-sm text-navy-800">{{ q.total|rupees }}</span>
+          <span class="text-xs px-2 py-0.5 rounded-full font-medium
+            {% if q.status == 'approved' %}bg-green-100 text-green-700
+            {% elif q.status == 'pending' %}bg-amber-100 text-amber-700
+            {% elif q.status == 'rejected' %}bg-red-100 text-red-700
+            {% else %}bg-slate-100 text-slate-600{% endif %}">
+            {{ q.status|title }}
+          </span>
+        </div>
+      </a>
+      {% endfor %}
     </div>
   </div>
   {% endif %}
 
-  <!-- Already-rated summary -->
+  <!-- Approved visit summary + report access -->
+  {% if v.status == 'completed' and v.customer_approved %}
+  <div class="bg-white rounded-2xl border border-slate-200 p-6 mt-5">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <h2 class="font-bold text-navy-800 text-sm uppercase tracking-wide">Service Report</h2>
+        <p class="text-xs text-slate-500 mt-0.5">Approved on {{ v.approved_at|datefmt }}</p>
+      </div>
+      <div class="flex gap-2">
+        <a href="{{ url_for('portal.service_report_pdf', visit_id=v.id, view=1) }}" target="_blank"
+           class="text-sm px-4 py-2 rounded-lg border border-slate-300 text-navy-800 hover:border-primary transition">View</a>
+        <a href="{{ url_for('portal.service_report_pdf', visit_id=v.id) }}"
+           class="text-sm px-4 py-2 rounded-lg bg-navy-800 text-white hover:bg-navy-700 transition">Download</a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Rating summary (after approval) -->
   {% if v.customer_approved and fb %}
   <div class="bg-white rounded-2xl border border-slate-200 p-6 mt-5">
-    <h2 class="font-bold text-navy-800 mb-1">Your rating</h2>
-    <p class="text-amber-500 text-xl">{{ '★' * (fb.rating_overall or 0) }}<span class="text-slate-300">{{ '★' * (5 - (fb.rating_overall or 0)) }}</span> <span class="text-slate-500 text-sm align-middle">{{ fb.rating_overall }}/5</span></p>
-    {% if fb.comment %}<p class="text-sm text-slate-600 mt-1 italic">“{{ fb.comment }}”</p>{% endif %}
-    <p class="text-xs text-slate-400 mt-1">Approved on {{ v.approved_at|datefmt }} · thank you for your feedback.</p>
+    <h2 class="font-bold text-navy-800 mb-2 text-sm uppercase tracking-wide">Your Rating</h2>
+    <div class="flex items-center gap-2">
+      <div class="flex">
+        {% for i in range(1, 6) %}
+        <svg class="w-5 h-5 {{ 'text-amber-400' if i <= (fb.rating_overall or 0) else 'text-slate-200' }}" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 0 0 .95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 0 0-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 0 0-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 0 0-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 0 0 .951-.69l1.07-3.292z"/></svg>
+        {% endfor %}
+      </div>
+      <span class="text-sm text-slate-600 font-medium">{{ fb.rating_overall }}/5</span>
+    </div>
+    {% if fb.comment %}<p class="text-sm text-slate-600 mt-2 italic">"{{ fb.comment }}"</p>{% endif %}
   </div>
   {% endif %}
 
   {% if v.photos %}
-  <h2 class="font-bold text-navy-800 mt-8 mb-3">Site photos ({{ v.photos|length }})</h2>
+  <h2 class="font-bold text-navy-800 mt-8 mb-3 text-sm uppercase tracking-wide">Site Photos ({{ v.photos|length }})</h2>
   <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
     {% for p in v.photos %}
     <a href="{{ p.file_path|upload_url }}" target="_blank" class="block group">
       <img src="{{ p.file_path|upload_url }}" alt="{{ p.caption or 'Site photo' }}"
-           class="w-full h-40 object-cover rounded-xl border border-slate-200 group-hover:opacity-90">
+           class="w-full h-40 object-cover rounded-xl border border-slate-200 group-hover:opacity-90 transition">
       {% if p.caption %}<p class="text-xs text-slate-500 mt-1">{{ p.caption }}</p>{% endif %}
     </a>
     {% endfor %}
@@ -84,25 +145,110 @@
   {% endif %}
 
   {% if v.status != 'completed' %}
-  <p class="text-slate-500 text-sm mt-6 bg-white border border-dashed border-slate-300 rounded-xl p-5">This visit is {{ v.status.replace('_',' ') }}. Photos and the service report will appear here once it's completed.</p>
+  <p class="text-slate-500 text-sm mt-6 bg-white border border-dashed border-slate-300 rounded-xl p-5">
+    This visit is {{ v.status.replace('_',' ') }}. Photos and the service report will appear here once it is completed.
+  </p>
   {% endif %}
 </section>
 
-<!-- ── Mandatory rating popup ──────────────────────────────────────────────── -->
+<!-- Celebration overlay (auto-shows once on first view of completed visit) -->
+{% if v.status == 'completed' and not v.customer_approved %}
+<div id="celebrate-overlay" style="display:none;position:fixed;inset:0;z-index:80;background:rgba(15,23,42,.6);align-items:center;justify-content:center;padding:1rem">
+  <div id="celebrate-card" style="background:#fff;border-radius:24px;max-width:420px;width:100%;padding:40px 36px;text-align:center;transform:scale(.92);opacity:0;transition:transform .4s cubic-bezier(.34,1.56,.64,1),opacity .3s ease">
+    <div style="display:inline-flex;align-items:center;justify-content:center;width:72px;height:72px;border-radius:50%;background:#dcfce7;margin-bottom:20px">
+      <svg style="width:36px;height:36px;color:#16a34a" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    </div>
+    <h2 style="font-size:1.4rem;font-weight:800;color:#16235b;margin:0 0 10px">Visit Complete!</h2>
+    <p style="color:#475569;font-size:.9rem;line-height:1.6;margin:0 0 28px">Your <strong>{{ v.label }}</strong> for <strong>{{ v.contract.reference }}</strong> has been successfully completed by our team.</p>
+    <button onclick="closeCelebrate()" style="background:#16235b;color:#fff;border:none;padding:12px 32px;border-radius:12px;font-size:.9rem;font-weight:600;cursor:pointer;width:100%">View My Report</button>
+  </div>
+</div>
+<script>
+(function(){
+  var key = 'nse_celebrated_visit_{{ v.id }}';
+  if (!sessionStorage.getItem(key)) {
+    sessionStorage.setItem(key, '1');
+    var overlay = document.getElementById('celebrate-overlay');
+    var card = document.getElementById('celebrate-card');
+    overlay.style.display = 'flex';
+    setTimeout(function(){ card.style.transform='scale(1)'; card.style.opacity='1'; }, 80);
+  }
+})();
+function closeCelebrate() {
+  var overlay = document.getElementById('celebrate-overlay');
+  overlay.style.opacity = '0';
+  overlay.style.transition = 'opacity .25s';
+  setTimeout(function(){ overlay.style.display='none'; }, 260);
+}
+</script>
+{% endif %}
+
+<!-- Rating popup modal -->
 {% if v.status == 'completed' and not v.customer_approved %}
 <div id="rate-modal" style="display:none;position:fixed;inset:0;z-index:60;background:rgba(15,23,42,.55);align-items:center;justify-content:center;padding:1rem">
   <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
     <h3 class="text-lg font-bold text-navy-800">Rate your {{ v.label }}</h3>
-    <p class="text-sm text-slate-500 mt-1">Your feedback helps us serve you better. All stars are required.</p>
+    <p class="text-sm text-slate-500 mt-1">Your feedback helps us improve. All dimensions are required.</p>
     <form method="post" action="{{ url_for('portal.visit_approve', visit_id=v.id) }}" class="mt-4">
       {{ star_rating_inputs() }}
       <textarea name="comment" rows="2" placeholder="Any comments (optional)" class="w-full mt-3 px-3 py-2 rounded-lg border border-slate-300 text-sm"></textarea>
       <div class="mt-5 flex gap-3 justify-end">
-        <button type="button" onclick="document.getElementById('rate-modal').style.display='none'" class="px-4 py-2.5 rounded-xl bg-surface-2 text-ink-muted font-medium hover:bg-surface-3">Later</button>
-        <button class="px-5 py-2.5 rounded-xl bg-amber-500 text-white font-semibold hover:bg-amber-600">Submit &amp; approve</button>
+        <button type="button" onclick="document.getElementById('rate-modal').style.display='none'"
+                class="px-4 py-2.5 rounded-xl bg-surface-2 text-ink-muted font-medium hover:bg-surface-3 text-sm">Later</button>
+        <button class="px-5 py-2.5 rounded-xl text-white font-semibold text-sm" style="background:var(--amber)">Submit &amp; Approve</button>
       </div>
     </form>
   </div>
 </div>
+{% endif %}
+
+<!-- Referral prompt modal (shown when ?prompt_referral=1 after 2nd+ good rating) -->
+{% if request.args.get('prompt_referral') == '1' %}
+<div id="referral-modal" style="display:flex;position:fixed;inset:0;z-index:70;background:rgba(15,23,42,.6);align-items:center;justify-content:center;padding:1rem">
+  <div id="referral-card" style="background:#fff;border-radius:20px;max-width:460px;width:100%;padding:36px 32px;transform:scale(.94);opacity:0;transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .28s ease">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="display:inline-flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:#fef3c7;margin-bottom:12px">
+        <svg style="width:30px;height:30px;color:#d97706" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      </div>
+      <h2 style="font-size:1.25rem;font-weight:800;color:#16235b;margin:0 0 6px">You are loving our service!</h2>
+      <p style="color:#475569;font-size:.875rem;line-height:1.6;margin:0">Know someone who could benefit from Northern Star's fire safety services? Refer them and help keep more people safe.</p>
+    </div>
+    <form method="post" action="{{ url_for('portal.submit_referral', contract_id=v.contract_id) }}" class="space-y-3">
+      <div class="grid grid-cols-2 gap-3">
+        <label class="block col-span-2">
+          <span class="text-sm font-medium text-slate-700">Contact name <span class="text-red-500">*</span></span>
+          <input name="referee_name" required placeholder="Full name" class="mt-1 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:border-amber-400 outline-none">
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-slate-700">Phone</span>
+          <input name="referee_phone" type="tel" placeholder="Mobile number" class="mt-1 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:border-amber-400 outline-none">
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-slate-700">Area / City</span>
+          <input name="referee_area" placeholder="e.g. Vesu, Surat" class="mt-1 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:border-amber-400 outline-none">
+        </label>
+        <label class="block col-span-2">
+          <span class="text-sm font-medium text-slate-700">Company / Building name</span>
+          <input name="referee_company" placeholder="Optional" class="mt-1 w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:border-amber-400 outline-none">
+        </label>
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button type="button" onclick="closeReferral()" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-medium text-sm hover:bg-slate-50">Maybe later</button>
+        <button class="flex-1 px-4 py-2.5 rounded-xl text-white font-semibold text-sm" style="background:var(--amber)">Submit Referral</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+(function(){
+  var card = document.getElementById('referral-card');
+  setTimeout(function(){ card.style.transform='scale(1)'; card.style.opacity='1'; }, 80);
+})();
+function closeReferral(){
+  var m = document.getElementById('referral-modal');
+  m.style.opacity='0'; m.style.transition='opacity .25s';
+  setTimeout(function(){ m.style.display='none'; }, 260);
+}
+</script>
 {% endif %}
 {% endblock %}

@@ -249,7 +249,7 @@ The app is wired to run as a **Vercel Python serverless function**. Key pieces:
 
 **Equipment detail portal page** (`/portal/equipment/<id>`, `portal.equipment_detail`): shows equipment header (name, type, location, S/N), key dates (installed, last refill, next due, interval), status alerts (overdue/due-soon banners), full refill history, and completed service visits with checklist summaries. Equipment names in the portal contract page now link to this page.
 
-**QR code mobile page** (`/qr`, `public.qr`): auto-detects local network IP via socket, renders a QR code using `qrcodejs` CDN (no install needed). Scan to open app on any phone on the same WiFi. Template: `public/qr.html`.
+**QR code mobile page** (`/qr`, `public.qr`): auto-detects local network IP via socket, generates QR code **server-side** using the Python `qrcode` library (embedded as base64 PNG — no CDN dependency). Scan to open app on any phone on the same WiFi. Template: `public/qr.html`.
 
 ## Wave 3 features (added post-Wave 2)
 
@@ -407,6 +407,214 @@ The quotation PDF (`pdf/quotation.html`) already matches NSE's real QUO format (
 **Inventory from CSV.** `import_inventory.py` (project root) reads `~/Downloads/Invetory List.csv` and bulk-replaces all `InventoryItem` rows. Run: `.venv/bin/python import_inventory.py`. Imports 1,273 real NSE product codes (Code → hsn, Name → name, Group → category, Unit → unit, Amount → rate). The visit-linked quote picker and the **Service Quotation new form** (`sq_new.html` + `sq.new_quotation`) both now use this inventory via datalist + JS auto-fill (`sqFill`/`invFill` respectively).
 
 **Notification deep links + congratulations chime.** Visit-completion `notify()` call now appends `?chime=1` to the portal visit URL. `base.html` JS extended: `DOMContentLoaded` plays `nseChime()` when `URLSearchParams.get('chime') === '1'` (in addition to the existing flash-based trigger). So clicking the 🎉 congratulations bell notification navigates to the visit page **and** plays the chime automatically.
+
+## UX restructure (post-Wave-6 round 2)
+
+**Contract number format.** `Contract.reference` now returns `NSE-AMC-{id:04d}` (was `AMC-{id:05d}`). No DB column — purely computed, so all existing contracts auto-display the new format.
+
+**Ops Console restructure.** Dashboard (`admin/dashboard.html`) simplified: long tab-bar removed, replaced with four **Service Module cards** (AMC Contracts → `/ops/amc`, Emergency & NOC, Refill Orders, Enquiries). Upcoming visits section moved out of the dashboard.
+
+**AMC Module hub** (`/ops/amc`, `admin.amc_module`, `admin/amc_module.html`): landing page for the AMC Contracts module with inner sub-nav tabs (Contracts, Quotations, Calendar, Analytics, Financials, Health Reports, Performance), AMC KPI strip, upcoming visits (relocated from dashboard), and pending applications.
+
+**Client portfolio page** (`/ops/client/<user_id>`, `admin.client_portfolio`, `admin/client_portfolio.html`): per-customer aggregate view with four tabs — Contracts, Visits, Quotations, Payments. Calendar links (grid + list view) navigate to client portfolio when `contract.customer_id` exists; fall back to the contract page otherwise.
+
+**Roadmap spacing fix.** `workflow_track` macro in `_macros.html`: step containers changed to `flex-1 min-w-[92px] px-2` with `w-full` on labels — prevents "Quote confirmedContract started" text collision.
+
+**Service report PDF** (`pdf/service_report.html`): header redesigned as table layout (logo left, wordmark + tagline + contact right), single-page margins tightened, material-quote clause appended (shows approved/rejected decision per visit quotation). Renamed from "Branded PDF" to "Service Report" in all customer-facing copy.
+
+**Download restrictions.** Clients can no longer download service quotation PDFs or material-quotation PDFs — the Download PDF buttons removed from `portal/sq_detail.html` and `portal/quotation.html`. Clients can still download Visit Service Reports and FSHCR reports.
+
+**In-app report viewing.** `portal.service_report_pdf` and `portal.health_report_pdf` accept `?view=1` → served inline (`as_attachment=False`) so clients can preview in-browser without downloading. Both visit page and contract page now show a 👁 **View** button next to ⬇ Download.
+
+**AMC Agreement (click-through T&C).** Clauses + version live in `utils.py` (`AMC_AGREEMENT_CLAUSES` list of (title, body) tuples, `AMC_AGREEMENT_VERSION`). `Contract` gained `agreement_accepted` / `agreement_accepted_at` / `agreement_version` columns (existing DBs: `ALTER TABLE contracts ADD COLUMN ...` — already applied to `nse_amc.db`; fresh installs get them from `db.create_all`). Routes: `portal.agreement` (view, `/portal/contract/<id>/agreement`) + `portal.agreement_accept` (POST). Template `portal/agreement.html` — scrollable clauses, JS gates the checkbox until the client scrolls to the bottom, then enables the **Agree & Continue** button. View-only (no download). The portal contract page shows an amber "accept your AMC agreement" banner when `c.status=='active'` and not yet accepted, green confirmation once accepted. Acceptance logs an `agreement_accepted` journey event, notifies staff, fires a `success_chime`. **To change clauses, edit `AMC_AGREEMENT_CLAUSES` and bump `AMC_AGREEMENT_VERSION`.**
+
+**Personalised hero card.** `public.home` now computes `hero_contract` / `hero_hide` / `hero` (dict). Logged-in customer **with** a contract → the home hero dashboard card (`public/home.html`) renders their real data (site, AMC status, compliance %, visits done/total, next visit, equipment count, last report, open requests) with deep links into the portal; logged-in customer with **no** contract → card hidden (`hero_hide`); anonymous visitors / staff → the original marketing demo card. The compliance ring + progress bar JS reads `data-pct` / `data-fill` attributes (falls back to the demo's 98%/75%).
+
+## Professional UI overhaul + PDF fixes (post-Wave-6 round 3)
+
+**No emojis policy.** All emoji characters removed from every template (tabs, buttons, headings, module cards, status banners). Navigation uses SVG icons; tabs use underline-border text style. Keep this convention — do not re-introduce emoji in UI copy.
+
+**Ops dashboard redesign.** Module cards changed from tall emoji-icon tiles to compact horizontal rows (border icon + text). Sub-navigation in `admin/amc_module.html` and `admin/client_portfolio.html` uses clean underline tabs with no emoji labels.
+
+**FSHCR PDF checkbox fix.** `pdf/health_report.html` replaced `☑`/`☐` Unicode characters (not renderable by xhtml2pdf/ReportLab) with inline CSS pill indicators: navy fill = Yes, red fill = No, grey fill = N/A. Filled answers now visibly differ from blank ones in the downloaded PDF.
+
+**PDF header standardised.** Both `pdf/quotation.html` and `pdf/health_report.html` now use the same horizontal table layout as `pdf/service_report.html`: logo on the left (60–70 px), company name + tagline + contact on the right, navy address bar spanning full width below. Do not revert to the old centred stacked layout.
+
+**Visit completion overlay.** `portal/visit.html`: the duplicate "Service report" card (with a second set of View/Download buttons) was removed — the congratulations banner at the top is the single entry point. Added a JS-driven celebration overlay (`#celebrate-overlay`) that smoothly scales in on the first view of a completed (not-yet-rated) visit and is dismissed on button click. Uses `sessionStorage` so it only shows once per browser session per visit.
+
+**Database reset.** `nse_amc.db` was wiped and re-seeded (June 2026). All test data cleared; seed state: 4 AMC plans, admin + technician staff, one demo customer (`9876543210`) with contract `NSE-AMC-0001`.
+
+## Post-round-3 feature batch
+
+**Feedback visible on Ops Console visit page.** `admin/visit.html` now shows a "Client Feedback" card after the photos section — 5-dimension star ratings with average + Excellent/Good/Needs improvement badge. Shows a "no feedback yet" placeholder for completed-but-unrated visits.
+
+**FSHCR PDF fix (definitive).** `pdf/health_report.html` `yn()` macro rewritten: (1) `answers` is now passed **explicitly** as a parameter `yn(key, answers)` so Jinja2 macro scope is guaranteed; (2) uses CSS classes (`yn-yes`/`yn-no`/`yn-na`/`yn-off`) defined at `<style>` level with `background-color` (not `background` shorthand which xhtml2pdf ignores); (3) each indicator is a `<td>` in a 1-row mini `<table>` — block-level elements render reliably in xhtml2pdf, inline `<span>` elements do not. Header changed from CSS `display:table` divs to a real `<table>` element.
+
+**Quotation PDF letterhead fix.** `pdf/quotation.html` header now uses a real `<table>` with `<td>` cells (logo left, wordmark right) instead of CSS `display:table-cell` divs. xhtml2pdf/ReportLab renders HTML `<table>` layout reliably; CSS display-table is not fully supported.
+
+**Agreement status in Ops.** `admin/contract.html` shows an "Maintenance Agreement" section at the bottom of active contracts — green "Accepted" or amber "Pending". `admin/client_portfolio.html` Contracts tab row shows "Agreement accepted / pending" inline. A Referrals tab is also added listing all referrals per contract.
+
+**Visit-linked material quote: re-open after rejection.** `Quotation` model gained `negotiation_note TEXT` column. `portal/quotation.html` shows a "Changed your mind?" section for rejected quotes — client writes a message and posts to `portal.quotation_reopen` which resets status back to `pending`, stores the note, and notifies staff. The rejected-quote view also shows payment status clearly when approved.
+
+**Material quotes visible on portal visit page.** `portal/visit.html` shows a "Material Quotations" section listing all quotes linked to that visit with status, total, and payment status.
+
+**Customer profile fields.** `User` model gained `company_name VARCHAR(200)`, `gst_number VARCHAR(50)`, `photo_path VARCHAR(255)`. Route `portal.profile` (`/portal/profile`, GET+POST) renders `portal/profile.html` — editable name, area, city, address, company name, GST number, and optional photo/ID card upload. "My Profile" link added to portal dashboard nav. Ops client portfolio header shows company name + GST number when set, and renders profile photo in the avatar.
+
+**Referral system.** New `Referral` model (`nse/models.py`) — links `contract_id` + `submitted_by_id` to `referee_name`, `referee_phone`, `referee_company`, `referee_area`, `notes`, `status` (new/contacted/converted). `portal.submit_referral` (`POST /portal/contract/<id>/refer`) creates the row, logs a journey event, notifies staff. `portal/contract.html` has a permanent referral form on active contracts, plus a read-only list of submitted referrals. `admin/contract.html` and `admin/client_portfolio.html` (Referrals tab) show them to staff. **Referral prompt modal**: after `portal.visit_approve` saves a rating, if the customer has ≥ 2 visits rated ≥ 4/5 AND no existing referral for that contract, the redirect appends `?prompt_referral=1`; `portal/visit.html` renders a full-screen animated referral modal on that param.
+
+**New DB columns (existing installs — run migration):**
+```
+ALTER TABLE users ADD COLUMN company_name VARCHAR(200);
+ALTER TABLE users ADD COLUMN gst_number VARCHAR(50);
+ALTER TABLE users ADD COLUMN photo_path VARCHAR(255);
+ALTER TABLE quotations ADD COLUMN negotiation_note TEXT;
+```
+New table `referrals` created automatically by `db.create_all()` on next startup.
+
+## Wave 7 features (quotation from backend, AMC certificate, custom plan)
+
+**AMC Quotation from Ops backend.** Staff can now create a Service Quotation for a prospective AMC client directly from the AMC module hub — "New AMC Quotation" button links to `/ops/sq/new` with AMC pre-selected. The form accepts client name, phone, email, and line items. The quotation is sent via email and also auto-linked to the client's portal account (lookup by phone first, then email — `sq.customer_id` is set if a matching User exists). Previously the SQ creation only linked by email; now phone (the primary login credential) takes precedence. Quotes created before a customer registers still surface after login via the `or_(customer_id, customer_phone)` portal query.
+
+**AMC Fire Safety Certificate.** A landscape, framed PDF certificate (`pdf/amc_certificate.html`, generated by `generate_amc_certificate_pdf()` in `pdf_generator.py`) is issued automatically when a contract's 4th completed visit is recorded. Logic: `_maybe_issue_certificate(visit)` (in `admin.py`, called from `admin.visit` POST alongside `_trigger_feedback`) checks `visit.visit_number >= 4` and `completed_visits >= 4`, then sets `Contract.certificate_issued / certificate_issued_at` (new Boolean/DateTime columns). Client is notified with a chime + `?celebrate=1` deep-link to `portal.amc_certificate` (`/portal/contract/<id>/certificate`). The portal contract page shows a navy/gold certificate card when issued (with View/Download), or a "coming after your 4th visit" placeholder for active contracts. A full-screen celebration overlay appears on `?celebrate=1`. **New DB columns (existing installs):**
+```
+ALTER TABLE contracts ADD COLUMN certificate_issued BOOLEAN DEFAULT 0;
+ALTER TABLE contracts ADD COLUMN certificate_issued_at DATETIME;
+```
+
+**Custom / Tailored AMC Plan.** A 5th "Get a Customised Plan" card on `public/plans.html` (amber dashed border, edit-pen icon) links to `/custom-plan` (`public.custom_plan`). The form (`public/custom_plan.html`) collects: contact name + phone + email, property type (dropdown), floors, area sq ft, extinguishers on site, services required (8 checkboxes), and additional notes. Submission saves to the `Enquiry` model with `subject="Custom AMC Plan Enquiry"` and a formatted multi-line `message`. The ops console Enquiries section shows it like any other enquiry.
+
+## Wave 7 patch (journey emojis, inventory import, quotation re-send, hero card)
+
+**No emojis in customer journey.** `CustomerJourneyEvent.EVENT_ICONS` changed from emoji characters to named string keys (`"doc"`, `"send"`, `"eye"`, `"chat"`, `"check"`, `"x"`, `"shield"`, `"sign"`, `"calendar"`, `"coin"`, `"star"`, `"users"`, `"dot"`). `portal/journey.html` fully rewritten with a `journey_icon(key)` Jinja2 macro that renders the correct SVG for each key. Empty state also uses SVG instead of emoji. Added new event types: `agreement_accepted`, `visit_rescheduled`, `referral_submitted`.
+
+**Inventory CSV imported.** Running `.venv/bin/python import_inventory.py` loaded 1,273 NSE product codes from `~/Downloads/Invetory List.csv` into the `inventory_items` table. The datalist (`<datalist id="sq-inv-list">` in `admin/sq_new.html` and `<datalist id="inv-list">` in `admin/visit.html`) now exposes all 1,273 items — type in the Description field to search, category + rate auto-fill via `sqFill()`/`invFill()` JS functions.
+
+**Material quotation re-send/revise from Ops Console.** When a client re-opens a rejected material quotation (`portal.quotation_reopen`), the staff notification now carries a deep link to the admin visit page (already set). On that page, for `pending` quotes with a `negotiation_note`, a new amber action panel shows the client's message plus two options: (1) **Re-send original** — POST to `admin.quotation_resend` with no `revise` flag; (2) **Revise items & re-send** — inline `<details>` form with editable item desc/qty/rate fields, POST to same route with `revise=1`. The `admin.quotation_resend` route updates items if `revise=1`, clears `negotiation_note`, and notifies the client.
+
+**Hero card phone-fallback.** `public.home` now runs a second lookup when no contract is found by `customer_id`: `Contract.query.filter_by(applicant_phone=current_user.phone, customer_id=None)`. This surfaces pending contracts applied before the customer registered. `open_reqs` count guards against `None` customer_id. Result: any logged-in customer with a contract (active or pending, linked or phone-matched) sees their real data in the hero card; new customers with no contract see the card hidden (`hero_hide=True`); anonymous visitors still see the demo marketing card.
+
+**Video background slot.** The hero already has `<video id="heroBgVid">` loading `nse/static/video/hero.mp4` (autoplay, muted, loop, 42% opacity fade-in on `canplaythrough`). To swap in the maintenance department video: download the MP4 from Google Drive and place it at `nse/static/video/hero.mp4` — no code change needed. For a clip trimmed to 20–25 s, use `ffmpeg -i original.mp4 -ss 0 -t 25 -c copy nse/static/video/hero.mp4` (ffmpeg is not installed on this machine; do the trim on another device or use an online tool before dropping the file).
+
+## Wave 8 features (no-login quotation link, hassle-free payment, reminders, WhatsApp share)
+
+Built for **non-tech-savvy / elderly customers** (society presidents, 60-80 yr olds) who will
+**not** download an app or log in. The engineer creates a quotation (office or on-site tablet) and
+**WhatsApps a link**; the client opens it with **zero login/OTP/app**, sees a big-button page, and pays.
+
+**New `ServiceQuotation` columns** (`nse/models.py`; existing DBs migrated in place — idempotent
+`ALTER TABLE` via `PRAGMA table_info`, already applied to `nse_amc.db`; fresh installs get them from
+`db.create_all`):
+```
+ALTER TABLE service_quotations ADD COLUMN public_token VARCHAR(40);
+ALTER TABLE service_quotations ADD COLUMN payment_status VARCHAR(20) DEFAULT 'pending';
+ALTER TABLE service_quotations ADD COLUMN payment_method VARCHAR(20);     -- upi/cash/cheque
+ALTER TABLE service_quotations ADD COLUMN payment_reference VARCHAR(120);
+ALTER TABLE service_quotations ADD COLUMN payment_marked_at DATETIME;
+```
+Helpers on `ServiceQuotation`: `ensure_token()` (idempotent `secrets.token_urlsafe(12)`), `is_paid`,
+`payment_method_label`.
+
+**No-login public quotation link** (`public.py`, all under `/q/<token>`, **no `@login_required`**):
+- `public.public_quote` (`/q/<token>`) — senior-friendly standalone page (`public/quote_public.html`,
+  self-contained HTML — **not** extending `base.html**, big fonts, 3 big buttons). Marks the quote viewed.
+- `public.public_quote_pay` (`POST /q/<token>/pay`, `method=upi|cash|cheque`) — choosing a method
+  **accepts** the quote, **auto-creates the customer account** (`_ensure_customer_account` — links by
+  phone then email, creates a `customer` User keyed on the mobile number if none), logs a
+  `quote_accepted` journey event, and `notify_staff`. UPI → redirect to the QR page; cash/cheque →
+  thank-you page.
+- `public.public_quote_upi` (`/q/<token>/upi`) — `public/quote_upi.html`: server-rendered **UPI QR**
+  (base64 PNG via `utils.upi_qr_data_uri`, builds an `upi://pay?pa=…&am=…` deep link) + "I have paid"
+  button. If `COMPANY_UPI_ID` is unset, shows a "UPI being set up" notice instead.
+- `public.public_quote_paid_claim` (`POST /q/<token>/paid-claim`) — client taps "I have paid"; we do
+  **not** auto-confirm (no gateway yet) — sets a `payment_reference` note + `notify_staff` to verify.
+- `public.public_quote_thanks` (`/q/<token>/thanks?m=…`) — `public/quote_thanks.html`: friendly
+  confirmation + "your account is ready, log in with your number anytime" (links to `auth.login`).
+
+**Payment = manual now, gateway-ready.** Per the user's choice, there is **no payment gateway** — UPI
+shows a QR and staff confirms receipt by hand. The flow/columns are structured so a Razorpay-style
+webhook can later flip `payment_status='paid'` automatically. **Staff confirmation**: `sq.mark_paid`
+(`POST /ops/sq/<id>/mark-paid`) sets `payment_status='paid'` + method + reference + `payment_marked_at`,
+cascades to a linked `Contract.payment_status='paid'` (+`payment_date`), logs `payment_received`, and
+notifies the customer. The `admin/sq_detail.html` page gained a **Share** card (copy-link + WhatsApp +
+preview) and a **Payment** panel (status badge + mark-paid form).
+
+**WhatsApp click-to-send (free, no API).** `utils.whatsapp_url(phone, text)` builds a `wa.me` link with
+a pre-filled message (the engineer taps send). `utils.normalise_phone` prepends `91` to 10-digit numbers.
+`sq.detail_quotation` ensures the token, builds `share_link` (`_external=True`) + `whatsapp_share`, and
+passes them to the template. **API-ready**: when a WhatsApp Business API provider (AiSensy/Interakt/
+Twilio) is added later, reuse the same message-builders for automated sends. The public quote page's
+"WhatsApp us" / "Call us" buttons use `COMPANY_PHONE`.
+
+**Payment reminders** (`nse/reminders.py`): `payment_reminders(customer_id=None)` returns dicts for
+(1) AMC fee unpaid after **≥2 completed visits**, (2) visit-linked material quotes `approved` & unpaid,
+(3) `ServiceQuotation` `accepted` & unpaid (de-duped against rule 1). Surfaced in: the Ops Console
+**`/ops/reminders`** page (`admin.reminders`, `admin/reminders.html`, severity-sorted priority cards) +
+a **Reminders tab** with a red count badge on `admin/amc_module.html` (driven by `payment_reminder_count`
+injected for staff in `inject_globals`, wrapped in try/except), and the **customer profile**
+(`portal.profile` passes `my_reminders`; `portal/profile.html` shows an amber "Payments due" card).
+
+**Config**: `COMPANY_UPI_ID` / `COMPANY_UPI_NAME` (`config.py` + `inject_globals` exposes `COMPANY_UPI_ID`
++ `.env.example`). Set `COMPANY_UPI_ID` to the firm's real UPI handle to switch the UPI QR live.
+**Deps**: `qrcode==8.2` + `Pillow==11.3.0` added to `requirements.txt` (were installed in `.venv` but
+unpinned; the UPI QR and the `/qr` page both need them).
+
+**`BASE_URL` config + `public_url()` helper** — shareable quotation links (WhatsApp, email) must be
+clickable on a client's phone, so they cannot use `127.0.0.1`. `config.py` exposes `BASE_URL`
+(`os.getenv("BASE_URL", "")`, also in `.env.example`). `utils.public_url(endpoint, **values)` builds
+the external link with this priority: (1) `BASE_URL` env var (set to ngrok / Vercel domain in
+production), (2) auto-detected LAN IP via `socket` (same-WiFi dev use-case — detects the Mac's
+outbound IP automatically), (3) Flask `url_for(_external=True)` fallback. `sq.detail_quotation` calls
+`public_url("public.public_quote", token=...)` instead of `url_for(..., _external=True)` so the
+WhatsApp share link is always a reachable address. `create_app()` sets `SERVER_PORT` in app config
+(from `PORT` env, default 5055) so `public_url` can construct the correct port in the LAN-IP path.
+To add a new shareable link, call `public_url(endpoint, **values)` — never `url_for(_external=True)`
+for customer-facing links.
+
+**Design note**: the three `public/quote_*.html` templates are **deliberately self-contained** (own
+`<html>`, inline CSS, ~19px base font, ≥56px tap targets, one task per screen) — they do **not** extend
+`base.html`, so the senior-facing flow has no nav/footer/dark-mode clutter. They still receive the
+`COMPANY_*` globals from `inject_globals` and use the `rupees` filter.
+
+## Wave 9 features (Site System Checking List — floor-by-floor survey → quotation)
+
+Digitises NSE's printed **"system checking list"** (`~/Downloads/system checking list.xlsx`): a
+floor-by-floor inventory matrix an engineer fills on site (tablet) BEFORE raising a quote. The sheet is
+a grid of **equipment items (rows) × floors (columns)** holding the quantity of each component per
+floor, plus a separate **pump-room details** table.
+
+**New model `SystemCheckList`** (`nse/models.py`, new table — `db.create_all` picks it up, no reset):
+header fields (`site_name`, `site_address`, `client_name/phone/email`, `survey_date`, `surveyed_by_id`,
+`status` draft/completed, optional `contract_id` + `service_quotation_id`, `general_remarks`) and a
+single **`data` JSON column** holding everything else:
+`{floors:[...], matrix:{item:{floor:qty}}, custom_items:[...], pumps:{pump:{col:val}}, item_remarks:{item:text}}`.
+Class constants mirror the sheet **with additions**: `ITEMS` (the original 26 — Hydrant Valve, Hose Box,
+Branch Pipe, RRL, Hose Reel, … Tanks — plus Heat Detector, Foam/Clean-Agent/Water-CO2 F.E, Landing Valve,
+Emergency Light, Exit Signage, Fire Door, Fire Damper), `FLOORS` (Basement 3 → 24th Floor → Terrace, 29),
+`PUMPS` (Hydrant/Sprinkler/Jockey 1/Jockey 2/Diesel Engine/Booster/Fire Electrical Panel) and
+`PUMP_COLUMNS` (Qty/HP/LPM/Make/Condition/Area). Helpers: `reference` (`SCL-0001`), `get_data`/`set_data`,
+`active_floors`, `all_items` (standard + custom), `matrix`, `pumps_data`, `item_remarks`, and
+`item_totals` (per-item count across floors, skips tank litres — used to seed a quotation).
+
+**Routes** (`admin.py`, all `@staff_required`): `admin.surveys` (`/ops/surveys` list),
+`admin.survey` (`/ops/survey/new` + `/ops/survey/<id>`, one GET+POST view), `admin.survey_to_quote`
+(`/ops/survey/<id>/quote`). Templates: `admin/surveys.html` (list) + `admin/survey_form.html`.
+
+**Form UX** (`admin/survey_form.html`): tablet-friendly. Engineer ticks **which floors exist** → JS
+renders a matrix showing **only those floor columns** (items as rows, a numeric cell per floor, a Remarks
+column per item). `+ Add custom item` appends free rows. A static **pump-room table** below
+(PUMPS × PUMP_COLUMNS). Everything serialises to one hidden `data_json` on submit (the matrix is
+re-filtered to checked floors so unchecking a floor drops its values); a JS `MAT/REM/CUSTOM` cache
+preserves entries across floor toggles. Server parses `data_json` → `set_data`. The model constants +
+existing `data` are embedded as `window.SCL` for edit repopulation.
+
+**Survey → quotation handoff:** "Save & create quotation" (or `admin.survey_to_quote`) builds a **draft
+`ServiceQuotation`** carrying the survey's client/site header, with **one line item per surveyed item**
+(`item_totals`, rate 0 for the engineer to fill), links it both ways (`survey.service_quotation_id`),
+and redirects to `sq.detail_quotation`. From there the existing Wave 8 flow takes over (price → send →
+WhatsApp link → pay). A **"Site Surveys" tab** was added to the AMC module sub-nav.
+
+Note: this is distinct from the **FSHCR** `HealthCheckReport` (Wave 6), which is a Yes/No *condition*
+checkup; the SystemCheckList is a *quantity inventory* survey. Both can stand alone or link to a contract.
 
 ## Known dev-grade pieces (not yet production)
 

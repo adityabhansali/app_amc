@@ -29,23 +29,90 @@
 
     <!-- Action buttons -->
     <div class="flex flex-wrap gap-3 mt-5">
-      <a href="{{ url_for('sq.download_pdf', sq_id=sq.id) }}" class="btn btn-ghost text-sm">⬇ Download PDF</a>
+      <a href="{{ url_for('sq.download_pdf', sq_id=sq.id) }}" class="btn btn-ghost text-sm">Download PDF</a>
       {% if sq.status == 'draft' %}
       <form method="post">
         <input type="hidden" name="action" value="send">
-        <button class="btn btn-primary text-sm">📤 Send to Customer</button>
+        <button class="btn btn-primary text-sm">Send to Customer</button>
       </form>
       {% endif %}
       {% if sq.status == 'negotiation_requested' %}
-      <a href="tel:{{ sq.customer_phone }}" class="btn btn-emergency text-sm">📞 Call Customer Now</a>
+      <a href="tel:{{ sq.customer_phone }}" class="btn btn-emergency text-sm">Call Customer</a>
       {% endif %}
     </div>
+  </div>
+
+  <!-- Share link (no-login customer page) -->
+  <div class="card p-5 mt-5">
+    <div class="flex items-center gap-2 mb-1">
+      <svg class="w-4 h-4 text-navy-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      <h3 class="font-bold text-ink">Share with customer</h3>
+    </div>
+    <p class="text-sm text-ink-subtle mb-3">The customer opens this link with <strong>no login, no OTP, no app download</strong> — views the quote and pays.</p>
+    <div class="flex items-center gap-2 mb-3">
+      <input id="shareLink" type="text" readonly value="{{ share_link }}"
+             class="flex-1 px-3 py-2 text-sm rounded-lg border border-hairline bg-slate-50 text-ink-muted">
+      <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('shareLink').value); this.textContent='Copied!';"
+              class="btn btn-ghost text-sm whitespace-nowrap">Copy link</button>
+    </div>
+    <div class="flex flex-wrap gap-3">
+      <a href="{{ whatsapp_share }}" target="_blank" rel="noopener"
+         class="btn text-sm text-white whitespace-nowrap" style="background:#25D366">
+        <svg class="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.5-.1-.6.2-.2.3-.7.9-.9 1.1-.2.2-.3.2-.6.1-1.7-.8-2.8-1.5-3.9-3.4-.3-.5.3-.5.8-1.5.1-.2 0-.4 0-.5 0-.1-.6-1.5-.8-2.1-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.9.9-.9 2.1-.9 2.3 0 .2.6 2.3 2.5 4.3 2.7 2.6 4.8 2.8 5.5 2.8.7 0 1.7-.4 1.9-1 .2-.5.2-1 .2-1.1-.1-.1-.3-.2-.5-.3M12 2a10 10 0 0 0-8.6 15l-1.4 5 5.1-1.3A10 10 0 1 0 12 2"/></svg>
+        Send on WhatsApp
+      </a>
+      <a href="{{ share_link }}" target="_blank" rel="noopener" class="btn btn-ghost text-sm whitespace-nowrap">Preview page</a>
+    </div>
+  </div>
+
+  <!-- Payment status -->
+  <div class="card p-5 mt-5">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <div class="flex items-center gap-2">
+        <svg class="w-4 h-4 text-navy-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+        <h3 class="font-bold text-ink">Payment</h3>
+      </div>
+      {% if sq.is_paid %}
+        <span class="px-3 py-1 rounded-full text-sm font-semibold bg-green-50 text-green-800">Paid · {{ sq.payment_method_label }}</span>
+      {% elif sq.payment_method %}
+        <span class="px-3 py-1 rounded-full text-sm font-semibold bg-amber-50 text-amber-800">Awaiting payment · chose {{ sq.payment_method_label }}</span>
+      {% else %}
+        <span class="px-3 py-1 rounded-full text-sm font-semibold bg-slate-100 text-slate-700">Not yet paid</span>
+      {% endif %}
+    </div>
+
+    {% if sq.payment_reference and not sq.is_paid %}
+    <p class="text-sm text-amber-800 bg-amber-50 rounded-lg p-3 mt-3">{{ sq.payment_reference }}</p>
+    {% endif %}
+
+    {% if sq.is_paid %}
+      <p class="text-sm text-ink-subtle mt-3">Received {{ sq.payment_marked_at.strftime('%d %b %Y %H:%M') if sq.payment_marked_at }}{% if sq.payment_reference %} · Ref: {{ sq.payment_reference }}{% endif %}.</p>
+    {% else %}
+      <form method="post" action="{{ url_for('sq.mark_paid', sq_id=sq.id) }}" class="mt-4 grid sm:grid-cols-3 gap-3">
+        <div>
+          <label class="block text-xs text-ink-subtle mb-1">Method</label>
+          <select name="payment_method" class="w-full px-3 py-2 text-sm rounded-lg border border-hairline">
+            <option value="upi"    {{ 'selected' if sq.payment_method=='upi' }}>UPI / GPay</option>
+            <option value="cash"   {{ 'selected' if sq.payment_method=='cash' }}>Cash</option>
+            <option value="cheque" {{ 'selected' if sq.payment_method=='cheque' }}>Cheque</option>
+          </select>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-xs text-ink-subtle mb-1">Reference (UTR / cheque no. — optional)</label>
+          <input type="text" name="payment_reference" class="w-full px-3 py-2 text-sm rounded-lg border border-hairline" placeholder="e.g. UPI Ref 4839... / Cheque 100231">
+        </div>
+        <div class="sm:col-span-3">
+          <button class="btn btn-primary text-sm">Mark as paid</button>
+          <span class="text-xs text-ink-subtle ml-2">Confirms {{ sq.grand_total|rupees }} received{% if sq.contract %} and marks contract {{ sq.contract.reference }} paid{% endif %}.</span>
+        </div>
+      </form>
+    {% endif %}
   </div>
 
   <!-- Negotiation panel -->
   {% if sq.status == 'negotiation_requested' %}
   <div class="card p-5 mt-5 border-amber-200 bg-amber-50">
-    <h3 class="font-bold text-amber-800 mb-2">💬 Customer Requested Negotiation</h3>
+    <h3 class="font-bold text-amber-800 mb-2">Customer Requested Negotiation</h3>
     {% if sq.negotiation_note %}
     <p class="text-amber-700 text-sm mb-3 bg-amber-100 rounded-lg p-3">{{ sq.negotiation_note }}</p>
     {% endif %}

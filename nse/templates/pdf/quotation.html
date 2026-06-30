@@ -18,30 +18,33 @@
 
   /* ── Company header ───────────────────────────────────────────── */
   .co-header {
-    text-align: center;
-    border-bottom: 2px solid #16235b;
+    display: table;
+    width: 100%;
+    border-bottom: 2.5px solid #16235b;
     padding-bottom: 8px;
     margin-bottom: 10px;
   }
-  .co-header img { height: 52px; }
+  .co-logo-cell { display: table-cell; width: 70px; vertical-align: middle; }
+  .co-logo-cell img { height: 56px; }
+  .co-details-cell { display: table-cell; vertical-align: middle; padding-left: 12px; }
   .co-name {
-    font-size: 18pt;
+    font-size: 17pt;
     font-weight: bold;
     color: #16235b;
-    margin: 4px 0 2px;
+    margin: 0 0 2px;
+    line-height: 1.1;
   }
-  .co-tagline { font-size: 9pt; color: #444; font-style: italic; margin: 0; }
-  .co-iso { font-size: 8pt; color: #555; margin: 2px 0; }
+  .co-tagline { font-size: 8.5pt; color: #444; font-style: italic; margin: 1px 0; }
+  .co-iso { font-size: 7.5pt; color: #555; margin: 1px 0; }
   .co-address {
     background: #16235b;
     color: #fff;
     text-align: center;
-    font-size: 8.5pt;
-    padding: 4px 10px;
-    border-radius: 2px;
-    margin: 6px 0 4px;
+    font-size: 8pt;
+    padding: 3px 10px;
+    margin: 5px 0 4px;
   }
-  .co-contact { font-size: 8pt; color: #333; text-align: center; margin: 2px 0 4px; }
+  .co-contact { font-size: 7.5pt; color: #444; text-align: center; margin: 2px 0 4px; }
 
   /* ── QUOTATION title ──────────────────────────────────────────── */
   .doc-title {
@@ -155,21 +158,21 @@
 </head>
 <body>
 
-<!-- ── Company Header ───────────────────────────────────────────── -->
-<div class="co-header">
-  {% if logo_url %}
-  <img src="{{ logo_url }}" alt="{{ company_name }}">
-  {% endif %}
-  <div class="co-name">{{ company_name.upper() }}</div>
-  <div class="co-tagline">Enlightening Safety...</div>
-  <div class="co-iso">An ISO 9001:2015 Company &nbsp;|&nbsp; Govt. Approved Fire Consultant</div>
-  <div class="co-address">{{ company_address }}</div>
-  <div class="co-contact">
-    Web: northernstarengineering.com &nbsp;|&nbsp;
-    Mail: {{ company_email }} &nbsp;|&nbsp;
-    GST: {{ company_gst }}
-  </div>
-</div>
+<!-- ── Company Header (real <table> — reliable in xhtml2pdf) ───── -->
+<table cellpadding="0" cellspacing="0" style="width:100%;border-bottom:2.5px solid #16235b;padding-bottom:8px;margin-bottom:10px">
+  <tr>
+    <td style="width:70px;vertical-align:middle">
+      {% if logo_url %}<img src="{{ logo_url }}" alt="{{ company_name }}" style="height:56px">{% endif %}
+    </td>
+    <td style="vertical-align:middle;padding-left:12px">
+      <div class="co-name">{{ company_name.upper() }}</div>
+      <div class="co-tagline">Enlightening Safety...</div>
+      <div class="co-iso">An ISO 9001:2015 Company &nbsp;|&nbsp; Govt. Approved Fire Consultant</div>
+      <div class="co-iso">Web: northernstarengineering.com &nbsp;|&nbsp; Mail: {{ company_email }} &nbsp;|&nbsp; GST: {{ company_gst }}</div>
+    </td>
+  </tr>
+</table>
+<div class="co-address">{{ company_address }}</div>
 
 <!-- ── Document Title ───────────────────────────────────────────── -->
 <div class="doc-title">QUOTATION</div>

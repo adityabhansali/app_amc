@@ -10,8 +10,9 @@ from ..models import (User, AMCPlan, Contract, Visit, VisitPhoto, Equipment,
                       RefillRecord, Quotation, QuotationItem, ServiceRequest,
                       Payment, Enquiry, RefillOrder, RefillItem, FormAttachment,
                       VisitFeedback, CustomerJourneyEvent, ServiceQuotation,
-                      VisitChecklistItem, InventoryItem, HealthCheckReport)
-from ..utils import staff_required, save_upload, notify
+                      VisitChecklistItem, InventoryItem, HealthCheckReport,
+                      SystemCheckList)
+from ..utils import staff_required, save_upload, notify, notify_staff
 from ..email_service import send_feedback_request, send_visit_confirmation
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/ops")
@@ -84,6 +85,55 @@ def dashboard():
 
 
 # --------------------------------------------------------------------------- #
+# AMC Module hub
+# --------------------------------------------------------------------------- #
+@admin_bp.route("/amc")
+@login_required
+@staff_required
+def amc_module():
+    active_count  = Contract.query.filter_by(status="active").count()
+    pending_count = Contract.query.filter_by(status="pending").count()
+    expired_count = Contract.query.filter(
+        Contract.status.in_(["expired", "cancelled"])).count()
+    pending_apps = Contract.query.filter_by(status="pending")\
+        .order_by(Contract.created_at.desc()).all()
+    upcoming = Visit.query.filter(
+        Visit.status.in_(["scheduled", "in_progress"]),
+        Visit.scheduled_date != None)\
+        .order_by(Visit.scheduled_date).limit(12).all()
+    return render_template("admin/amc_module.html",
+                           active_count=active_count, pending_count=pending_count,
+                           expired_count=expired_count, pending_apps=pending_apps,
+                           upcoming=upcoming)
+
+
+# --------------------------------------------------------------------------- #
+# Client portfolio
+# --------------------------------------------------------------------------- #
+@admin_bp.route("/client/<int:user_id>")
+@login_required
+@staff_required
+def client_portfolio(user_id):
+    client = db.session.get(User, user_id) or abort(404)
+    contracts = Contract.query.filter_by(customer_id=user_id)\
+        .order_by(Contract.created_at.desc()).all()
+    # All visits across all contracts
+    all_visits = []
+    for c in contracts:
+        all_visits.extend(c.visits)
+    all_visits.sort(key=lambda v: v.scheduled_date or date.min, reverse=True)
+    # Service quotations (linked by customer_id or phone)
+    service_quotations = ServiceQuotation.query.filter(
+        or_(ServiceQuotation.customer_id == user_id,
+            ServiceQuotation.customer_phone == client.phone)
+    ).order_by(ServiceQuotation.created_at.desc()).all()
+    return render_template("admin/client_portfolio.html",
+                           client=client, contracts=contracts,
+                           all_visits=all_visits,
+                           service_quotations=service_quotations)
+
+
+# --------------------------------------------------------------------------- #
 # Staff notifications (bell / popup feed)
 # --------------------------------------------------------------------------- #
 @admin_bp.route("/notifications")
@@ -94,6 +144,21 @@ def notifications():
     notes = Notification.query.filter_by(user_id=current_user.id)\
         .order_by(Notification.created_at.desc()).limit(100).all()
     return render_template("admin/notifications.html", notes=notes)
+
+
+# --------------------------------------------------------------------------- #
+# Payment reminders (money still owed across all clients)
+# --------------------------------------------------------------------------- #
+@admin_bp.route("/reminders")
+@login_required
+@staff_required
+def reminders():
+    from ..reminders import payment_reminders
+    items = payment_reminders()
+    # high severity first
+    order = {"high": 0, "medium": 1, "low": 2}
+    items.sort(key=lambda r: order.get(r.get("severity"), 9))
+    return render_template("admin/reminders.html", items=items)
 
 
 # --------------------------------------------------------------------------- #
@@ -262,10 +327,12 @@ def visit(visit_id):
         db.session.commit()
         if v.status == "completed":
             notify(v.contract.customer_id,
-                   f"🎉 Congratulations — your {v.label} is done!",
+                   f"Congratulations — your {v.label} is done!",
                    f"Your service report for {v.contract.reference} is ready. "
                    f"Please review, download it, and rate the service.",
                    link=url_for("portal.visit", visit_id=v.id) + "?chime=1")
+            # Issue AMC Fire Safety Certificate after the 4th completed visit
+            _maybe_issue_certificate(v)
             # Trigger post-visit feedback email
             _trigger_feedback(v)
             db.session.commit()
@@ -344,6 +411,51 @@ def quotation_payment(quote_id):
         db.session.commit()
     flash(f"Quotation {q.reference} payment marked {q.payment_status}.", "success")
     return redirect(request.referrer or url_for("admin.visit", visit_id=q.visit_id))
+
+
+@admin_bp.route("/quotation/<int:quote_id>/resend", methods=["POST"])
+@login_required
+@staff_required
+def quotation_resend(quote_id):
+    """Re-send a visit-linked material quotation to the client.
+
+    Used after the client re-opens a previously rejected quote (status → pending +
+    negotiation_note set). Staff either re-sends the original or adjusts items via
+    the visit page form first, then calls this to notify the client.
+    The action reads a `revise` flag: if present, item quantities/prices posted in
+    the form are applied before re-notifying.
+    """
+    q = db.session.get(Quotation, quote_id) or abort(404)
+    revise = request.form.get("revise") == "1"
+    if revise:
+        # Update line-item prices & quantities if the staff revised them
+        descs   = request.form.getlist("item_desc")
+        qtys    = request.form.getlist("item_qty")
+        prices  = request.form.getlist("item_price")
+        # Delete existing items and replace
+        for item in q.items:
+            db.session.delete(item)
+        db.session.flush()
+        for d, qty, pr in zip(descs, qtys, prices):
+            if d.strip():
+                db.session.add(QuotationItem(
+                    quotation_id=q.id,
+                    description=d.strip(),
+                    quantity=int(qty or 1),
+                    unit_price=int(pr or 0)))
+    # Clear negotiation note + re-send
+    q.negotiation_note = None
+    q.status = "pending"
+    db.session.commit()
+    if q.contract and q.contract.customer_id:
+        action = "revised quotation" if revise else "quotation"
+        notify(q.contract.customer_id,
+               f"{'Revised' if revise else 'Updated'} material quotation {q.reference}",
+               f"We've {'revised' if revise else 'reviewed your request on'} quotation "
+               f"{q.reference} totalling ₹{q.total:,.0f}. Please review and approve or decline.",
+               link=url_for("portal.quotation", quote_id=q.id))
+    flash(f"Quotation {q.reference} {'revised and ' if revise else ''}re-sent to the client.", "success")
+    return redirect(url_for("admin.visit", visit_id=q.visit_id))
 
 
 @admin_bp.route("/visit/<int:visit_id>/reschedule", methods=["POST"])
@@ -545,6 +657,104 @@ def health_report_pdf(report_id):
 
 
 # --------------------------------------------------------------------------- #
+# Site System Checking List (floor-by-floor survey → feeds quotations)
+# --------------------------------------------------------------------------- #
+@admin_bp.route("/surveys")
+@login_required
+@staff_required
+def surveys():
+    items = SystemCheckList.query.order_by(SystemCheckList.created_at.desc()).all()
+    return render_template("admin/surveys.html", surveys=items)
+
+
+@admin_bp.route("/survey/new", methods=["GET", "POST"])
+@admin_bp.route("/survey/<int:survey_id>", methods=["GET", "POST"])
+@login_required
+@staff_required
+def survey(survey_id=None):
+    import json
+    s = db.session.get(SystemCheckList, survey_id) if survey_id else None
+    if survey_id and not s:
+        abort(404)
+    if request.method == "POST":
+        f = request.form
+        if s is None:
+            s = SystemCheckList(surveyed_by_id=current_user.id)
+            db.session.add(s)
+        s.site_name    = f.get("site_name", "").strip()
+        s.site_address = f.get("site_address", "").strip()
+        s.client_name  = f.get("client_name", "").strip()
+        s.client_phone = f.get("client_phone", "").strip()
+        s.client_email = f.get("client_email", "").strip()
+        s.contract_id  = f.get("contract_id") or None
+        if f.get("survey_date"):
+            s.survey_date = datetime.strptime(f.get("survey_date"), "%Y-%m-%d").date()
+        s.general_remarks = f.get("general_remarks", "").strip()
+        s.status = f.get("status", "draft")
+        try:
+            payload = json.loads(f.get("data_json") or "{}")
+        except (ValueError, TypeError):
+            payload = {}
+        s.set_data(payload)
+        db.session.commit()
+        flash(f"Site checking list {s.reference} saved.", "success")
+        if f.get("save_and_quote"):
+            return redirect(url_for("admin.survey_to_quote", survey_id=s.id))
+        return redirect(url_for("admin.survey", survey_id=s.id))
+
+    cid = request.args.get("contract_id", type=int)
+    contract = db.session.get(Contract, cid) if cid else None
+    contracts = Contract.query.order_by(Contract.id.desc()).all()
+    return render_template("admin/survey_form.html", s=s, model=SystemCheckList,
+                           contract=contract, contracts=contracts)
+
+
+@admin_bp.route("/survey/<int:survey_id>/quote")
+@login_required
+@staff_required
+def survey_to_quote(survey_id):
+    """Create a draft ServiceQuotation pre-filled from a survey's findings.
+
+    Each surveyed item (with a non-zero total count) becomes a line item the
+    engineer can price; client header carries over so the quote is ready to send.
+    """
+    s = db.session.get(SystemCheckList, survey_id) or abort(404)
+    sq = ServiceQuotation(
+        service_type="amc",
+        customer_name=s.client_name or s.site_name or "Customer",
+        customer_phone=s.client_phone or "",
+        customer_email=s.client_email or "",
+        project_name=s.site_name or "",
+        customer_address=s.site_address or "",
+        gst_percent=18, valid_days=7,
+        notes=f"Auto-generated from site survey {s.reference}.",
+        created_by_id=current_user.id, status="draft",
+    )
+    # link to an existing customer account if one matches
+    cu = None
+    if sq.customer_phone:
+        cu = User.query.filter_by(phone=sq.customer_phone, role="customer").first()
+    if cu:
+        sq.customer_id = cu.id
+    sq.generate_number()
+    db.session.add(sq)
+    db.session.flush()
+
+    from ..models import ServiceQuotationItem
+    order = 0
+    for item, qty in s.item_totals.items():
+        db.session.add(ServiceQuotationItem(
+            quotation_id=sq.id, category="As-surveyed equipment",
+            description=item, unit="No.", quantity=qty, rate=0, sort_order=order))
+        order += 1
+    s.service_quotation_id = sq.id
+    db.session.commit()
+    flash(f"Draft quotation {sq.reference} created from survey {s.reference}. "
+          f"Add rates, then send.", "success")
+    return redirect(url_for("sq.detail_quotation", sq_id=sq.id))
+
+
+# --------------------------------------------------------------------------- #
 # Service requests (emergency / NOC)
 # --------------------------------------------------------------------------- #
 @admin_bp.route("/requests")
@@ -705,6 +915,39 @@ def technician_performance():
 # --------------------------------------------------------------------------- #
 # Trigger feedback email (called after visit marked completed)
 # --------------------------------------------------------------------------- #
+def _maybe_issue_certificate(visit: Visit) -> None:
+    """Issue an AMC Fire Safety Certificate when visit 4 is marked completed.
+
+    Once issued the flag is set permanently on the contract so the notification
+    fires only once, even if a visit is accidentally re-saved as completed.
+    """
+    c = visit.contract
+    if not c or c.certificate_issued:
+        return
+    # Fire when visit_number 4 is the one being completed, or when it was
+    # already completed and we now have >= 4 completed visits.
+    if visit.visit_number < 4:
+        return
+    completed = sum(1 for v in c.visits if v.status == "completed")
+    if completed < 4:
+        return
+    # Mark issued
+    from datetime import datetime as _dt
+    c.certificate_issued = True
+    c.certificate_issued_at = _dt.utcnow()
+    # Notify the client with a chime
+    if c.customer_id:
+        notify(c.customer_id,
+               "Your AMC Fire Safety Certificate is ready!",
+               f"Congratulations! {c.reference} has completed its 4th service visit. "
+               "Your fire safety certificate is now available. Download it from your portal.",
+               link=url_for("portal.amc_certificate", contract_id=c.id) + "?chime=1&celebrate=1")
+    # Also notify staff
+    notify_staff("AMC certificate issued",
+                 f"{c.reference} completed 4 visits — certificate issued.",
+                 link=url_for("admin.contract", contract_id=c.id))
+
+
 def _trigger_feedback(visit: Visit) -> None:
     """Create a VisitFeedback stub and send the feedback email to the customer."""
     import secrets

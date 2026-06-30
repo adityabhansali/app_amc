@@ -11,11 +11,12 @@ from ..extensions import db
 from ..models import (Contract, Visit, Quotation, ServiceRequest, Payment,
                       Notification, RefillOrder, ServiceQuotation,
                       CustomerJourneyEvent, VisitFeedback, Equipment,
-                      HealthCheckReport)
-from ..utils import customer_required, notify, notify_staff, WAIVER_TEXT
+                      HealthCheckReport, Referral)
+from ..utils import (customer_required, notify, notify_staff, WAIVER_TEXT,
+                     AMC_AGREEMENT_CLAUSES, AMC_AGREEMENT_VERSION, save_upload)
 from ..email_service import (send_quote_accepted_alert, send_negotiation_alert)
 from ..pdf_generator import (generate_quotation_pdf, generate_health_report_pdf,
-                            generate_service_report_pdf,
+                            generate_service_report_pdf, generate_amc_certificate_pdf,
                             generate_material_quotation_pdf)
 
 portal_bp = Blueprint("portal", __name__, url_prefix="/portal")
@@ -68,6 +69,46 @@ def contract(contract_id):
                            health_reports=health_reports)
 
 
+# ─────────────────────────────────────────────────────────────────
+# AMC maintenance agreement (click-through T&C, view-only)
+# ─────────────────────────────────────────────────────────────────
+
+@portal_bp.route("/contract/<int:contract_id>/agreement")
+@login_required
+@customer_required
+def agreement(contract_id):
+    c = _own_contract(contract_id)
+    return render_template("portal/agreement.html", c=c,
+                           clauses=AMC_AGREEMENT_CLAUSES,
+                           version=AMC_AGREEMENT_VERSION)
+
+
+@portal_bp.route("/contract/<int:contract_id>/agreement/accept", methods=["POST"])
+@login_required
+@customer_required
+def agreement_accept(contract_id):
+    c = _own_contract(contract_id)
+    if c.agreement_accepted:
+        flash("You have already accepted this agreement.", "info")
+        return redirect(url_for("portal.contract", contract_id=c.id))
+    if request.form.get("agree") != "1":
+        flash("Please tick the box to confirm you have read and agree.", "warning")
+        return redirect(url_for("portal.agreement", contract_id=c.id))
+    c.agreement_accepted = True
+    c.agreement_accepted_at = datetime.utcnow()
+    c.agreement_version = AMC_AGREEMENT_VERSION
+    db.session.add(CustomerJourneyEvent(
+        customer_id=current_user.id, event_type="agreement_accepted",
+        description=f"Customer accepted the AMC agreement (v{AMC_AGREEMENT_VERSION}) for {c.reference}",
+        ref_type="contract", ref_id=c.id))
+    db.session.commit()
+    notify_staff(f"AMC agreement accepted — {c.reference}",
+                 f"{current_user.name} accepted the maintenance agreement for {c.reference}.",
+                 link=url_for("admin.contract", contract_id=c.id))
+    flash("Thank you — your AMC agreement is confirmed.", "success_chime")
+    return redirect(url_for("portal.contract", contract_id=c.id))
+
+
 @portal_bp.route("/visit/<int:visit_id>")
 @login_required
 @customer_required
@@ -97,15 +138,17 @@ def report(visit_id):
 @login_required
 @customer_required
 def service_report_pdf(visit_id):
-    """Branded NSE service report generated from the visit record."""
+    """NSE service report generated from the visit record. Pass ?view=1 to open
+    inline in the browser (preview) instead of forcing a download."""
     v = db.session.get(Visit, visit_id)
     if not v or v.contract.customer_id != current_user.id:
         abort(404)
     pdf = generate_service_report_pdf(v)
     if not pdf:
         abort(500)
+    inline = request.args.get("view") == "1"
     return send_file(io.BytesIO(pdf), mimetype="application/pdf",
-                     as_attachment=True,
+                     as_attachment=not inline,
                      download_name=f"{v.contract.reference}-{v.label.replace(' ','')}.pdf")
 
 
@@ -156,7 +199,7 @@ def visit_approve(visit_id):
 
     # Notify the technician + ops console of the rating
     if v.technician_id:
-        notify(v.technician_id, f"⭐ {overall}/5 — {v.label} rated",
+        notify(v.technician_id, f"{overall}/5 — {v.label} rated",
                f"{current_user.name} rated {v.label} of {v.contract.reference} {overall}/5.",
                link=url_for("admin.visit", visit_id=v.id))
     notify_staff(f"Feedback received — {v.contract.reference} {v.label}",
@@ -164,6 +207,19 @@ def visit_approve(visit_id):
                  + (f": {fb.comment[:80]}" if fb.comment else "."),
                  link=url_for("admin.visit", visit_id=v.id))
     flash("Thank you! Your feedback has been shared with our team.", "success")
+
+    # Check if referral prompt should appear: 2+ good ratings with no existing referral
+    good_ratings = VisitFeedback.query.filter(
+        VisitFeedback.customer_id == current_user.id,
+        VisitFeedback.rating_overall >= 4,
+        VisitFeedback.rating_overall.isnot(None),
+    ).count()
+    existing_referral = Referral.query.filter_by(
+        contract_id=v.contract_id,
+        submitted_by_id=current_user.id,
+    ).first()
+    if good_ratings >= 2 and not existing_referral:
+        return redirect(url_for("portal.visit", visit_id=v.id, prompt_referral=1))
     return redirect(url_for("portal.visit", visit_id=v.id))
 
 
@@ -233,6 +289,34 @@ def quotation_decide(quote_id):
     return redirect(url_for("portal.contract", contract_id=q.contract_id))
 
 
+@portal_bp.route("/quotation/<int:quote_id>/reopen", methods=["POST"])
+@login_required
+@customer_required
+def quotation_reopen(quote_id):
+    """Client re-opens a rejected material quotation to negotiate / re-quote."""
+    q = db.session.get(Quotation, quote_id)
+    if not q or q.contract.customer_id != current_user.id:
+        abort(404)
+    if q.status != "rejected":
+        flash("Only a rejected quotation can be re-opened.", "warning")
+        return redirect(url_for("portal.quotation", quote_id=q.id))
+    note = request.form.get("negotiation_note", "").strip()
+    q.status = "pending"
+    q.negotiation_note = note or None
+    q.decided_at = None
+    q.rejection_acknowledged = False
+    q.waiver_text = None
+    db.session.commit()
+    notify_staff(
+        f"Re-quote requested — {q.reference}",
+        f"{current_user.name} wants to revisit quotation {q.reference}"
+        + (f": {note[:100]}" if note else "."),
+        link=url_for("admin.visit", visit_id=q.visit_id) if q.visit_id
+             else url_for("admin.contract", contract_id=q.contract_id))
+    flash("Your request has been sent. Our team will review and update the quotation shortly.", "success")
+    return redirect(url_for("portal.quotation", quote_id=q.id))
+
+
 @portal_bp.route("/quotation/<int:quote_id>/pdf")
 @login_required
 @customer_required
@@ -262,8 +346,9 @@ def health_report_pdf(report_id):
     pdf = generate_health_report_pdf(r)
     if not pdf:
         abort(500)
+    inline = request.args.get("view") == "1"
     return send_file(io.BytesIO(pdf), mimetype="application/pdf",
-                     as_attachment=True, download_name=f"{r.reference}.pdf")
+                     as_attachment=not inline, download_name=f"{r.reference}.pdf")
 
 
 @portal_bp.route("/requests")
@@ -408,6 +493,76 @@ def service_quotation_negotiate(sq_id):
 
 
 # ─────────────────────────────────────────────────────────────────
+# Customer profile (extended fields: company, GST, photo)
+# ─────────────────────────────────────────────────────────────────
+
+@portal_bp.route("/profile", methods=["GET", "POST"])
+@login_required
+@customer_required
+def profile():
+    if request.method == "POST":
+        f = request.form
+        current_user.name         = f.get("name", current_user.name).strip() or current_user.name
+        current_user.company_name = f.get("company_name", "").strip() or None
+        current_user.gst_number   = f.get("gst_number", "").strip() or None
+        current_user.address      = f.get("address", "").strip() or None
+        current_user.area         = f.get("area", "").strip() or None
+        current_user.city         = f.get("city", "").strip() or "Surat, Gujarat"
+        # Optional photo / ID card upload
+        photo_file = request.files.get("photo")
+        if photo_file and photo_file.filename:
+            path = save_upload(photo_file, f"profiles/user{current_user.id}",
+                               {"png", "jpg", "jpeg", "gif", "webp", "pdf"})
+            if path:
+                current_user.photo_path = path
+        db.session.commit()
+        flash("Profile updated.", "success")
+        return redirect(url_for("portal.profile"))
+    from ..reminders import payment_reminders
+    my_reminders = payment_reminders(customer_id=current_user.id)
+    return render_template("portal/profile.html", my_reminders=my_reminders)
+
+
+# ─────────────────────────────────────────────────────────────────
+# Referrals
+# ─────────────────────────────────────────────────────────────────
+
+@portal_bp.route("/contract/<int:contract_id>/refer", methods=["POST"])
+@login_required
+@customer_required
+def submit_referral(contract_id):
+    c = _own_contract(contract_id)
+    f = request.form
+    name = f.get("referee_name", "").strip()
+    if not name:
+        flash("Please enter the contact's name.", "warning")
+        return redirect(url_for("portal.contract", contract_id=c.id))
+    ref = Referral(
+        contract_id=c.id,
+        submitted_by_id=current_user.id,
+        referee_name=name,
+        referee_phone=f.get("referee_phone", "").strip() or None,
+        referee_company=f.get("referee_company", "").strip() or None,
+        referee_area=f.get("referee_area", "").strip() or None,
+        notes=f.get("notes", "").strip() or None,
+    )
+    db.session.add(ref)
+    db.session.add(CustomerJourneyEvent(
+        customer_id=current_user.id, event_type="referral_submitted",
+        description=f"Customer referred {name} for {c.reference}",
+        ref_type="contract", ref_id=c.id))
+    db.session.commit()
+    notify_staff(
+        f"New referral from {current_user.name}",
+        f"{current_user.name} referred {name}"
+        + (f" ({f.get('referee_phone','').strip()})" if f.get("referee_phone") else "")
+        + f" against {c.reference}.",
+        link=url_for("admin.contract", contract_id=c.id))
+    flash("Thank you for the referral! Our team will reach out to them shortly.", "success_chime")
+    return redirect(url_for("portal.contract", contract_id=c.id))
+
+
+# ─────────────────────────────────────────────────────────────────
 # Customer journey timeline
 # ─────────────────────────────────────────────────────────────────
 
@@ -446,3 +601,30 @@ def equipment_detail(equipment_id):
               .all())
     return render_template("portal/equipment_detail.html",
                            eq=eq, contract=contract, visits=visits)
+
+
+# ─────────────────────────────────────────────────────────────────
+# AMC Fire Safety Certificate (issued after 4th completed visit)
+# ─────────────────────────────────────────────────────────────────
+
+@portal_bp.route("/contract/<int:contract_id>/certificate")
+@login_required
+@customer_required
+def amc_certificate(contract_id):
+    """View (inline) or download the AMC Fire Safety Certificate PDF."""
+    c = db.session.get(Contract, contract_id)
+    if not c or c.customer_id != current_user.id:
+        abort(404)
+    if not c.certificate_issued:
+        flash("Your certificate will be available after your 4th completed visit.", "info")
+        return redirect(url_for("portal.contract", contract_id=c.id))
+    pdf = generate_amc_certificate_pdf(c)
+    if not pdf:
+        abort(500)
+    as_attachment = request.args.get("view") != "1"
+    return send_file(
+        io.BytesIO(pdf),
+        mimetype="application/pdf",
+        as_attachment=as_attachment,
+        download_name=f"NSE-Certificate-{c.reference}.pdf",
+    )

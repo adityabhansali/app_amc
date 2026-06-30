@@ -3,46 +3,88 @@
 <head>
 <meta charset="UTF-8">
 <style>
-  @page { size: A4; margin: 14mm 14mm 16mm 14mm; }
+  @page { size: A4; margin: 12mm 12mm 14mm 12mm; }
   * { box-sizing: border-box; }
-  body { font-family: Arial, Helvetica, sans-serif; font-size: 9.5pt; color: #111; margin: 0; }
-  .co-header { text-align: center; border-bottom: 2px solid #16235b; padding-bottom: 6px; margin-bottom: 8px; }
-  .co-header img { height: 48px; }
-  .co-name { font-size: 16pt; font-weight: bold; color: #16235b; margin: 2px 0 0; }
-  .co-address { background: #16235b; color: #fff; text-align: center; font-size: 8pt; padding: 3px 8px; margin: 4px 0; }
-  .doc-title { text-align: center; font-size: 13pt; font-weight: bold; color: #16235b; margin: 6px 0; text-decoration: underline; }
-  table { width: 100%; border-collapse: collapse; }
-  .meta td { padding: 3px 5px; font-size: 9pt; border: 1px solid #ccc; }
-  .meta .lbl { color: #555; font-weight: bold; width: 20%; background: #f5f7fc; }
-  .section-title { background: #dce4f4; color: #16235b; font-weight: bold; padding: 4px 6px; margin: 10px 0 4px; font-size: 9pt; }
-  .work { border: 1px solid #ccc; padding: 8px; min-height: 40px; white-space: pre-line; }
-  .chk th, .chk td { border: 1px solid #ccc; padding: 4px 6px; font-size: 8.5pt; text-align: left; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 9pt; color: #111; margin: 0; }
+
+  /* ── Header ── */
+  .co-header { display: table; width: 100%; border-bottom: 2.5px solid #16235b; padding-bottom: 6px; margin-bottom: 8px; }
+  .co-logo-cell { display: table-cell; width: 64px; vertical-align: middle; }
+  .co-logo-cell img { height: 52px; }
+  .co-details-cell { display: table-cell; vertical-align: middle; padding-left: 10px; }
+  .co-name { font-size: 15pt; font-weight: bold; color: #16235b; margin: 0; line-height: 1.1; }
+  .co-tagline { font-size: 8.5pt; color: #444; font-style: italic; margin: 1px 0; }
+  .co-meta { font-size: 7.5pt; color: #555; margin: 1px 0; }
+  .co-address-bar { background: #16235b; color: #fff; font-size: 7.5pt; padding: 3px 8px; margin-top: 5px; }
+
+  /* ── Document title ── */
+  .doc-title { text-align: center; font-size: 12pt; font-weight: bold; color: #16235b;
+               margin: 6px 0 5px; text-decoration: underline; text-transform: uppercase; }
+
+  /* ── Meta grid ── */
+  table.meta { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+  table.meta td { padding: 3px 5px; font-size: 8.5pt; border: 1px solid #ccc; }
+  table.meta .lbl { color: #555; font-weight: bold; width: 20%; background: #f5f7fc; }
+
+  /* ── Section title ── */
+  .section-title { background: #dce4f4; color: #16235b; font-weight: bold;
+                   padding: 3px 6px; margin: 7px 0 3px; font-size: 8.5pt; }
+
+  /* ── Work done ── */
+  .work { border: 1px solid #ccc; padding: 5px 6px; min-height: 28px;
+          white-space: pre-line; font-size: 8.5pt; }
+
+  /* ── Checklist ── */
+  .chk { width: 100%; border-collapse: collapse; font-size: 8pt; }
+  .chk th, .chk td { border: 1px solid #ccc; padding: 3px 5px; text-align: left; }
   .chk th { background: #16235b; color: #fff; }
   .ok { color: #15803d; font-weight: bold; }
   .issue { color: #b91c1c; font-weight: bold; }
   .na { color: #666; }
-  .photos img { height: 90px; margin: 3px; border: 1px solid #ccc; }
-  .sign-tbl td { padding: 18px 6px 4px; font-size: 9pt; }
+
+  /* ── Photos ── */
+  .photos img { height: 75px; margin: 2px; border: 1px solid #ccc; }
+
+  /* ── Material clause ── */
+  .mat-clause { border: 1px solid #ccc; padding: 5px 8px; font-size: 8pt;
+                background: #fffbeb; margin-top: 5px; }
+  .mat-clause strong { color: #16235b; }
+
+  /* ── Signatures ── */
+  .sign-tbl { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  .sign-tbl td { padding: 18px 6px 3px; font-size: 8.5pt; width: 50%; }
+  .sign-line { border-top: 1px solid #333; }
+
+  .footer-note { font-size: 7.5pt; color: #666; margin-top: 6px; font-style: italic; text-align: center; }
 </style>
 </head>
 <body>
 
+<!-- ── Header: logo left, name+tagline right ── -->
 <div class="co-header">
-  {% if logo_url %}<img src="{{ logo_url }}" alt="{{ company_name }}">{% endif %}
-  <div class="co-name">{{ company_name.upper() }}</div>
-  <div class="co-address">{{ company_address }} &nbsp;|&nbsp; {{ company_email }} &nbsp;|&nbsp; GST: {{ company_gst }}</div>
+  <div class="co-logo-cell">
+    {% if logo_url %}<img src="{{ logo_url }}" alt="{{ company_name }}">{% endif %}
+  </div>
+  <div class="co-details-cell">
+    <div class="co-name">{{ company_name.upper() }}</div>
+    <div class="co-tagline">Enlightening Safety...</div>
+    <div class="co-meta">An ISO 9001:2015 Company &nbsp;|&nbsp; Govt. Approved Fire Consultant</div>
+    <div class="co-meta">GST: {{ company_gst }} &nbsp;|&nbsp; {{ company_email }} &nbsp;|&nbsp; northernstarengineering.com</div>
+  </div>
 </div>
+<div class="co-address-bar">{{ company_address }}</div>
 
-<div class="doc-title">AMC SERVICE REPORT</div>
+<div class="doc-title">AMC Service Report</div>
 
+<!-- ── Meta ── -->
 <table class="meta">
   <tr>
-    <td class="lbl">Contract</td><td>{{ v.contract.reference }}</td>
+    <td class="lbl">Contract No.</td><td><strong>{{ v.contract.reference }}</strong></td>
     <td class="lbl">Visit</td><td>{{ v.label }}</td>
   </tr>
   <tr>
-    <td class="lbl">Site</td><td>{{ v.contract.site_name or v.contract.applicant_name or '' }}</td>
-    <td class="lbl">Service date</td><td>{{ (v.completed_date or v.scheduled_date).strftime('%d-%m-%Y') if (v.completed_date or v.scheduled_date) else '' }}</td>
+    <td class="lbl">Site / Client</td><td>{{ v.contract.site_name or v.contract.applicant_name or '' }}</td>
+    <td class="lbl">Service Date</td><td>{{ (v.completed_date or v.scheduled_date).strftime('%d-%m-%Y') if (v.completed_date or v.scheduled_date) else '' }}</td>
   </tr>
   <tr>
     <td class="lbl">Address</td><td>{{ v.contract.site_address or '' }}</td>
@@ -50,13 +92,17 @@
   </tr>
 </table>
 
+<!-- ── Work done ── -->
 <div class="section-title">WORK CARRIED OUT</div>
 <div class="work">{{ v.work_done or 'Routine maintenance and inspection completed.' }}</div>
 
+<!-- ── Checklist ── -->
 {% if v.checklist_items %}
 <div class="section-title">MAINTENANCE CHECKLIST</div>
 <table class="chk">
-  <thead><tr><th style="width:50%">Item</th><th style="width:15%">Status</th><th>Note</th></tr></thead>
+  <thead>
+    <tr><th style="width:50%">Item</th><th style="width:12%">Status</th><th>Note</th></tr>
+  </thead>
   <tbody>
     {% for it in v.checklist_items %}
     <tr>
@@ -69,6 +115,7 @@
 </table>
 {% endif %}
 
+<!-- ── Photos ── -->
 {% if v.photos %}
 <div class="section-title">SITE PHOTOS</div>
 <div class="photos">
@@ -79,15 +126,33 @@
 </div>
 {% endif %}
 
+<!-- ── Material quotation clause ── -->
+{% set mat_quotes = v.material_quotes %}
+{% if mat_quotes %}
+<div class="section-title">MATERIAL / SPARE PARTS</div>
+<div class="mat-clause">
+  {% for mq in mat_quotes %}
+  <strong>{{ mq.reference }}</strong> — {{ mq.status|title }}
+  {% if mq.status == 'approved' %}
+    : Client approved replacement of materials (₹{{ '{:,.0f}'.format(mq.total) }}).
+  {% elif mq.status == 'rejected' %}
+    : Client declined replacement. Liability waiver accepted — Northern Star Engineering bears no responsibility for fire incidents arising from unmaintained equipment.
+  {% else %}
+    : Pending client decision (₹{{ '{:,.0f}'.format(mq.total) }}).
+  {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- ── Signatures ── -->
 <table class="sign-tbl">
   <tr>
-    <td style="border-top:1px solid #333;width:45%">Customer Sign</td>
-    <td style="width:10%"></td>
-    <td style="border-top:1px solid #333;width:45%">For {{ company_name }}</td>
+    <td><div class="sign-line">Customer Signature &amp; Date</div></td>
+    <td><div class="sign-line">For {{ company_name }}</div></td>
   </tr>
 </table>
 
-<p style="font-size:8pt;color:#666;margin-top:10px;font-style:italic">Thank you for choosing {{ company_name }} — Enlightening Safety.</p>
+<p class="footer-note">Thank you for choosing {{ company_name }} — Enlightening Safety. | {{ company_address }}</p>
 
 </body>
 </html>

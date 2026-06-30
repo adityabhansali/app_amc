@@ -9,8 +9,9 @@
       <p class="text-slate-600 text-sm">{{ current_user.phone }}{% if current_user.area %} · {{ current_user.area }}{% endif %}</p>
     </div>
     <div class="flex flex-wrap gap-2">
-      <a href="{{ url_for('portal.service_quotations') }}" class="btn btn-ghost text-sm px-3 py-2">📋 My Quotes</a>
-      <a href="{{ url_for('portal.journey') }}" class="btn btn-ghost text-sm px-3 py-2">🗺 My Journey</a>
+      <a href="{{ url_for('portal.profile') }}" class="btn btn-ghost text-sm px-3 py-2">My Profile</a>
+      <a href="{{ url_for('portal.service_quotations') }}" class="btn btn-ghost text-sm px-3 py-2">My Quotes</a>
+      <a href="{{ url_for('portal.journey') }}" class="btn btn-ghost text-sm px-3 py-2">My Journey</a>
       <a href="{{ url_for('public.apply') }}" class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-hover transition">+ New AMC</a>
       {% if has_refills %}<a href="{{ url_for('public.refill') }}" class="bg-surface-2 text-ink px-4 py-2 rounded-lg text-sm font-medium border border-hairline hover:border-primary transition">Book refill</a>{% endif %}
       {% if has_emergencies %}<a href="{{ url_for('public.emergency') }}" class="bg-danger text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition">Emergency</a>{% endif %}
@@ -20,7 +21,7 @@
   {% if pending_quotes %}
   <div class="mt-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
     <div class="flex items-start gap-3">
-      <span class="text-2xl mt-0.5">📋</span>
+      <svg class="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 12h6M9 16h4"/></svg>
       <div class="flex-1">
         <h3 class="font-semibold text-amber-800">
           {% if pending_quotes|length == 1 %}1 quotation is waiting for your response{% else %}{{ pending_quotes|length }} quotations are waiting for your response{% endif %}

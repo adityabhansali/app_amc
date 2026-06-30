@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}AMC Agreement — {{ c.reference }}{% endblock %}
+{% block content %}
+<section class="max-w-3xl mx-auto px-4 py-10">
+  <a href="{{ url_for('portal.contract', contract_id=c.id) }}" class="text-sm text-slate-500 hover:text-navy-700">← Back to {{ c.reference }}</a>
+
+  <div class="card p-6 mt-3">
+    <!-- Header -->
+    <div class="flex items-center gap-3 border-b border-hairline pb-4 mb-4">
+      <div class="w-11 h-11 rounded-xl bg-navy-100 grid place-items-center flex-shrink-0">
+        <svg class="w-5 h-5 text-navy-800" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+      </div>
+      <div>
+        <h1 class="text-xl font-extrabold text-ink">AMC Maintenance Agreement</h1>
+        <p class="text-sm text-ink-subtle">{{ c.reference }}{% if c.site_name %} · {{ c.site_name }}{% endif %} · v{{ version }}</p>
+      </div>
+    </div>
+
+    {% if c.agreement_accepted %}
+    <!-- Already accepted -->
+    <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-5 text-green-800 text-sm">
+      Agreement accepted on <strong>{{ c.agreement_accepted_at|datefmt }}</strong>. The terms below remain in effect for the duration of your contract.
+    </div>
+    {% else %}
+    <p class="text-sm text-ink-muted mb-5">
+      Please read the terms below carefully. To activate the protections of your contract,
+      tick the confirmation box at the end and click <strong>Agree &amp; Continue</strong>.
+    </p>
+    {% endif %}
+
+    <!-- Scrollable clauses -->
+    <div id="clauseBox" class="border border-hairline rounded-xl bg-surface-1 max-h-[55vh] overflow-y-auto p-5 space-y-4">
+      {% for title, body in clauses %}
+      <div>
+        <h3 class="font-bold text-ink text-sm">{{ loop.index }}. {{ title }}</h3>
+        <p class="text-sm text-ink-muted mt-1 leading-relaxed">{{ body }}</p>
+      </div>
+      {% endfor %}
+      <p class="text-xs text-ink-subtle border-t border-hairline pt-3 mt-2">
+        This agreement is between {{ COMPANY_NAME }} ({{ COMPANY_CITY }}) and the registered
+        customer for contract {{ c.reference }}. Issued under GST No. 24ALQPD0899P1ZD.
+      </p>
+    </div>
+
+    {% if not c.agreement_accepted %}
+    <!-- Accept form -->
+    <form method="post" action="{{ url_for('portal.agreement_accept', contract_id=c.id) }}" class="mt-5">
+      <label class="flex items-start gap-2.5 text-sm text-ink-muted">
+        <input type="checkbox" name="agree" value="1" id="agreeChk" required class="mt-0.5">
+        <span>I have read and understood all {{ clauses|length }} clauses above and agree to the
+        terms of this AMC maintenance agreement on behalf of the registered site.</span>
+      </label>
+      <div class="mt-5 flex flex-wrap gap-3">
+        <button type="submit" id="agreeBtn"
+                class="btn btn-primary px-6 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+          Agree &amp; Continue
+        </button>
+        <a href="{{ url_for('portal.contract', contract_id=c.id) }}" class="btn btn-ghost px-5">Read later</a>
+      </div>
+      <p class="text-xs text-ink-subtle mt-2">For your protection, this agreement is view-only and cannot be downloaded.</p>
+    </form>
+    {% endif %}
+  </div>
+</section>
+
+{% if not c.agreement_accepted %}
+<script>
+(function() {
+  var chk = document.getElementById('agreeChk');
+  var btn = document.getElementById('agreeBtn');
+  var box = document.getElementById('clauseBox');
+  var scrolled = false;
+  // Require the client to scroll the clauses before the checkbox is enabled.
+  function checkScroll() {
+    if (box.scrollTop + box.clientHeight >= box.scrollHeight - 24) scrolled = true;
+    sync();
+  }
+  function sync() {
+    chk.disabled = !scrolled;
+    btn.disabled = !(scrolled && chk.checked);
+  }
+  // If the content is short enough that there's nothing to scroll, allow immediately.
+  if (box.scrollHeight <= box.clientHeight + 24) scrolled = true;
+  box.addEventListener('scroll', checkScroll);
+  chk.addEventListener('change', sync);
+  sync();
+})();
+</script>
+{% endif %}
+{% endblock %}

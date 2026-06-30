@@ -6,35 +6,47 @@
   @page { size: A4; margin: 12mm 12mm 14mm 12mm; }
   * { box-sizing: border-box; }
   body { font-family: Arial, Helvetica, sans-serif; font-size: 8.5pt; color: #111; margin: 0; }
-  .co-header { text-align: center; border-bottom: 2px solid #16235b; padding-bottom: 6px; margin-bottom: 8px; }
-  .co-header img { height: 44px; }
-  .co-name { font-size: 15pt; font-weight: bold; color: #16235b; margin: 2px 0 0; }
-  .co-address { background: #16235b; color: #fff; text-align: center; font-size: 7.5pt; padding: 3px 8px; margin: 4px 0; }
-  .doc-title { text-align: center; font-size: 12pt; font-weight: bold; color: #16235b; margin: 6px 0; text-decoration: underline; }
+  .co-name { font-size: 15pt; font-weight: bold; color: #16235b; margin: 0 0 1px; }
+  .co-sub  { font-size: 7.5pt; color: #444; margin: 0; }
+  .co-address { background-color: #16235b; color: #fff; text-align: center; font-size: 7.5pt; padding: 3px 8px; margin: 5px 0 4px; }
+  .doc-title  { text-align: center; font-size: 12pt; font-weight: bold; color: #16235b; margin: 6px 0; text-decoration: underline; }
   table { width: 100%; border-collapse: collapse; }
   .meta td { padding: 2px 4px; font-size: 8.5pt; border: 1px solid #ccc; }
-  .meta .lbl { color: #555; font-weight: bold; width: 18%; background: #f5f7fc; }
-  .section-title { background: #dce4f4; color: #16235b; font-weight: bold; padding: 4px 6px; margin: 8px 0 0; font-size: 8.5pt; }
+  .meta .lbl { color: #555; font-weight: bold; width: 18%; background-color: #f5f7fc; }
+  .section-title { background-color: #dce4f4; color: #16235b; font-weight: bold; padding: 4px 6px; margin: 8px 0 0; font-size: 8.5pt; }
   .qtable td { padding: 3px 5px; border-bottom: 1px solid #eee; vertical-align: top; }
   .qtable .opts { text-align: right; white-space: nowrap; width: 130px; color: #333; }
-  .box { font-family: Arial; }
   .floor-tbl th, .floor-tbl td { border: 1px solid #bbb; padding: 2px 3px; text-align: center; font-size: 6.5pt; }
-  .floor-tbl th { background: #16235b; color: #fff; }
+  .floor-tbl th { background-color: #16235b; color: #fff; }
   .floor-tbl td.fl { text-align: left; font-weight: bold; }
   .part-tbl td { border: 1px solid #ccc; padding: 3px 5px; font-size: 8pt; }
-  .part-tbl .lbl { background: #f5f7fc; color: #444; width: 55%; }
+  .part-tbl .lbl { background-color: #f5f7fc; color: #444; width: 55%; }
   .remarks { border: 1px solid #ccc; min-height: 60px; padding: 6px; margin-top: 4px; }
   .sign-tbl td { padding: 14px 6px 4px; font-size: 8.5pt; }
   .valid { font-size: 7.5pt; font-style: italic; color: #555; margin-top: 6px; }
+  /* yn() indicator cells */
+  .yn-yes  { padding: 1px 5px; border: 1px solid #16235b; background-color: #16235b; color: #fff; font-weight: bold; font-size: 7.5pt; }
+  .yn-no   { padding: 1px 5px; border: 1px solid #b91c1c; background-color: #b91c1c; color: #fff; font-weight: bold; font-size: 7.5pt; }
+  .yn-na   { padding: 1px 5px; border: 1px solid #555555; background-color: #555555; color: #fff; font-weight: bold; font-size: 7.5pt; }
+  .yn-off  { padding: 1px 5px; border: 1px solid #dddddd; background-color: #ffffff; color: #cccccc; font-size: 7.5pt; }
 </style>
 </head>
 <body>
 
-<div class="co-header">
-  {% if logo_url %}<img src="{{ logo_url }}" alt="{{ company_name }}">{% endif %}
-  <div class="co-name">{{ company_name.upper() }}</div>
-  <div class="co-address">{{ company_address }} &nbsp;|&nbsp; {{ company_email }} &nbsp;|&nbsp; GST: {{ company_gst }}</div>
-</div>
+<!-- Company header using actual <table> for reliable xhtml2pdf layout -->
+<table cellpadding="0" cellspacing="0" style="width:100%;border-bottom:2px solid #16235b;padding-bottom:6px;margin-bottom:8px">
+  <tr>
+    <td style="width:60px;vertical-align:middle">
+      {% if logo_url %}<img src="{{ logo_url }}" alt="{{ company_name }}" style="height:50px">{% endif %}
+    </td>
+    <td style="vertical-align:middle;padding-left:10px">
+      <div class="co-name">{{ company_name.upper() }}</div>
+      <div class="co-sub">Enlightening Safety &nbsp;|&nbsp; An ISO 9001:2015 Company &nbsp;|&nbsp; Govt. Approved Fire Consultant</div>
+      <div class="co-sub">{{ company_email }} &nbsp;|&nbsp; GST: {{ company_gst }} &nbsp;|&nbsp; northernstarengineering.com</div>
+    </td>
+  </tr>
+</table>
+<div class="co-address">{{ company_address }}</div>
 
 <div class="doc-title">FIRE SYSTEM HEALTH CHECKUP REPORT</div>
 
@@ -53,16 +65,28 @@
   </tr>
 </table>
 
-{% macro yn(key) %}
-{% set v = answers.get(key) %}
-<span class="box">{{ '☑' if v=='yes' else '☐' }} Yes &nbsp; {{ '☑' if v=='no' else '☐' }} No &nbsp; {{ '☑' if v=='na' else '☐' }} N/A</span>
+{#
+  yn(key, ans) — render a Yes / No / N/A indicator for a given answer key.
+  Pass `answers` explicitly so the macro is guaranteed to see the dict
+  regardless of Jinja2 scope semantics.
+  Uses CSS classes defined above so xhtml2pdf applies background-color reliably.
+#}
+{% macro yn(key, ans) %}
+{% set val = ans.get(key, '') %}
+<table cellpadding="0" cellspacing="2" style="display:inline-table;font-size:7.5pt">
+  <tr>
+    <td class="{{ 'yn-yes' if val == 'yes' else 'yn-off' }}">Yes</td>
+    <td class="{{ 'yn-no'  if val == 'no'  else 'yn-off' }}">No</td>
+    <td class="{{ 'yn-na'  if val == 'na'  else 'yn-off' }}">N/A</td>
+  </tr>
+</table>
 {% endmacro %}
 
 {% for title, qs in model.SECTIONS %}
 <div class="section-title">{{ title|upper }}</div>
 <table class="qtable">
   {% for key, label in qs %}
-  <tr><td>{{ label }}</td><td class="opts">{{ yn(key) }}</td></tr>
+  <tr><td>{{ label }}</td><td class="opts">{{ yn(key, answers) }}</td></tr>
   {% endfor %}
 </table>
 {% endfor %}
@@ -72,7 +96,7 @@
   {% for key, label, has_count in model.HYDRANT_ITEMS %}
   <tr>
     <td>{{ label }}{% if has_count and answers.get(key + '_nos') %} &nbsp;(<strong>{{ answers.get(key + '_nos') }}</strong> Nos){% endif %}</td>
-    <td class="opts">{{ yn(key) }}</td>
+    <td class="opts">{{ yn(key, answers) }}</td>
   </tr>
   {% endfor %}
 </table>
@@ -81,10 +105,10 @@
 {% if floors %}
 <div class="section-title">FLOOR-WISE FIRE PROTECTION EQUIPMENT</div>
 <table class="floor-tbl">
-  <thead><tr><th class="fl">Floor</th>{% for c in model.FLOOR_COLUMNS %}<th>{{ c }}</th>{% endfor %}</tr></thead>
+  <thead><tr><th class="fl">Floor</th>{% for col in model.FLOOR_COLUMNS %}<th>{{ col }}</th>{% endfor %}</tr></thead>
   <tbody>
     {% for row in floors %}
-    <tr><td class="fl">{{ row.floor }}</td>{% for c in model.FLOOR_COLUMNS %}<td>{{ (row.cols or {}).get(c,'') }}</td>{% endfor %}</tr>
+    <tr><td class="fl">{{ row.floor }}</td>{% for col in model.FLOOR_COLUMNS %}<td>{{ (row.cols or {}).get(col,'') }}</td>{% endfor %}</tr>
     {% endfor %}
   </tbody>
 </table>
