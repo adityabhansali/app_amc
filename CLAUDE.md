@@ -77,8 +77,7 @@ schema changes to `models.py` require deleting `nse_amc.db` and re-seeding).
 
 **Template layout** (`nse/templates/`): `base.html` + `_macros.html` + `_chat_widget.html` at the
 root; subdirs `public/`, `portal/`, `admin/` mirror the blueprints. `auth/` holds login screens.
-All templates extend `base.html`; portal and admin templates also lean on `_macros.html` for
-`status_badge`, `refill_badge`, and the `field()` form helper.
+`admin/` templates extend `base_ops.html`; `portal/` templates extend `base_portal.html`; `public/` and `auth/` templates extend `base.html` directly. See the "Template layout architecture" section below. All surfaces lean on `_macros.html` for `status_badge`, `refill_badge`, and the `field()` form helper.
 
 **Domain model** (`nse/models.py`): `Contract` is the spine — it has `Visit`s (each with `VisitPhoto`s
 and a service-report file path), `Equipment` (each with `RefillRecord`s), and `Quotation`s (with
@@ -133,9 +132,58 @@ new official logo is dropped in, re-crop the emblem the same way (Pillow isn't a
 pip-installed into `.venv` just for this). Company facts/stats on the home page and in the AI prompt are
 sourced from the live site northernstarengineering.com.
 
-## Styling / theme
+## Template layout architecture (3 base templates)
 
-The app uses a **light theme by default** — **navy brand + warm off-white canvas + amber CTAs**, with **red reserved for emergency/danger only**. Design language inspired by the "Premise — Maintenance Made Transparent" Behance reference: warm backgrounds, amber/orange primary actions, service category tiles, status timelines, and priority-border cards. Users can switch to **dark mode** via a floating pill (bottom-left) or the moon icon in the nav; preference persisted in `localStorage` (`nse-theme`). Anti-FOUC script before Tailwind CDN.
+**IMPORTANT:** There are now three separate base templates. Choose the correct one when creating new templates:
+
+| Template | Extends | Used by | Layout |
+|---|---|---|---|
+| `base.html` | — (root) | `public/`, `auth/` templates | Marketing top-nav + footer |
+| `base_ops.html` | `base.html` | All `admin/` templates | Dark navy sidebar (238px) + warm content area |
+| `base_portal.html` | `base.html` | All `portal/` templates | Sticky portal top-nav + centered content (max 1040px) |
+
+**How it works:** `base.html` defines `{% block body %}` (the public layout). `base_ops.html` and `base_portal.html` both override `{% block body %}` to inject their own layout shells, then define `{% block content %}` inside. Child templates override `{% block content %}` as normal. This is standard Jinja2 multi-level inheritance — `{% block %}` cannot live inside `{% if %}`/`{% else %}` (Jinja2 raises "block defined twice").
+
+**Never use `{% if request.path ... %}` in base.html to switch layouts** — it causes the "block defined twice" error. Always use the right base template instead.
+
+**Adding a new admin page:** `{% extends "base_ops.html" %}` — gets sidebar + ops header automatically.
+**Adding a new portal page:** `{% extends "base_portal.html" %}` — gets portal nav + centered content.
+**Adding a new public page:** `{% extends "base.html" %}` — gets marketing nav + footer.
+
+The Tara AI chat widget is included in `base_portal.html` and `base.html` (public) only — not in `base_ops.html` (staff don't need it).
+
+## Styling / theme (updated — new design system)
+
+The UI was redesigned from Claude Design prototypes in `~/Downloads/App-design/Northern Star Fire Safety Platform/`. The design has three distinct visual surfaces:
+
+**Ops Console** (`base_ops.html`): Dark navy sidebar (`linear-gradient(180deg, #171d3a, #141834)`) + warm `#f6f5f2` content canvas. White cards with `border: 1px solid #eceae4`, `border-radius: 12px`, `box-shadow: 0 1px 2px rgba(16,24,40,.04)`. Header: sticky, `rgba(246,245,242,.92)` blur. Primary action: navy `#072076` button. Amber badge on Quotations badge; red badge on Complaints/Reminders. User profile at sidebar bottom. "New Quotation" amber button in header.
+
+**Customer Portal** (`base_portal.html`): Sticky top nav, `rgba(246,245,242,.92)` blur. NSE logo in navy square `#072076` (white emblem inside) + "Northern Star" / "Customer Portal" subtitle. Nav links as pill buttons (active = white bg + border). User avatar (2-letter initials, navy gradient). Notification bell (native `<details>` popup, same as before). Content max-width 1040px centered.
+
+**Public site** (`base.html`): Unchanged marketing nav. Dark mode toggle still present (public-only). Footer navy gradient.
+
+**Design tokens (new — replaces the old palette):**
+- Canvas: `#f6f5f2` (was `#faf8f5`)
+- Card bg: `#ffffff`, card border: `#eceae4` (was `#e8e3db`)
+- Primary navy: `#072076` (was `#16235b`) — darker, more saturated
+- Sidebar bg: `#171d3a → #141834` gradient
+- Text ink: `#1b1c22`, muted: `#4a4b52`, subtle: `#8a8a90`, tertiary: `#9a9aa2`
+- Success: `#17864a`, danger: `#d23f3f`, warning: `#b45309`
+- CSS vars: `--pri`, `--pri-h`, `--pri-dk`, `--s1`, `--s2`, `--hair`, `--hair2`, `--hair3`, `--ink` through `--ink4`, `--succ`, `--danger`, `--amber`, `--amber-h`, `--amber-lt`
+
+**Fonts:** Inter (all weights 400–700 from Google Fonts) + JetBrains Mono (for reference numbers like `NSE-AMC-0001`, `QUO-0186`). Body `letter-spacing: -0.006em`; headings more negative.
+
+**Status pills** (`status_badge` macro in `_macros.html`): Now use **inline `style=` attributes** (not Tailwind classes) so colors are correct regardless of Tailwind's CDN scan. Color map: active/completed/approved/paid → green `#e7f4ec / #17864a`; pending/new/warning → amber `#fbf0dc / #b45309`; danger/rejected/open → red `#fdecea / #d23f3f`; scheduled/sent/info → blue `#eef1fb / #2f6fed`; in_progress/dispatched → indigo `#ede9fe / #5b21b6`; draft/expired/closed → slate `#f1f0ee / #6b6b72`.
+
+**`.btn-primary` behavior:** On public pages = amber `#f59e0b` (hero CTAs). On ops/portal = navy `#072076` (the `html:not(.ops-mode) .btn-primary` override in base.html handles this for public; base_ops uses explicit styles). Use `.btn-amber` for explicit amber anywhere, `.btn-primary` for the context-appropriate primary.
+
+**Sidebar nav item classes:** `.snav` (base), `.snav.active` (white bg 8% opacity + full white text). `.snav-section` = uppercase section label (grey). Defined in `<style>` inside `base_ops.html`'s `{% block body %}`.
+
+**Portal nav link classes:** `.pnav` (base), `.pnav.active` (white bg + border). Defined in `<style>` inside `base_portal.html`'s `{% block body %}`.
+
+**Dark mode:** Still available on public pages only (floating toggle bottom-left). Ops console and portal are light-only — no dark mode toggle shown there. `html.dark` overrides in `base.html` still work for public templates.
+
+**No emojis policy still applies.** SVG icons only in all UI elements.
 
 **Nav tagline**: "Enlightening Safety" (not the old "Maintenance · Refilling · Emergency" — changed on request). **No top emergency strip** — removed; the hotline still appears in the footer and in hero CTAs.
 
@@ -182,13 +230,12 @@ drag-and-drop photo input with thumbnail previews; the global JS in `base.html` 
 
 ## Conventions
 
-- Templates extend `base.html` and reuse macros from `_macros.html` (`status_badge`, `refill_badge`,
-  `field`). The AI chat widget is `_chat_widget.html`, included globally.
-- **Jinja string literals cannot contain escaped single quotes** (`\'`). When putting prose with
-  apostrophes into `{% set %}` lists (e.g. the FAQ), reword to avoid them — `\'` raises a
-  `TemplateSyntaxError`.
+- **Template inheritance:** `admin/` templates extend `base_ops.html`; `portal/` templates extend `base_portal.html`; `public/` and `auth/` templates extend `base.html`. Never use a single base template with `{% if request.path %}` branching — Jinja2 prohibits `{% block %}` inside conditionals.
+- Macros from `_macros.html` (`status_badge`, `refill_badge`, `field`, `workflow_track`, `voice_note_widget`, `star_rating_inputs`). The AI chat widget is `_chat_widget.html`, included in `base.html` and `base_portal.html` (not ops).
+- **Jinja string literals cannot contain escaped single quotes** (`\'`). When putting prose with apostrophes into `{% set %}` lists (e.g. the FAQ), reword to avoid them — `\'` raises a `TemplateSyntaxError`.
 - Customer-facing money is rendered with the `rupees` filter (₹ with thousands separators).
-- Status strings are lowercase with underscores (`in_progress`); `status_badge` maps them to colors.
+- Status strings are lowercase with underscores (`in_progress`); `status_badge` maps them to colors via inline `style=` (not Tailwind classes).
+- Reference numbers (`NSE-AMC-0001`, `QUO-0186`, `TKT-0001`) should use `class="mono"` for JetBrains Mono rendering.
 
 ## Hooks / automation
 
@@ -536,7 +583,7 @@ webhook can later flip `payment_status='paid'` automatically. **Staff confirmati
 (`POST /ops/sq/<id>/mark-paid`) sets `payment_status='paid'` + method + reference + `payment_marked_at`,
 cascades to a linked `Contract.payment_status='paid'` (+`payment_date`), logs `payment_received`, and
 notifies the customer. The `admin/sq_detail.html` page gained a **Share** card (copy-link + WhatsApp +
-preview) and a **Payment** panel (status badge + mark-paid form).
+QR + preview) and a **Payment** panel (status badge + mark-paid form).
 
 **WhatsApp click-to-send (free, no API).** `utils.whatsapp_url(phone, text)` builds a `wa.me` link with
 a pre-filled message (the engineer taps send). `utils.normalise_phone` prepends `91` to 10-digit numbers.
@@ -544,6 +591,16 @@ a pre-filled message (the engineer taps send). `utils.normalise_phone` prepends 
 passes them to the template. **API-ready**: when a WhatsApp Business API provider (AiSensy/Interakt/
 Twilio) is added later, reuse the same message-builders for automated sends. The public quote page's
 "WhatsApp us" / "Call us" buttons use `COMPANY_PHONE`.
+
+**Quotation share QR (post-Wave-11 patch).** `utils.qr_data_uri(data, fill="#16235b", box_size=8)` is a
+generic base64-PNG QR helper (any string in, `data:image/png;base64,...` out, `None` on failure) —
+`upi_qr_data_uri` now delegates to it, and `sq.detail_quotation` calls it on `share_link` to pass a
+`share_qr` thumbnail into `admin/sq_detail.html`'s Share card. A dedicated route
+**`sq.quotation_qr`** (`/ops/sq/<id>/qr`, template `admin/sq_qr.html`) renders a large, print-friendly
+QR page (`window.print()` button, `@media print` hides the sidebar/header) — meant for handing a tablet
+to a client on-site or printing and leaving it at the property. This was the one piece missing from the
+Wave 8 no-login quotation-share feature (copy-link + WhatsApp existed; QR did not) — added on user
+request when the feature was hard to discover.
 
 **Payment reminders** (`nse/reminders.py`): `payment_reminders(customer_id=None)` returns dicts for
 (1) AMC fee unpaid after **≥2 completed visits**, (2) visit-linked material quotes `approved` & unpaid,
@@ -607,16 +664,127 @@ re-filtered to checked floors so unchecking a floor drops its values); a JS `MAT
 preserves entries across floor toggles. Server parses `data_json` → `set_data`. The model constants +
 existing `data` are embedded as `window.SCL` for edit repopulation.
 
-**Survey → quotation handoff:** "Save & create quotation" (or `admin.survey_to_quote`) builds a **draft
-`ServiceQuotation`** carrying the survey's client/site header, with **one line item per surveyed item**
-(`item_totals`, rate 0 for the engineer to fill), links it both ways (`survey.service_quotation_id`),
-and redirects to `sq.detail_quotation`. From there the existing Wave 8 flow takes over (price → send →
-WhatsApp link → pay). A **"Site Surveys" tab** was added to the AMC module sub-nav.
+**Survey → quotation handoff:** After saving a survey, a "Create quotation from this survey" card
+appears (`{% if s %}`). Clicking it calls `admin.survey_to_quote` which redirects to `sq.new_quotation`
+with client details pre-filled via URL params (`prefill_name/phone/email/project/address`) — **no items
+are auto-created**. The engineer fills items and rates manually from the inventory dropdown. A hidden
+`from_survey_id` field links the new quotation back to the survey on save
+(`survey.service_quotation_id`). This replaces the previous auto-populate approach which caused
+mistakes. A **"Site Surveys" tab** was added to the AMC module sub-nav.
+
+**Quotation re-editing** (`sq.edit_quotation`, `/ops/sq/<id>/edit`, template `admin/sq_edit.html`):
+quotes are **always editable by staff** regardless of status (removed the `is_editable` draft-only
+guard). The edit page pre-populates all existing items and client details. Every save logs a
+`CustomerJourneyEvent` (event_type `quote_sent`) recording who revised it and the old→new total
+change (e.g. "₹12,000 → ₹14,000"). The detail page (`admin/sq_detail.html`) always shows an
+**Edit / Revise** button plus a **Re-send** button for sent/viewed/accepted quotes. The activity log
+on the detail page shows the full revision history.
 
 Note: this is distinct from the **FSHCR** `HealthCheckReport` (Wave 6), which is a Yes/No *condition*
 checkup; the SystemCheckList is a *quantity inventory* survey. Both can stand alone or link to a contract.
 
+## Wave 10 features (complaints, visit reminders, days-left, technician day plan)
+
+**Support Tickets / Complaints** (`SupportTicket` + `TicketAttachment` models, new tables — `db.create_all` picks them up). Customer raises complaint from the portal contract page (modal) or from `/portal/tickets`. Fields: title, description, voice note, photos/videos, priority, linked contract/visit. Status flow: `open → acknowledged → resolved → closed`. If no staff reply in 24h, `is_overdue=True` and `can_retrigger=True` — client sees "Send reminder" button (`portal.retrigger_ticket`). Staff console: `/ops/tickets` (list with filter chips) and `/ops/ticket/<id>` (view + acknowledge + resolve + close). Acknowledging/resolving sends in-app notification to client. Open ticket count injected globally for staff (`open_ticket_count`) and shown as red badge on the "Complaints" tab in the AMC module sub-nav.
+
+Portal: `portal.tickets` (list), `portal.raise_ticket` (POST modal), `portal.ticket_detail`, `portal.retrigger_ticket`. Admin: `admin.tickets`, `admin.ticket_detail`. "Raise a complaint" card + modal permanently visible on active/pending contract pages. "My Complaints" link added to portal mobile nav. Attachments saved via `save_upload("tickets")`.
+
+**Visit reminders (1 month / 1 week / 1 day before)** — `VisitReminderLog` model (new table) tracks which (visit_id, reminder_type, sent_to) triples have been notified. `process_visit_reminders()` in `reminders.py` is called from `inject_globals` (idempotent — the unique constraint on `visit_reminder_logs` prevents duplicates). Fires in-app notifications to both the customer (portal contract page link) and the assigned technician (visit page link) when a visit is 30/7/1 days away. No SMS/email yet (in-app only, visible in the notification bell).
+
+**Days-left countdown** — `Visit.days_until` property (returns int or None). Used in `portal/contract.html` as a colour-coded pill per visit row: red (0/overdue) → amber (≤7 days) → blue (>7 days). Also used in `admin/_day_plan_card.html` for the technician's day plan.
+
+**Technician day plan** (`/ops/my-plan`, `admin.day_plan`): shows the logged-in technician's visits for today, tomorrow, and the next 7 days. Each visit card has an **Accept** button (marks `Visit.technician_confirmed=True`) and a **Flag conflict / reject** collapsible with a reason field (`Visit.technician_confirmed=False`, `technician_note`). Accept/reject both notify all staff via `notify_staff`. New columns on `Visit`: `technician_confirmed BOOLEAN` (nullable — None=pending), `technician_note TEXT`. Template: `admin/day_plan.html` + reusable partial `admin/_day_plan_card.html`. Route: `admin.confirm_visit` (POST `/ops/visit/<id>/confirm`). "Day Plan" tab added to AMC module sub-nav.
+
+**Surveys list — quote status column** — `admin/surveys.html` now shows a "Quotation" column: "View quote" (blue, links to detail) if linked, "Create quote" (amber, links to `survey_to_quote`) if survey is completed but no quote made, "—" otherwise.
+
+**New DB columns (existing installs):**
+```
+ALTER TABLE visits ADD COLUMN technician_confirmed BOOLEAN;
+ALTER TABLE visits ADD COLUMN technician_note TEXT;
+```
+New tables `support_tickets`, `ticket_attachments`, `visit_reminder_logs` created automatically by `db.create_all()` on next startup.
+
+## Wave 11 features (renewal, field ops, BI, comms, payments — "AMC module" expansion)
+
+A large batch of AMC-module features. **Migration:** new COLUMNS on existing tables are added by the
+idempotent **`migrate_wave11.py`** (root; `PRAGMA table_info`-guarded — already run against `nse_amc.db`);
+new TABLES self-create via `db.create_all()`. Columns added: `contracts.renewed_from_id`;
+`visits.checkin_at/checkout_at/checkin_note`; `amc_plans.sla_hours`;
+`service_requests.sla_due_at/first_response_at`; `service_quotations.gateway_order_id/gateway_payment_id`.
+New tables: `visit_defects`, `broadcasts`, `installments`, `milestone_logs`.
+**Note: "mobile app" = the same responsive Flask templates — there is no separate native codebase.**
+**Feature 16 (Compliance Document Vault) and the whole Inventory & Certificates set were intentionally
+excluded** per the user.
+
+**Model helpers (`nse/models.py`):**
+- `Contract`: `renewed_from`/`renewals` self-relationship; `days_to_expiry`, `is_renewed`,
+  `renewal_window` (`"90"`/`"60"`/`"30"`/`"expired"`/None — active & not-yet-renewed only),
+  `anniversary_years`, `safety_score` (0-100 weighting visit compliance/equipment/defects/certificate/
+  agreement), `safety_grade` → `(letter, color)`, `open_defects`, `installment_plan`.
+- `User.health_score` (0-100 retention score: payments/visit-reliability/feedback/agreement/referrals) +
+  `health_band` → `(label, color)`.
+- `Visit`: `is_checked_in`, `onsite_minutes`, `onsite_duration_label`, `open_defects`.
+- `ServiceRequest`: `sla_status` (`met`/`breached`/`at_risk`/`pending`/`none`) + `sla_label`.
+- New models: `VisitDefect` (severity low/medium/high, status open→acknowledged→quoted→resolved,
+  `reference` `DEF-0001`), `Broadcast` (saved WhatsApp broadcast + audience filter), `Installment`
+  (EMI schedule, `is_overdue`/`days_to_due`), `MilestoneLog` (renewal/anniversary dedup, unique
+  `(contract_id, milestone_type)`).
+
+**Renewal pipeline & clone** (`admin.py`): `admin.renewals` (`/ops/renewals`, `admin/renewals.html`) lists
+contracts in the 90/60/30/expired bands (from `reminders.renewal_reminders()`). `admin.renew_contract`
+(`POST /ops/contract/<id>/renew`) calls helper `_clone_contract_for_renewal(src)` — copies site/plan/
+equipment/contact into a new **pending** contract (`renewed_from_id` set) and auto-creates an AMC
+`ServiceQuotation` (like the apply flow). Portal: `portal.request_renewal`
+(`POST /portal/contract/<id>/renew`) lets the customer ask; a renewal banner shows on `portal/contract.html`.
+`reminders.process_milestones()` (idempotent, called from `inject_globals`) fires renewal-band + service-
+anniversary notifications de-duped via `MilestoneLog`. `renewal_reminder_count()` drives the red badge on the
+sidebar **Renewals** link + AMC-module tab.
+
+**Mid-contract upgrade** (`portal.upgrade_plan`, `/portal/contract/<id>/upgrade`, `portal/upgrade.html`):
+customer picks a higher plan → auto-creates a `ServiceQuotation` with a single **prorated-difference**
+line item (scaled by remaining contract days), notifies staff.
+
+**Field ops** (`admin/visit.html`): check-in/out — `admin.visit_checkin` / `admin.visit_checkout`
+(POST) stamp `checkin_at`/`checkout_at`; a status card sits under the visit `<h1>`. Photo-based **defect
+reports** — `admin.visit_defect_add` (POST, photo via `save_upload("defects/…")`) logs a `VisitDefect`
+and notifies the client; `admin.defect_status` (POST) changes status; the customer acknowledges via
+`portal.acknowledge_defect` (`POST /portal/defect/<id>/acknowledge`). Defects surface on `admin/visit.html`,
+`admin/contract.html` (open-defects card), and `portal/contract.html` (acknowledge buttons). **SLA**:
+emergency `ServiceRequest`s get `sla_due_at = now + 4h` at creation (`public.emergency`); the admin request
+route stamps `first_response_at` on first staff action; a colour-coded SLA badge shows on `admin/request.html`.
+
+**Business insights** (`admin.insights`, `/ops/insights`, `admin/insights.html`): revenue forecast
+(confirmed active fees vs open-quote pipeline vs renewals-at-stake), property **Fire Safety Scores**
+(lowest-first, graded A–D), **Customer Health** scores (at-risk-first, banded), and an **area heat-map**
+bar chart. Safety-score chips also appear on `admin/contract.html` + `portal/contract.html`.
+
+**Bulk WhatsApp broadcast** (`admin.broadcasts` `/ops/broadcasts` composer + history;
+`admin.broadcast_new` POST saves a `Broadcast`; `admin.broadcast_send` `/ops/broadcast/<id>/send` renders
+one `wa.me` link per recipient — free, no API). Audiences resolved by `_broadcast_recipients(audience,
+value)`: all / active / expiring / by-area / by-plan. `{name}` in the message is personalised per
+recipient. Templates `admin/broadcasts.html` + `admin/broadcast_send.html`. **Loyalty/anniversary**
+notifications are part of `process_milestones()` (see renewal above).
+
+**Payments — Razorpay (gateway-ready) + EMI** (`nse/payments.py`): config-gated exactly like the AI layer
+— `Config.razorpay_enabled()` is False (and the SDK import is lazy) until `RAZORPAY_KEY_ID` +
+`RAZORPAY_KEY_SECRET` are set, so the manual UPI/cash flow stays the default. `create_order`,
+`verify_payment_signature`, `verify_webhook_signature`, `mark_quote_paid` (flips a `ServiceQuotation` +
+cascades to its contract). Routes: **no-login** `public.public_quote_pay_online` +
+`…_verify` (senior flow, `public/quote_checkout.html`) and `public.razorpay_webhook` (`POST /pay/webhook`,
+auto-confirms by matching `gateway_order_id`); **logged-in** `portal.service_quotation_pay_online` + `…_verify`
+(`portal/checkout.html`). "Pay online" buttons appear on `public/quote_public.html` and `portal/sq_detail.html`
+gated on `RAZORPAY_ENABLED` (injected by `inject_globals`). **EMI instalments**: `admin.contract_installments`
+(POST) builds an N-part schedule (monthly/quarterly/half-yearly); `admin.installment_pay` (POST) toggles each
+paid and marks the contract fee paid once all are settled. Shown on `admin/contract.html` (editable) +
+`portal/contract.html` (read-only). Dep: `razorpay==1.4.2` in `requirements.txt`; env keys in `.env.example`.
+
+**Nav wiring:** sidebar (`base_ops.html`) gained **Renewals** (AMC section, red badge), **Insights** +
+**Broadcast** (Insights section). AMC-module sub-nav (`admin/amc_module.html`) gained Renewals / Insights /
+Broadcast tabs. `inject_globals` exposes `renewal_reminder_count` + `RAZORPAY_ENABLED` and calls
+`process_milestones()` alongside `process_visit_reminders()`.
+
 ## Known dev-grade pieces (not yet production)
 
-OTP is a dev flow (code shown on screen, not SMS). Payments record cash/online **intent** only — no
-gateway. DB is SQLite (swap to Postgres via `DATABASE_URL`). These are deliberate; harden on request.
+OTP is a dev flow (code shown on screen, not SMS). Payments: manual cash/UPI **intent** by default; a
+**gateway-ready Razorpay** integration (Wave 11) auto-confirms when `RAZORPAY_*` keys are set (SDK +
+webhook). DB is SQLite (swap to Postgres via `DATABASE_URL`). These are deliberate; harden on request.

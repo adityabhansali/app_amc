@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base_ops.html" %}
 {% block title %}New Service Quotation — Ops{% endblock %}
 {% block content %}
 <section class="max-w-4xl mx-auto px-4 py-10">
@@ -6,6 +6,12 @@
   <h1 class="text-2xl font-extrabold text-ink mt-2 mb-6">New Service Quotation</h1>
 
   <form method="post" id="sqForm" class="space-y-6">
+    {% if from_survey_id %}
+    <div class="card p-4 border-l-4 border-amber-400 bg-amber-50">
+      <p class="text-sm text-amber-800 font-medium">Created from site survey — client details pre-filled. Add your line items and rates below.</p>
+    </div>
+    {% endif %}
+
     <!-- Service type + client info -->
     <div class="card p-6 space-y-4">
       <h2 class="font-bold text-ink">1. Service &amp; Client</h2>
@@ -21,29 +27,30 @@
         </label>
         <label class="block">
           <span class="text-sm font-medium text-ink-muted">Project / Site name</span>
-          <input name="project_name" value="{{ contract.site_name or (sr.location if sr) or '' }}" class="mt-1.5 w-full px-3 py-2.5" placeholder="e.g. Rajshree City Centre">
+          <input name="project_name" value="{{ prefill.get('project_name') or (contract.site_name if contract) or (sr.location if sr) or '' }}" class="mt-1.5 w-full px-3 py-2.5" placeholder="e.g. Rajshree City Centre">
         </label>
         <label class="block">
           <span class="text-sm font-medium text-ink-muted">Customer name <span class="text-danger">*</span></span>
-          <input name="customer_name" required value="{{ contract.applicant_name or (sr.name if sr) or (ro.name if ro) or '' }}" class="mt-1.5 w-full px-3 py-2.5">
+          <input name="customer_name" required value="{{ prefill.get('customer_name') or (contract.applicant_name if contract) or (sr.name if sr) or (ro.name if ro) or '' }}" class="mt-1.5 w-full px-3 py-2.5">
         </label>
         <label class="block">
           <span class="text-sm font-medium text-ink-muted">Phone</span>
-          <input name="customer_phone" value="{{ contract.applicant_phone or (sr.phone if sr) or (ro.phone if ro) or '' }}" class="mt-1.5 w-full px-3 py-2.5">
+          <input name="customer_phone" value="{{ prefill.get('customer_phone') or (contract.applicant_phone if contract) or (sr.phone if sr) or (ro.phone if ro) or '' }}" class="mt-1.5 w-full px-3 py-2.5">
         </label>
         <label class="block">
           <span class="text-sm font-medium text-ink-muted">Email</span>
-          <input name="customer_email" type="email" value="{{ contract.applicant_email or (sr.email if sr) or (ro.email if ro) or '' }}" class="mt-1.5 w-full px-3 py-2.5">
+          <input name="customer_email" type="email" value="{{ prefill.get('customer_email') or (contract.applicant_email if contract) or (sr.email if sr) or (ro.email if ro) or '' }}" class="mt-1.5 w-full px-3 py-2.5">
         </label>
         <label class="block">
           <span class="text-sm font-medium text-ink-muted">Address</span>
-          <textarea name="customer_address" rows="2" class="mt-1.5 w-full px-3 py-2.5">{{ contract.site_address or (sr.location if sr) or (ro.address if ro) or '' }}</textarea>
+          <textarea name="customer_address" rows="2" class="mt-1.5 w-full px-3 py-2.5">{{ prefill.get('customer_address') or (contract.site_address if contract) or (sr.location if sr) or (ro.address if ro) or '' }}</textarea>
         </label>
       </div>
       <!-- Hidden links -->
       {% if contract %}<input type="hidden" name="contract_id" value="{{ contract.id }}">{% endif %}
       {% if sr %}<input type="hidden" name="service_request_id" value="{{ sr.id }}">{% endif %}
       {% if ro %}<input type="hidden" name="refill_order_id" value="{{ ro.id }}">{% endif %}
+      {% if from_survey_id %}<input type="hidden" name="from_survey_id" value="{{ from_survey_id }}">{% endif %}
     </div>
 
     <!-- Line items -->

@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;550;600;650;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Inter',system-ui,sans-serif;background:#0e1330;-webkit-font-smoothing:antialiased;letter-spacing:-0.006em;}
+  .mono{font-family:'JetBrains Mono',monospace;letter-spacing:0;}
+  .scr::-webkit-scrollbar{display:none;}
+  .scr{scrollbar-width:none;}
+  .tap{transition:transform .1s,background .12s;-webkit-tap-highlight-color:transparent;}
+  .tap:active{transform:scale(.98);}
+  @keyframes riseIn{from{transform:translateY(8px);}to{transform:none;}}
+  @keyframes ringdraw{from{stroke-dashoffset:283;}to{stroke-dashoffset:71;}}
+  @keyframes popc{0%{transform:scale(.7);}60%{transform:scale(1.08);}100%{transform:scale(1);}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px;background:radial-gradient(circle at 50% 0%,#141a3e,#0a0e24);">
+  <div style="width:390px;height:844px;background:#000;border-radius:52px;padding:11px;box-shadow:0 50px 100px -30px rgba(0,0,0,.8),0 0 0 2px #23284a;flex:none;">
+    <div style="width:100%;height:100%;background:#faf8f5;border-radius:42px;overflow:hidden;position:relative;display:flex;flex-direction:column;">
+
+      <!-- STATUS BAR -->
+      <div style="height:52px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;background:{{ topBg }};position:relative;z-index:5;">
+        <span style="font-size:14px;font-weight:650;color:{{ topFg }};">9:41</span>
+        <div style="position:absolute;top:8px;left:50%;transform:translateX(-50%);width:104px;height:26px;background:#000;border-radius:0 0 18px 18px;"></div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <svg width="17" height="12" viewBox="0 0 24 18" fill="{{ topFg }}"><rect x="0" y="11" width="4" height="7" rx="1"/><rect x="6" y="7" width="4" height="11" rx="1"/><rect x="12" y="3" width="4" height="15" rx="1"/><rect x="18" y="0" width="4" height="18" rx="1"/></svg>
+          <svg width="18" height="13" viewBox="0 0 24 18" fill="{{ topFg }}"><path d="M12 3C7 3 3 6 1 9c2 3 6 6 11 6s9-3 11-6c-2-3-6-6-11-6z" opacity=".55"/><circle cx="12" cy="9" r="3.2"/></svg>
+          <svg width="24" height="13" viewBox="0 0 28 14" fill="none"><rect x="1" y="1" width="22" height="12" rx="3" stroke="{{ topFg }}" stroke-opacity=".5"/><rect x="3" y="3" width="16" height="8" rx="1.5" fill="{{ topFg }}"/><rect x="24" y="4.5" width="2" height="5" rx="1" fill="{{ topFg }}" fill-opacity=".5"/></svg>
+        </div>
+      </div>
+
+      <div ref="{{ setRef }}" class="scr" style="flex:1;overflow-y:auto;overflow-x:hidden;">
+
+        <!-- ===== HOME ===== -->
+        <sc-if value="{{ is.home }}" hint-placeholder-val="{{ true }}">
+          <div style="animation:riseIn .3s ease both;">
+            <div style="background:linear-gradient(160deg,#0d1f5e,#061238);padding:6px 22px 26px;border-radius:0 0 26px 26px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:10px;"><div style="width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="assets/mark-white.png" alt="NSE" style="width:26px;height:26px;object-fit:contain;"></div><div style="font-size:13px;font-weight:650;color:#fff;">Northern Star</div></div>
+                <div style="width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;position:relative;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg><span style="position:absolute;top:6px;right:7px;width:7px;height:7px;background:#f0a24b;border-radius:50%;"></span></div>
+              </div>
+              <div style="font-size:14px;font-weight:500;color:#9fb0e8;margin-top:18px;">Welcome back</div>
+              <div style="font-size:22px;font-weight:700;color:#fff;letter-spacing:-0.02em;">Rajhans Group</div>
+              <div style="display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;margin-top:18px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:16px;">
+                <div style="position:relative;width:76px;height:76px;">
+                  <svg width="76" height="76" viewBox="0 0 100 100" style="transform:rotate(-90deg);"><circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="9"/><circle cx="50" cy="50" r="45" fill="none" stroke="#5bd08b" stroke-width="9" stroke-linecap="round" stroke-dasharray="283" style="stroke-dashoffset:71;animation:ringdraw 1s ease both;"/></svg>
+                  <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;"><span style="font-size:19px;font-weight:700;color:#fff;">75%</span></div>
+                </div>
+                <div>
+                  <div style="font-size:12px;font-weight:600;color:#9fb0e8;">AMC compliance</div>
+                  <div style="font-size:14px;font-weight:650;color:#fff;margin-top:2px;">Visit 3 of 4 done</div>
+                  <div style="font-size:11.5px;color:#8b93c4;margin-top:6px;">Next inspection · 15 Sep 2026</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="padding:20px;">
+              <div onClick="{{ nav.serviceQuote }}" class="tap" style="background:#eef1fb;border:1px solid #d5ddf5;border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+                <div style="width:36px;height:36px;border-radius:10px;background:#072076;display:flex;align-items:center;justify-content:center;flex:none;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9"><path d="M4 3h16v18l-4-3-4 3-4-3-4 3z"/></svg></div>
+                <div style="flex:1;"><div style="font-size:13px;font-weight:650;color:#072076;">Quotation awaiting response</div><div style="font-size:11.5px;color:#5a6a9a;">QUO-0186 · ₹18,408</div></div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#072076" stroke-width="2.2"><path d="M9 18l6-6-6-6"/></svg>
+              </div>
+
+              <div style="font-size:15px;font-weight:700;margin-bottom:12px;">Quick actions</div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+                <div onClick="{{ nav.refillList }}" class="tap" style="display:flex;flex-direction:column;align-items:center;gap:7px;"><div style="width:52px;height:52px;border-radius:15px;background:#fff;border:1px solid #eceae4;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px -4px rgba(16,24,40,.12);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#072076" stroke-width="1.8"><path d="M14 4c-3 0-5 3-5 8 0 1-1 2-2 3-1 1-2 3 0 4h14c2-1 1-3 0-4-1-1-2-2-2-3 0-5-2-8-5-8z"/></svg></div><span style="font-size:10.5px;font-weight:600;color:#4a4b52;">Refill</span></div>
+                <div class="tap" style="display:flex;flex-direction:column;align-items:center;gap:7px;"><div style="width:52px;height:52px;border-radius:15px;background:#fff;border:1px solid #eceae4;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px -4px rgba(16,24,40,.12);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d23f3f" stroke-width="1.8"><path d="M12 2a7 7 0 00-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 00-7-7z"/></svg></div><span style="font-size:10.5px;font-weight:600;color:#4a4b52;">Emergency</span></div>
+                <div onClick="{{ nav.journey }}" class="tap" style="display:flex;flex-direction:column;align-items:center;gap:7px;"><div style="width:52px;height:52px;border-radius:15px;background:#fff;border:1px solid #eceae4;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px -4px rgba(16,24,40,.12);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#072076" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></div><span style="font-size:10.5px;font-weight:600;color:#4a4b52;">Journey</span></div>
+                <div onClick="{{ nav.certificate }}" class="tap" style="display:flex;flex-direction:column;align-items:center;gap:7px;"><div style="width:52px;height:52px;border-radius:15px;background:#fff;border:1px solid #eceae4;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px -4px rgba(16,24,40,.12);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#072076" stroke-width="1.8"><circle cx="12" cy="9" r="6"/><path d="M9 14.5L8 22l4-2 4 2-1-7.5"/></svg></div><span style="font-size:10.5px;font-weight:600;color:#4a4b52;">Certificate</span></div>
+              </div>
+
+              <div style="font-size:15px;font-weight:700;margin:24px 0 12px;">Your contracts</div>
+              <div style="display:flex;flex-direction:column;gap:12px;">
+                <sc-for list="{{ contracts }}" as="c" hint-placeholder-count="2">
+                  <div onClick="{{ nav.contract }}" class="tap" style="background:#fff;border:1px solid #eceae4;border-radius:16px;padding:16px;box-shadow:0 2px 8px -4px rgba(16,24,40,.1);">
+                    <div style="display:flex;align-items:center;justify-content:space-between;"><span class="mono" style="font-size:11px;font-weight:500;color:#072076;background:#eef1fb;padding:3px 8px;border-radius:6px;">{{ c.ref }}</span><span style="font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:{{ c.bBg }};color:{{ c.bFg }};">{{ c.status }}</span></div>
+                    <div style="font-size:15px;font-weight:650;margin-top:10px;">{{ c.site }}</div>
+                    <div style="font-size:12px;color:#8a8a90;margin-top:2px;">{{ c.plan }} · Next {{ c.next }}</div>
+                    <div style="margin-top:12px;height:5px;background:#f0eee8;border-radius:99px;overflow:hidden;"><div style="height:100%;width:{{ c.pct }};background:#072076;border-radius:99px;"></div></div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== CONTRACT ===== -->
+        <sc-if value="{{ is.contract }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:riseIn .3s ease both;">
+            <div style="background:linear-gradient(160deg,#0d1f5e,#061238);padding:6px 20px 22px;">
+              <div onClick="{{ nav.home }}" class="tap" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:550;color:#9fb0e8;margin-bottom:12px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Back</div>
+              <div style="display:flex;align-items:center;gap:9px;"><span class="mono" style="font-size:11px;font-weight:500;color:#a9baff;background:rgba(255,255,255,.08);padding:3px 8px;border-radius:6px;">NSE-AMC-0001</span><span style="font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:rgba(91,208,139,.2);color:#5bd08b;">● Active</span></div>
+              <div style="font-size:21px;font-weight:700;color:#fff;margin-top:12px;letter-spacing:-0.02em;">Rajhans Textile Mills</div>
+              <div style="font-size:12.5px;color:#8b93c4;margin-top:3px;">Gold — Industrial · 15 Jan 2026 → 14 Jan 2027</div>
+            </div>
+            <div style="padding:20px;">
+              <div onClick="{{ nav.agreement }}" class="tap" style="background:#e7f4ec;border:1px solid #c4e6d1;border-radius:13px;padding:13px 15px;display:flex;align-items:center;gap:10px;margin-bottom:18px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#17864a" stroke-width="2.2"><path d="M20 6L9 17l-5-5"/></svg><span style="flex:1;font-size:12.5px;font-weight:600;color:#17864a;">Agreement accepted · v2.1</span><span style="font-size:11.5px;font-weight:600;color:#17864a;">View</span></div>
+
+              <div style="font-size:15px;font-weight:700;margin-bottom:10px;">Visits</div>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <sc-for list="{{ visits }}" as="v" hint-placeholder-count="4">
+                  <div onClick="{{ v.click }}" class="tap" style="background:#fff;border:1px solid #eceae4;border-radius:14px;padding:14px;box-shadow:0 2px 8px -4px rgba(16,24,40,.1);display:flex;align-items:center;gap:13px;">
+                    <div style="width:36px;height:36px;border-radius:10px;background:{{ v.bBg }};color:{{ v.bFg }};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex:none;">{{ v.n }}</div>
+                    <div style="flex:1;"><div style="font-size:13.5px;font-weight:650;">Visit {{ v.n }} · {{ v.date }}</div><div style="font-size:12px;color:#8a8a90;">{{ v.tech }}</div></div>
+                    <span style="font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:{{ v.bBg }};color:{{ v.bFg }};">{{ v.status }}</span>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="font-size:15px;font-weight:700;margin:22px 0 10px;">Equipment</div>
+              <div style="background:#fff;border:1px solid #eceae4;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px -4px rgba(16,24,40,.1);">
+                <sc-for list="{{ equipment }}" as="e" hint-placeholder-count="3">
+                  <div class="tap" style="display:flex;align-items:center;gap:11px;padding:13px 15px;border-bottom:1px solid #f5f3ee;">
+                    <div style="flex:1;"><div style="font-size:13px;font-weight:600;">{{ e.name }}</div><div class="mono" style="font-size:11px;color:#9a9aa2;">{{ e.serial }} · {{ e.loc }}</div></div>
+                    <span style="font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:{{ e.bBg }};color:{{ e.bFg }};">● {{ e.status }}</span>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div onClick="{{ nav.certificate }}" class="tap" style="margin-top:22px;background:linear-gradient(115deg,#0a1a52,#061238);border-radius:15px;padding:18px;display:flex;align-items:center;gap:14px;">
+                <div style="width:42px;height:42px;border-radius:11px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a9baff" stroke-width="1.7"><circle cx="12" cy="9" r="6"/><path d="M9 14.5L8 22l4-2 4 2-1-7.5"/></svg></div>
+                <div style="flex:1;"><div style="font-size:10.5px;font-weight:600;color:#a9baff;text-transform:uppercase;letter-spacing:.05em;">Certificate</div><div style="font-size:13.5px;font-weight:650;color:#fff;margin-top:2px;">Preview your certificate</div></div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a9baff" stroke-width="2.2"><path d="M9 18l6-6-6-6"/></svg>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== VISIT DETAIL ===== -->
+        <sc-if value="{{ is.visit }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:riseIn .3s ease both;">
+            <div style="background:linear-gradient(160deg,#0e7a43,#0a5f34);padding:6px 20px 24px;position:relative;overflow:hidden;">
+              <div style="position:absolute;right:-30px;top:-10px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.14),transparent 70%);"></div>
+              <div onClick="{{ nav.contract }}" class="tap" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:550;color:#c7f0d6;margin-bottom:14px;position:relative;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Contract</div>
+              <div style="width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;animation:popc .5s ease both;position:relative;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6"><path d="M20 6L9 17l-5-5"/></svg></div>
+              <div style="font-size:19px;font-weight:700;color:#fff;margin-top:12px;position:relative;">Visit 1 completed</div>
+              <div style="font-size:12.5px;color:#c7f0d6;margin-top:2px;position:relative;">16 Feb 2026 · Amit Desai</div>
+            </div>
+            <div style="padding:20px;">
+              <div style="display:flex;gap:8px;">
+                <button class="tap" style="flex:1;background:#072076;color:#fff;border:none;font-size:13px;font-weight:600;padding:12px;border-radius:12px;">View report</button>
+                <button class="tap" style="flex:1;background:#fff;border:1px solid #e6e4dd;color:#4a4b52;font-size:13px;font-weight:600;padding:12px;border-radius:12px;">Download</button>
+              </div>
+              <div style="background:#fff;border:1px solid #eceae4;border-radius:16px;padding:18px;margin-top:18px;box-shadow:0 2px 8px -4px rgba(16,24,40,.1);">
+                <div style="font-size:14px;font-weight:700;margin-bottom:4px;">Rate this visit</div>
+                <div style="font-size:11.5px;color:#8a8a90;margin-bottom:14px;">Required for completed visits</div>
+                <sc-for list="{{ ratings }}" as="r" hint-placeholder-count="5">
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;"><span style="font-size:13px;font-weight:550;">{{ r.dim }}</span><span style="display:flex;gap:3px;">{{ r.stars }}</span></div>
+                </sc-for>
+                <button class="tap" style="width:100%;margin-top:14px;background:#072076;color:#fff;border:none;font-size:13.5px;font-weight:600;padding:12px;border-radius:11px;">Submit rating</button>
+              </div>
+              <div style="font-size:15px;font-weight:700;margin:22px 0 10px;">Checklist</div>
+              <div style="background:#fff;border:1px solid #eceae4;border-radius:14px;padding:6px 15px;box-shadow:0 2px 8px -4px rgba(16,24,40,.1);">
+                <sc-for list="{{ vChecklist }}" as="c" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #f5f3ee;"><span style="width:8px;height:8px;border-radius:50%;background:{{ c.dot }};flex:none;"></span><span style="flex:1;font-size:13px;font-weight:500;">{{ c.item }}</span><span style="font-size:11px;font-weight:600;color:{{ c.dot }};">{{ c.st }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== SERVICE QUOTE ===== -->
+        <sc-if value="{{ is.serviceQuote }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:riseIn .3s ease both;padding:8px 20px 20px;">
+            <div onClick="{{ nav.home }}" class="tap" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:550;color:#8a8a90;margin-bottom:12px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Home</div>
+            <div style="display:flex;align-items:center;gap:9px;"><span class="mono" style="font-size:11px;font-weight:500;color:#072076;background:#eef1fb;padding:3px 8px;border-radius:6px;">QUO-0186</span><span style="font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:#e8effb;color:#2f6fed;">Sent</span></div>
+            <div style="font-size:20px;font-weight:700;margin:12px 0 3px;letter-spacing:-0.02em;">Material — spare parts</div>
+            <div style="font-size:12.5px;color:#8a8a90;">Raised 29 Jun · valid till 14 Jul</div>
+            <div style="background:#fff;border:1px solid #eceae4;border-radius:16px;overflow:hidden;margin-top:16px;box-shadow:0 2px 8px -4px rgba(16,24,40,.1);">
+              <sc-for list="{{ quoteItems }}" as="q" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-bottom:1px solid #f5f3ee;"><div><div style="font-size:13.5px;font-weight:600;">{{ q.desc }}</div><div style="font-size:11.5px;color:#8a8a90;">Qty {{ q.qty }}</div></div><span style="font-size:13.5px;font-weight:700;">{{ q.total }}</span></div>
+              </sc-for>
+              <div style="padding:14px 15px;background:#faf9f6;">
+                <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12.5px;"><span style="color:#8a8a90;">Subtotal</span><span style="font-weight:600;">₹15,600</span></div>
+                <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12.5px;"><span style="color:#8a8a90;">GST 18%</span><span style="font-weight:600;">₹2,808</span></div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0 0;margin-top:5px;border-top:1px solid #eceae4;"><span style="font-size:13.5px;font-weight:650;">Total</span><span style="font-size:17px;font-weight:700;color:#072076;">₹18,408</span></div>
+              </div>
+            </div>
+            <button onClick="{{ nav.pay }}" class="tap" style="width:100%;margin-top:16px;background:#17864a;color:#fff;border:none;font-size:14.5px;font-weight:650;padding:14px;border-radius:13px;">Accept &amp; pay</button>
+            <button class="tap" style="width:100%;margin-top:10px;background:#fff;border:1px solid #e6d3ad;color:#b45309;font-size:14px;font-weight:600;padding:13px;border-radius:13px;">Request negotiation</button>
+          </div>
+        </sc-if>
+
+        <!-- ===== PAY (UPI) ===== -->
+        <sc-if value="{{ is.pay }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:riseIn .3s ease both;padding:8px 20px 20px;">
+            <div onClick="{{ nav.serviceQuote }}" class="tap" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:550;color:#8a8a90;margin-bottom:14px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Quotation</div>
+            <div style="text-align:center;"><div style="font-size:12px;font-weight:600;color:#8a8a90;text-transform:uppercase;letter-spacing:.05em;">Amount to pay</div><div style="font-size:34px;font-weight:800;color:#072076;letter-spacing:-0.02em;margin-top:4px;">₹18,408</div></div>
+            <div style="background:#fff;border:1px solid #eceae4;border-radius:20px;padding:24px;margin-top:20px;text-align:center;box-shadow:0 2px 12px -6px rgba(16,24,40,.12);">
+              <div style="width:180px;height:180px;margin:0 auto;background:#fff;border-radius:14px;display:grid;grid-template-columns:repeat(11,1fr);grid-template-rows:repeat(11,1fr);gap:2px;padding:8px;">{{ qr }}</div>
+              <div style="font-size:13px;font-weight:600;margin-top:16px;">Scan with any UPI app</div>
+              <div style="font-size:11.5px;color:#8a8a90;margin-top:3px;">GPay · PhonePe · Paytm · BHIM</div>
+            </div>
+            <button onClick="{{ nav.thanks }}" class="tap" style="width:100%;margin-top:18px;background:#17864a;color:#fff;border:none;font-size:15px;font-weight:650;padding:15px;border-radius:14px;">I have paid</button>
+            <p style="text-align:center;font-size:11.5px;color:#9a9aa2;margin:12px 0 0;">Our team will verify and confirm shortly.</p>
+          </div>
+        </sc-if>
+
+        <!-- ===== THANKS ===== -->
+        <sc-if value="{{ is.thanks }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:riseIn .3s ease both;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 30px;min-height:560px;">
+            <div style="width:80px;height:80px;border-radius:50%;background:#e7f4ec;display:flex;align-items:center;justify-content:center;animation:popc .5s ease both;"><svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#17864a" stroke-width="2.6"><path d="M20 6L9 17l-5-5"/></svg></div>
+            <div style="font-size:23px;font-weight:700;margin-top:22px;letter-spacing:-0.02em;">Payment received</div>
+            <p style="font-size:14px;color:#7c7568;line-height:1.6;margin:10px 0 0;max-width:260px;">Thank you. We've recorded your UPI payment of ₹18,408 and notified our team for confirmation.</p>
+            <button onClick="{{ nav.home }}" class="tap" style="margin-top:28px;background:#072076;color:#fff;border:none;font-size:14.5px;font-weight:650;padding:14px 28px;border-radius:13px;">Back to home</button>
+          </div>
+        </sc-if>
+
+        <!-- ===== REFILL LIST ===== -->
+        <sc-if value="{{ is.refillList }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:riseIn .3s ease both;padding:8px 20px 20px;">
+            <div style="font-size:22px;font-weight:700;letter-spacing:-0.02em;margin:8px 0 4px;">Refill orders</div>
+            <div style="font-size:13px;color:#8a8a90;margin-bottom:16px;">Your extinguisher refills</div>
+            <button class="tap" style="width:100%;background:#072076;color:#fff;border:none;font-size:14px;font-weight:650;padding:13px;border-radius:13px;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>Book a new refill</button>
+            <div style="display:flex;flex-direction:column;gap:11px;">
+              <sc-for list="{{ refills }}" as="r" hint-placeholder-count="3">
+                <div class="tap" style="background:#fff;border:1px solid #eceae4;border-radius:16px;padding:15px;box-shadow:0 2px 8px -4px rgba(16,24,40,.1);">
+                  <div style="display:flex;align-items:center;justify-content:space-between;"><span class="mono" style="font-size:12px;font-weight:500;color:#072076;">{{ r.ref }}</span><span style="font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:999px;background:{{ r.bBg }};color:{{ r.bFg }};">{{ r.status }}</span></div>
+                  <div style="font-size:13.5px;font-weight:650;margin-top:8px;">{{ r.items }}</div>
+                  <div style="font-size:12px;color:#8a8a90;margin-top:2px;">{{ r.date }} · {{ r.amount }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== JOURNEY ===== -->
+        <sc-if value="{{ is.journey }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:riseIn .3s ease both;padding:8px 20px 20px;">
+            <div style="font-size:22px;font-weight:700;letter-spacing:-0.02em;margin:8px 0 4px;">Your journey</div>
+            <div style="font-size:13px;color:#8a8a90;margin-bottom:20px;">Everything on your account</div>
+            <div>
+              <sc-for list="{{ journey }}" as="j" hint-placeholder-count="6">
+                <div style="display:flex;gap:14px;padding-bottom:20px;">
+                  <div style="display:flex;flex-direction:column;align-items:center;flex:none;"><div style="width:34px;height:34px;border-radius:10px;background:{{ j.bg }};display:flex;align-items:center;justify-content:center;">{{ j.icon }}</div><div style="width:2px;flex:1;background:#eeece6;margin-top:4px;"></div></div>
+                  <div style="padding-top:2px;"><div style="font-size:13.5px;font-weight:650;">{{ j.title }}</div><div style="font-size:12px;color:#8a8a90;margin-top:2px;">{{ j.desc }}</div><div style="font-size:11px;color:#b6b4ac;margin-top:4px;">{{ j.time }}</div></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== NOTIFICATIONS ===== -->
+        <sc-if value="{{ is.alerts }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:riseIn .3s ease both;padding:8px 20px 20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin:8px 0 16px;"><div style="font-size:22px;font-weight:700;letter-spacing:-0.02em;">Notifications</div><span style="font-size:12px;font-weight:600;color:#072076;">Mark all read</span></div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <sc-for list="{{ notifs }}" as="n" hint-placeholder-count="5">
+                <div onClick="{{ n.click }}" class="tap" style="background:{{ n.bg }};border:1px solid #eceae4;border-radius:14px;padding:14px;display:flex;gap:12px;box-shadow:0 2px 8px -4px rgba(16,24,40,.08);">
+                  <span style="width:8px;height:8px;border-radius:50%;background:{{ n.dot }};flex:none;margin-top:6px;"></span>
+                  <div style="flex:1;"><div style="font-size:13.5px;font-weight:650;">{{ n.title }}</div><div style="font-size:12px;color:#8a8a90;margin-top:2px;">{{ n.body }}</div><div style="font-size:11px;color:#b6b4ac;margin-top:4px;">{{ n.time }}</div></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== AGREEMENT ===== -->
+        <sc-if value="{{ is.agreement }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:riseIn .3s ease both;padding:8px 20px 20px;">
+            <div onClick="{{ nav.contract }}" class="tap" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:550;color:#8a8a90;margin-bottom:12px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Contract</div>
+            <div style="font-size:20px;font-weight:700;letter-spacing:-0.02em;">Maintenance agreement</div>
+            <div style="font-size:12.5px;color:#8a8a90;margin:4px 0 16px;">Version 2.1 · accepted 15 Jan 2026</div>
+            <div style="background:#fff;border:1px solid #eceae4;border-radius:16px;padding:18px;box-shadow:0 2px 8px -4px rgba(16,24,40,.1);font-size:12.5px;line-height:1.7;color:#4a4b52;">
+              <sc-for list="{{ clauses }}" as="c" hint-placeholder-count="4">
+                <div style="margin-bottom:15px;"><div style="font-size:13px;font-weight:700;color:#1b1c22;margin-bottom:4px;">{{ c.n }}. {{ c.title }}</div><div>{{ c.body }}</div></div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ===== CERTIFICATE ===== -->
+        <sc-if value="{{ is.certificate }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:riseIn .3s ease both;padding:8px 20px 24px;">
+            <div onClick="{{ nav.contract }}" class="tap" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:550;color:#8a8a90;margin-bottom:14px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Contract</div>
+            <div style="text-align:center;margin-bottom:16px;"><div style="width:46px;height:46px;border-radius:13px;background:#e7f4ec;display:flex;align-items:center;justify-content:center;margin:0 auto;animation:popc .5s ease both;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#17864a" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg></div><div style="font-size:19px;font-weight:700;margin-top:12px;letter-spacing:-0.02em;">Certificate ready</div></div>
+            <div style="background:linear-gradient(135deg,#0a1a52,#061238);border-radius:18px;padding:5px;box-shadow:0 20px 50px -20px rgba(6,14,42,.7);">
+              <div style="border:1.5px solid rgba(169,186,255,.4);border-radius:14px;padding:26px 22px;text-align:center;position:relative;overflow:hidden;">
+                <div style="position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(120,150,255,.12),transparent 60%);"></div>
+                <div style="position:relative;">
+                  <div style="width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;margin:0 auto;overflow:hidden;"><img src="assets/mark-white.png" alt="NSE" style="width:34px;height:34px;object-fit:contain;"></div>
+                  <div style="font-size:10px;font-weight:600;color:#a9baff;text-transform:uppercase;letter-spacing:.14em;margin-top:14px;">Fire Safety Certificate</div>
+                  <div style="font-size:20px;font-weight:700;color:#fff;margin-top:9px;letter-spacing:-0.02em;">Rajhans Textile Mills</div>
+                  <div style="font-size:11.5px;color:#9fa8cf;margin-top:6px;line-height:1.5;">Certifies fire safety maintenance compliance for contract NSE-AMC-0001.</div>
+                  <div style="display:flex;justify-content:center;gap:8px;margin-top:16px;"><span style="font-size:9.5px;font-weight:600;color:#a9baff;border:1px solid rgba(169,186,255,.35);border-radius:5px;padding:3px 8px;">NBC</span><span style="font-size:9.5px;font-weight:600;color:#a9baff;border:1px solid rgba(169,186,255,.35);border-radius:5px;padding:3px 8px;">BIS</span><span style="font-size:9.5px;font-weight:600;color:#a9baff;border:1px solid rgba(169,186,255,.35);border-radius:5px;padding:3px 8px;">IS</span><span style="font-size:9.5px;font-weight:600;color:#a9baff;border:1px solid rgba(169,186,255,.35);border-radius:5px;padding:3px 8px;">NFPA</span></div>
+                  <div style="display:flex;justify-content:space-between;margin-top:22px;padding-top:16px;border-top:1px solid rgba(255,255,255,.1);"><div style="text-align:left;"><div style="font-size:9px;color:#6b74a0;text-transform:uppercase;">Issued</div><div style="font-size:12px;color:#fff;font-weight:600;">15 Dec 2026</div></div><div style="text-align:right;"><div style="font-size:9px;color:#6b74a0;text-transform:uppercase;">No.</div><div class="mono" style="font-size:12px;color:#fff;font-weight:600;">NSE-CERT-0001</div></div></div>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:16px;"><button class="tap" style="flex:1;background:#072076;color:#fff;border:none;font-size:13.5px;font-weight:600;padding:13px;border-radius:12px;">View</button><button class="tap" style="flex:1;background:#fff;border:1px solid #e6e4dd;color:#4a4b52;font-size:13.5px;font-weight:600;padding:13px;border-radius:12px;">Download</button></div>
+          </div>
+        </sc-if>
+
+      </div>
+
+      <!-- TAB BAR -->
+      <div style="flex:none;background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border-top:1px solid #eae8e2;padding:8px 18px 26px;display:flex;align-items:center;justify-content:space-between;">
+        <div onClick="{{ nav.home }}" class="tap" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="{{ tab.home }}" stroke-width="1.9"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"/></svg><span style="font-size:10px;font-weight:600;color:{{ tab.home }};">Home</span></div>
+        <div onClick="{{ nav.contract }}" class="tap" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="{{ tab.contract }}" stroke-width="1.9"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg><span style="font-size:10px;font-weight:600;color:{{ tab.contract }};">Contracts</span></div>
+        <div onClick="{{ nav.journey }}" class="tap" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="{{ tab.journey }}" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span style="font-size:10px;font-weight:600;color:{{ tab.journey }};">Journey</span></div>
+        <div onClick="{{ nav.alerts }}" class="tap" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="{{ tab.alerts }}" stroke-width="1.9"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg><span style="position:absolute;top:-2px;right:24px;width:8px;height:8px;background:#f0a24b;border-radius:50%;border:1.5px solid #fff;"></span><span style="font-size:10px;font-weight:600;color:{{ tab.alerts }};">Alerts</span></div>
+        <div onClick="{{ nav.refillList }}" class="tap" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="{{ tab.refillList }}" stroke-width="1.9"><path d="M14 4c-3 0-5 3-5 8 0 1-1 2-2 3-1 1-2 3 0 4h14c2-1 1-3 0-4-1-1-2-2-2-3 0-5-2-8-5-8z"/></svg><span style="font-size:10px;font-weight:600;color:{{ tab.refillList }};">Refills</span></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { route:'home' };
+  go(r){ return () => { this.setState({ route:r }); if(this.contentRef) this.contentRef.scrollTop=0; }; }
+  setRef = (el)=>{ this.contentRef = el; };
+  pal(t){ const m={green:['#e7f4ec','#17864a'],blue:['#e8effb','#2f6fed'],amber:['#fbf0dc','#b45309'],red:['#fbe9e7','#d23f3f'],grey:['#efeeeb','#6b6b73']}; return m[t]||m.grey; }
+  tag(l){ return l.map(x=>{ const [bg,fg]=this.pal(x.tone); return {...x,bBg:bg,bFg:fg}; }); }
+  h(t,p,c){ return React.createElement(t,p,c); }
+  stars(n){ const a=[]; for(let i=0;i<5;i++){ a.push(this.h('svg',{key:i,width:15,height:15,viewBox:'0 0 24 24',fill:i<n?'#f0a24b':'#e6e4dd'},this.h('path',{d:'M12 2l2.4 5.2L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.8z'}))); } return a; }
+  jic(paths,stroke){ return this.h('svg',{width:16,height:16,viewBox:'0 0 24 24',fill:'none',stroke:stroke,strokeWidth:1.9},paths.map((d,i)=>this.h('path',{key:i,d}))); }
+
+  renderVals(){
+    const r=this.state.route;
+    const nav={}, is={};
+    ['home','contract','visit','serviceQuote','pay','thanks','refillList','journey','alerts','agreement','certificate'].forEach(id=>{ nav[id]=this.go(id); is[id]=id===r; });
+    const tabRoutes=['home','contract','journey','alerts','refillList'];
+    const activeMap={ home:['home','serviceQuote','pay','thanks','certificate'], contract:['contract','visit','agreement'], journey:['journey'], alerts:['alerts'], refillList:['refillList'] };
+    const tab={}; tabRoutes.forEach(t=>{ const on=(activeMap[r]||[]).includes(t); tab[t]= on ? '#072076' : '#a8a8b0'; });
+
+    const darkTop=['home','contract','visit'].includes(r);
+    const topBg = r==='visit' ? '#0e7a43' : (darkTop ? '#0d1f5e' : '#faf8f5');
+    const topFg = darkTop ? '#fff' : '#1b1c22';
+
+    const contracts=this.tag([
+      { ref:'NSE-AMC-0001', site:'Rajhans Textile Mills', plan:'Gold Industrial', status:'Active', tone:'green', next:'2 Jul', pct:'40%' },
+      { ref:'NSE-AMC-0007', site:'Warehouse Unit 2', plan:'Silver Industrial', status:'Active', tone:'green', next:'18 Aug', pct:'25%' },
+    ]);
+    const visits=[
+      { n:'1', date:'16 Feb 2026', tech:'Amit Desai', status:'Done', tone:'green', click:this.go('visit') },
+      { n:'2', date:'2 Jul 2026', tech:'Amit Desai', status:'Active', tone:'amber', click:null },
+      { n:'3', date:'15 Sep 2026', tech:'Suresh Rana', status:'Sched.', tone:'blue', click:null },
+      { n:'4', date:'15 Dec 2026', tech:'Unassigned', status:'Sched.', tone:'blue', click:null },
+    ].map(v=>{ const [bg,fg]=this.pal(v.tone); return {...v,bBg:bg,bFg:fg}; });
+    const equipment=this.tag([
+      { name:'ABC Extinguisher 6kg', serial:'EX-1042', loc:'Ground Floor', status:'OK', tone:'green' },
+      { name:'CO₂ Extinguisher 4.5kg', serial:'EX-1043', loc:'Server Room', status:'Due Soon', tone:'amber' },
+      { name:'Water CO₂ 9L', serial:'EX-1044', loc:'Loading Bay', status:'Overdue', tone:'red' },
+    ]);
+
+    const ratings=[
+      { dim:'Behaviour', stars:this.stars(5) },{ dim:'Quality', stars:this.stars(5) },{ dim:'Punctuality', stars:this.stars(4) },{ dim:'Communication', stars:this.stars(5) },{ dim:'Overall', stars:this.stars(5) },
+    ];
+    const vChecklist=['Extinguisher pressure','Hydrant valves','Exit signage','Alarm panel'].map((item,i)=>{ const st=i===2?['Issue','#b45309']:['OK','#17864a']; return {item,st:st[0],dot:st[1]}; });
+
+    const quoteItems=[
+      { desc:'ABC Powder refill 6kg', qty:'12', total:'₹7,800' },
+      { desc:'CO₂ cartridge', qty:'6', total:'₹5,400' },
+      { desc:'Hydrant washer set', qty:'8', total:'₹2,400' },
+    ];
+
+    // QR — deterministic pseudo-pattern
+    const qrCells=[]; let s=7;
+    for(let i=0;i<121;i++){ s=(s*1103515245+12345)&0x7fffffff; const on=(s>>16)&1; const corner=(i<3||i%11<3)&&(i<36||i%11<3); qrCells.push(this.h('div',{key:i,style:{background:on?'#0b1128':'transparent',borderRadius:'1px'}})); }
+
+    const refills=this.tag([
+      { ref:'RF-00042', items:'24 units · 2 types', status:'Completed', tone:'green', date:'28 Jun', amount:'₹16,800' },
+      { ref:'RF-00048', items:'8 units · 1 type', status:'Scheduled', tone:'blue', date:'6 Jul', amount:'Est. ₹5,600' },
+      { ref:'RF-00031', items:'12 units · 1 type', status:'Completed', tone:'green', date:'14 Feb', amount:'₹8,200' },
+    ]);
+
+    const journey=[
+      { title:'Visit 1 completed', desc:'First maintenance visit done', time:'16 Feb 2026', bg:'#e7f4ec', icon:this.jic(['M20 6L9 17l-5-5'],'#17864a') },
+      { title:'Feedback submitted', desc:'You rated Visit 1 · 4.8', time:'16 Feb 2026', bg:'#fdf3d6', icon:this.jic(['M12 2l2.4 5.2L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.8z'],'#b45309') },
+      { title:'Contract activated', desc:'Gold Industrial plan', time:'15 Jan 2026', bg:'#eef1fb', icon:this.jic(['M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z','M14 2v6h6'],'#072076') },
+      { title:'Agreement accepted', desc:'v2.1 signed digitally', time:'15 Jan 2026', bg:'#e7f4ec', icon:this.jic(['M20 6L9 17l-5-5'],'#17864a') },
+      { title:'Payment received', desc:'AMC fee ₹68,000 · UPI', time:'14 Jan 2026', bg:'#fdf3d6', icon:this.jic(['M12 1v22','M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6'],'#b45309') },
+      { title:'Quotation accepted', desc:'QUO-0102 · ₹80,240', time:'10 Jan 2026', bg:'#eef1fb', icon:this.jic(['M4 3h16v18l-4-3-4 3-4-3-4 3z'],'#072076') },
+    ];
+
+    const notifs=[
+      { title:'Visit 2 in progress', body:'Amit Desai is servicing your site', time:'2h ago', dot:'#072076', bg:'#f9fafe', click:this.go('contract') },
+      { title:'Quotation for review', body:'QUO-0186 · ₹18,408', time:'Yesterday', dot:'#072076', bg:'#f9fafe', click:this.go('serviceQuote') },
+      { title:'Certificate ready', body:'Fire Safety Certificate issued', time:'2 days ago', dot:'transparent', bg:'#fff', click:this.go('certificate') },
+      { title:'Refill completed', body:'RF-00042 · 24 units', time:'28 Jun', dot:'transparent', bg:'#fff', click:this.go('refillList') },
+      { title:'Payment received', body:'AMC fee ₹68,000 confirmed', time:'14 Jan', dot:'transparent', bg:'#fff', click:this.go('home') },
+    ];
+
+    const clauses=[
+      { n:'1', title:'Scope of maintenance', body:'Periodic inspection, servicing and refilling of all listed fire safety equipment for the contract period.' },
+      { n:'2', title:'Visit schedule', body:'Four quarterly maintenance visits; dates may be rescheduled by mutual agreement.' },
+      { n:'3', title:'Fees & payment', body:'Annual fee per accepted quotation; approved material quotes payable within 15 days.' },
+      { n:'4', title:'Certification', body:'A Fire Safety Certificate (NBC/BIS/IS/NFPA) is issued on completion of all visits.' },
+    ];
+
+    return { is, nav, tab, topBg, topFg, setRef:this.setRef, contracts, visits, equipment, ratings, vChecklist, quoteItems, qr:qrCells, refills, journey, notifs, clauses };
+  }
+}
+</script>
+</body>
+</html>

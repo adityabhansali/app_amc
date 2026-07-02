@@ -1,0 +1,85 @@
+{# Reusable visit card for day plan — expects `v` in context #}
+<div class="card p-4
+  {{ 'border-l-4 border-green-400' if v.technician_confirmed == True else
+     'border-l-4 border-red-400' if v.technician_confirmed == False else
+     'border-l-4 border-amber-300' }}">
+  <div class="flex items-start justify-between gap-3 flex-wrap">
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2 flex-wrap mb-1">
+        <span class="font-semibold text-sm text-ink">
+          {{ v.scheduled_date.strftime('%a, %d %b') }} — {{ v.label }}
+        </span>
+        <!-- Days until badge -->
+        {% set du = v.days_until %}
+        {% if du is not none %}
+        <span class="text-xs px-2 py-0.5 rounded-full
+          {{ 'bg-red-50 text-red-700' if du <= 0 else
+             'bg-amber-50 text-amber-700' if du <= 2 else
+             'bg-blue-50 text-blue-700' }}">
+          {% if du == 0 %}Today
+          {% elif du == 1 %}Tomorrow
+          {% elif du < 0 %}{{ du|abs }} days overdue
+          {% else %}{{ du }} days away
+          {% endif %}
+        </span>
+        {% endif %}
+        <!-- Confirmation badge -->
+        {% if v.technician_confirmed == True %}
+        <span class="text-xs px-2 py-0.5 rounded-full bg-green-50 text-green-700">Accepted</span>
+        {% elif v.technician_confirmed == False %}
+        <span class="text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-700">Rejected</span>
+        {% else %}
+        <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">Pending confirmation</span>
+        {% endif %}
+      </div>
+      <p class="text-sm text-ink font-medium">
+        {{ v.contract.reference }} — {{ v.contract.site_name or v.contract.applicant_name }}
+      </p>
+      <p class="text-xs text-ink-subtle mt-0.5">
+        {{ v.contract.site_address or '' }}
+        {% if v.contract.customer %} · {{ v.contract.customer.phone or '' }}{% endif %}
+      </p>
+      {% if v.technician_note %}
+      <p class="text-xs text-amber-700 mt-1 italic">Note: {{ v.technician_note }}</p>
+      {% endif %}
+    </div>
+    <a href="{{ url_for('admin.visit', visit_id=v.id) }}"
+       class="btn btn-ghost text-xs px-2 py-1 flex-shrink-0">Open</a>
+  </div>
+
+  <!-- Accept / Reject buttons (only if not yet confirmed and visit is in future) -->
+  {% if v.technician_confirmed is none and v.days_until is not none and v.days_until >= 0 %}
+  <div class="mt-3 border-t border-hairline pt-3 flex gap-2 flex-wrap">
+    <form method="post" action="{{ url_for('admin.confirm_visit', visit_id=v.id) }}"
+          class="flex gap-2 flex-wrap">
+      <input type="hidden" name="action" value="accept">
+      <button class="btn text-xs px-3 py-1.5 bg-green-600 text-white hover:bg-green-700">
+        Accept visit
+      </button>
+    </form>
+    <details class="flex-1">
+      <summary class="btn btn-ghost text-xs px-3 py-1.5 cursor-pointer list-none">
+        Flag conflict / reject
+      </summary>
+      <form method="post" action="{{ url_for('admin.confirm_visit', visit_id=v.id) }}"
+            class="mt-2 flex gap-2">
+        <input type="hidden" name="action" value="reject">
+        <input type="text" name="note" placeholder="Reason (emergency visit, sick leave…)"
+               class="flex-1 px-3 py-1.5 text-xs rounded-lg border border-hairline">
+        <button class="btn btn-emergency text-xs px-3 py-1.5">Reject</button>
+      </form>
+    </details>
+  </div>
+  {% elif v.technician_confirmed == False %}
+  <!-- Show re-accept option -->
+  <div class="mt-2 pt-2 border-t border-hairline">
+    <form method="post" action="{{ url_for('admin.confirm_visit', visit_id=v.id) }}"
+          class="flex gap-2">
+      <input type="hidden" name="action" value="accept">
+      <input type="text" name="note" placeholder="Optional note"
+             class="flex-1 px-3 py-1.5 text-xs rounded-lg border border-hairline">
+      <button class="btn text-xs px-3 py-1.5 bg-green-600 text-white">Re-accept</button>
+    </form>
+  </div>
+  {% endif %}
+</div>

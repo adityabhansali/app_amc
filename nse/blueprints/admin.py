@@ -10,9 +10,11 @@ from ..models import (User, AMCPlan, Contract, Visit, VisitPhoto, Equipment,
                       RefillRecord, Quotation, QuotationItem, ServiceRequest,
                       Payment, Enquiry, RefillOrder, RefillItem, FormAttachment,
                       VisitFeedback, CustomerJourneyEvent, ServiceQuotation,
-                      VisitChecklistItem, InventoryItem, HealthCheckReport,
-                      SystemCheckList)
-from ..utils import staff_required, save_upload, notify, notify_staff
+                      ServiceQuotationItem, VisitChecklistItem, InventoryItem,
+                      HealthCheckReport, SystemCheckList, SupportTicket,
+                      VisitDefect, Broadcast, Installment, MilestoneLog)
+from ..utils import (staff_required, save_upload, notify, notify_staff,
+                     whatsapp_url, normalise_phone)
 from ..email_service import send_feedback_request, send_visit_confirmation
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/ops")
@@ -698,8 +700,6 @@ def survey(survey_id=None):
         s.set_data(payload)
         db.session.commit()
         flash(f"Site checking list {s.reference} saved.", "success")
-        if f.get("save_and_quote"):
-            return redirect(url_for("admin.survey_to_quote", survey_id=s.id))
         return redirect(url_for("admin.survey", survey_id=s.id))
 
     cid = request.args.get("contract_id", type=int)
@@ -713,45 +713,20 @@ def survey(survey_id=None):
 @login_required
 @staff_required
 def survey_to_quote(survey_id):
-    """Create a draft ServiceQuotation pre-filled from a survey's findings.
+    """Open the new-quotation form pre-filled with the survey's client details.
 
-    Each surveyed item (with a non-zero total count) becomes a line item the
-    engineer can price; client header carries over so the quote is ready to send.
+    No items are auto-created — the engineer manually adds line items and rates.
+    This avoids errors from auto-population and keeps the engineer in control.
     """
     s = db.session.get(SystemCheckList, survey_id) or abort(404)
-    sq = ServiceQuotation(
-        service_type="amc",
-        customer_name=s.client_name or s.site_name or "Customer",
-        customer_phone=s.client_phone or "",
-        customer_email=s.client_email or "",
-        project_name=s.site_name or "",
-        customer_address=s.site_address or "",
-        gst_percent=18, valid_days=7,
-        notes=f"Auto-generated from site survey {s.reference}.",
-        created_by_id=current_user.id, status="draft",
-    )
-    # link to an existing customer account if one matches
-    cu = None
-    if sq.customer_phone:
-        cu = User.query.filter_by(phone=sq.customer_phone, role="customer").first()
-    if cu:
-        sq.customer_id = cu.id
-    sq.generate_number()
-    db.session.add(sq)
-    db.session.flush()
-
-    from ..models import ServiceQuotationItem
-    order = 0
-    for item, qty in s.item_totals.items():
-        db.session.add(ServiceQuotationItem(
-            quotation_id=sq.id, category="As-surveyed equipment",
-            description=item, unit="No.", quantity=qty, rate=0, sort_order=order))
-        order += 1
-    s.service_quotation_id = sq.id
-    db.session.commit()
-    flash(f"Draft quotation {sq.reference} created from survey {s.reference}. "
-          f"Add rates, then send.", "success")
-    return redirect(url_for("sq.detail_quotation", sq_id=sq.id))
+    # Pass client details as query params so sq.new_quotation can pre-fill the form
+    return redirect(url_for("sq.new_quotation",
+                            from_survey=s.id,
+                            prefill_name=s.client_name or "",
+                            prefill_phone=s.client_phone or "",
+                            prefill_email=s.client_email or "",
+                            prefill_project=s.site_name or "",
+                            prefill_address=s.site_address or ""))
 
 
 # --------------------------------------------------------------------------- #
@@ -777,6 +752,11 @@ def service_request(req_id):
     techs = User.query.filter(User.role.in_(["technician", "admin"])).all()
     if request.method == "POST":
         f = request.form
+        # Wave 11 — stamp first staff response for SLA tracking
+        if not sr.first_response_at and (f.get("status") not in (None, "new")
+                                         or f.get("assigned_technician_id")
+                                         or f.get("team_eta")):
+            sr.first_response_at = datetime.utcnow()
         sr.status = f.get("status", sr.status)
         sr.team_eta = f.get("team_eta")
         sr.amount = int(f.get("amount") or 0)
@@ -1110,3 +1090,508 @@ def analytics():
                            open_emergencies=open_emergencies,
                            open_refills=open_refills,
                            monthly=monthly)
+
+
+# --------------------------------------------------------------------------- #
+# Support Tickets / Complaints (staff side)
+# --------------------------------------------------------------------------- #
+
+@admin_bp.route("/tickets")
+@login_required
+@staff_required
+def tickets():
+    """List all support tickets for staff — all statuses, most recent first."""
+    status_filter = request.args.get("status", "")
+    q = SupportTicket.query
+    if status_filter:
+        q = q.filter(SupportTicket.status == status_filter)
+    all_tickets = q.order_by(SupportTicket.created_at.desc()).all()
+    open_count = SupportTicket.query.filter(
+        SupportTicket.status.in_(["open", "acknowledged"])).count()
+    return render_template("admin/tickets.html",
+                           tickets=all_tickets, open_count=open_count,
+                           status_filter=status_filter)
+
+
+@admin_bp.route("/ticket/<int:ticket_id>", methods=["GET", "POST"])
+@login_required
+@staff_required
+def ticket_detail(ticket_id):
+    """View and respond to a support ticket."""
+    t = db.session.get(SupportTicket, ticket_id) or abort(404)
+
+    if request.method == "POST":
+        action = request.form.get("action")
+
+        if action == "acknowledge":
+            reply = request.form.get("staff_reply", "").strip()
+            t.status = "acknowledged"
+            t.staff_reply = reply or "We have received your complaint and are looking into it."
+            t.replied_by_id = current_user.id
+            t.replied_at = datetime.utcnow()
+            db.session.commit()
+            # Notify customer
+            if t.customer_id:
+                notify(t.customer_id,
+                       f"Complaint {t.reference} acknowledged",
+                       t.staff_reply[:120],
+                       link=url_for("portal.ticket_detail", ticket_id=t.id))
+            flash(f"{t.reference} acknowledged and customer notified.", "success")
+
+        elif action == "resolve":
+            reply = request.form.get("staff_reply", "").strip()
+            t.status = "resolved"
+            t.staff_reply = reply or t.staff_reply
+            t.replied_by_id = current_user.id
+            t.replied_at = t.replied_at or datetime.utcnow()
+            t.resolved_at = datetime.utcnow()
+            t.resolved_by_id = current_user.id
+            db.session.commit()
+            if t.customer_id:
+                notify(t.customer_id,
+                       f"Complaint {t.reference} resolved",
+                       (reply or "Your complaint has been resolved.")[:120],
+                       link=url_for("portal.ticket_detail", ticket_id=t.id))
+            flash(f"{t.reference} marked resolved.", "success_chime")
+
+        elif action == "close":
+            t.status = "closed"
+            db.session.commit()
+            flash(f"{t.reference} closed.", "info")
+
+        return redirect(url_for("admin.ticket_detail", ticket_id=t.id))
+
+    return render_template("admin/ticket_detail.html", ticket=t)
+
+
+# --------------------------------------------------------------------------- #
+# Technician Day Plan
+# --------------------------------------------------------------------------- #
+
+@admin_bp.route("/my-plan")
+@login_required
+@staff_required
+def day_plan():
+    """Tomorrow's visits assigned to the logged-in technician, with accept/reject."""
+    tomorrow = date.today() + timedelta(days=1)
+    today    = date.today()
+
+    # Show today + tomorrow for awareness
+    today_visits = Visit.query.filter(
+        Visit.technician_id == current_user.id,
+        Visit.scheduled_date == today,
+        Visit.status.in_(["scheduled", "in_progress"]),
+    ).all()
+    tomorrow_visits = Visit.query.filter(
+        Visit.technician_id == current_user.id,
+        Visit.scheduled_date == tomorrow,
+        Visit.status.in_(["scheduled", "in_progress"]),
+    ).all()
+    # Upcoming 7 days (excluding today/tomorrow)
+    week_visits = Visit.query.filter(
+        Visit.technician_id == current_user.id,
+        Visit.scheduled_date > tomorrow,
+        Visit.scheduled_date <= today + timedelta(days=7),
+        Visit.status.in_(["scheduled", "in_progress"]),
+    ).order_by(Visit.scheduled_date).all()
+
+    return render_template("admin/day_plan.html",
+                           today_visits=today_visits,
+                           tomorrow_visits=tomorrow_visits,
+                           week_visits=week_visits,
+                           tomorrow=tomorrow, today=today)
+
+
+@admin_bp.route("/visit/<int:visit_id>/confirm", methods=["POST"])
+@login_required
+@staff_required
+def confirm_visit(visit_id):
+    """Technician accepts or rejects a visit in their day plan."""
+    v = db.session.get(Visit, visit_id) or abort(404)
+    if v.technician_id != current_user.id:
+        abort(403)
+
+    action = request.form.get("action")
+    note   = request.form.get("note", "").strip()
+
+    if action == "accept":
+        v.technician_confirmed = True
+        v.technician_note = note or None
+        db.session.commit()
+        # Notify ops/admin
+        notify_staff(
+            f"{v.label} accepted by {current_user.name}",
+            f"{v.label} for {v.contract.reference} on "
+            f"{v.scheduled_date.strftime('%d %b %Y')} confirmed.",
+            link=url_for("admin.visit", visit_id=v.id),
+        )
+        flash(f"{v.label} accepted.", "success")
+
+    elif action == "reject":
+        v.technician_confirmed = False
+        v.technician_note = note
+        db.session.commit()
+        # Notify all admins so they can reassign
+        notify_staff(
+            f"{v.label} rejected by {current_user.name}",
+            f"{v.label} for {v.contract.reference} on "
+            f"{v.scheduled_date.strftime('%d %b %Y')} was rejected"
+            f"{': ' + note if note else ''}. Please reassign.",
+            link=url_for("admin.visit", visit_id=v.id),
+        )
+        flash(f"{v.label} rejected — ops team notified to reassign.", "warning")
+
+    return redirect(url_for("admin.day_plan"))
+
+
+# =========================================================================== #
+# Wave 11 — Renewal pipeline & one-click clone/renew
+# =========================================================================== #
+@admin_bp.route("/renewals")
+@login_required
+@staff_required
+def renewals():
+    """Contracts approaching expiry (90/60/30) or expired, not yet renewed."""
+    from ..reminders import renewal_reminders
+    items = renewal_reminders()
+    return render_template("admin/renewals.html", items=items)
+
+
+def _clone_contract_for_renewal(src, quote=True):
+    """Create a new PENDING contract copying the site/plan/equipment/contact of
+    `src`, linked back via renewed_from_id. Optionally auto-create an AMC
+    ServiceQuotation (as the public apply flow does). Returns the new Contract."""
+    plan = src.plan
+    nc = Contract(
+        plan_id=src.plan_id,
+        customer_id=src.customer_id,
+        status="pending",
+        site_name=src.site_name,
+        site_address=src.site_address,
+        area=src.area,
+        applicant_name=(src.customer.name if src.customer else src.applicant_name),
+        applicant_phone=(src.customer.phone if src.customer else src.applicant_phone),
+        applicant_email=(src.customer.email if src.customer else src.applicant_email),
+        property_type=src.property_type,
+        total_visits=src.total_visits,
+        price=(plan.price if plan else src.price),
+        payment_mode=src.payment_mode,
+        renewed_from_id=src.id,
+        application_notes=f"Renewal of {src.reference}",
+    )
+    db.session.add(nc)
+    db.session.flush()
+
+    # Copy equipment register forward (fresh refill schedule kept as-is)
+    for e in src.equipment:
+        db.session.add(Equipment(
+            contract_id=nc.id, name=e.name, equip_type=e.equip_type,
+            location=e.location, serial_no=e.serial_no,
+            install_date=e.install_date, last_refill_date=e.last_refill_date,
+            refill_interval_months=e.refill_interval_months,
+            next_refill_date=e.next_refill_date))
+
+    sq = None
+    if quote and plan:
+        sq = ServiceQuotation(
+            service_type="amc",
+            customer_name=nc.applicant_name,
+            customer_phone=nc.applicant_phone,
+            customer_email=nc.applicant_email,
+            project_name=nc.site_name,
+            customer_address=nc.site_address,
+            status="sent", sent_at=datetime.utcnow(),
+            contract_id=nc.id, customer_id=nc.customer_id,
+            gst_percent=18.0, valid_days=15,
+            notes=f"Annual renewal quotation for {src.reference}.",
+        )
+        sq.generate_number()
+        db.session.add(sq)
+        db.session.flush()
+        detail = (f"{plan.visits_per_year} maintenance visits/year | "
+                  f"{plan.response_time} response time")
+        db.session.add(ServiceQuotationItem(
+            quotation_id=sq.id, category="AMC Services",
+            description=f"{plan.name} — AMC Renewal ({src.reference})\n{detail}",
+            unit="Year", quantity=1.0, rate=float(plan.price), sort_order=1))
+    db.session.commit()
+    return nc, sq
+
+
+@admin_bp.route("/contract/<int:contract_id>/renew", methods=["POST"])
+@login_required
+@staff_required
+def renew_contract(contract_id):
+    src = db.session.get(Contract, contract_id) or abort(404)
+    nc, sq = _clone_contract_for_renewal(src, quote=True)
+    if nc.customer_id:
+        db.session.add(CustomerJourneyEvent(
+            customer_id=nc.customer_id, event_type="quote_sent",
+            description=f"Renewal quotation raised for {src.reference} → {nc.reference}",
+            ref_type="service_quotation", ref_id=(sq.id if sq else None),
+            created_by_id=current_user.id))
+        db.session.commit()
+        notify(nc.customer_id, "Your AMC renewal is ready",
+               f"We've prepared a renewal quote for {src.reference}. "
+               f"Review and accept it to continue your cover.",
+               link=(url_for("portal.service_quotation", sq_id=sq.id) if sq
+                     else url_for("portal.contract", contract_id=nc.id)))
+    flash(f"Renewal {nc.reference} created from {src.reference}"
+          + (f" with quote {sq.reference}." if sq else "."), "success_chime")
+    return redirect(url_for("admin.contract", contract_id=nc.id))
+
+
+# =========================================================================== #
+# Wave 11 — Visit check-in / check-out (proof of visit)
+# =========================================================================== #
+@admin_bp.route("/visit/<int:visit_id>/checkin", methods=["POST"])
+@login_required
+@staff_required
+def visit_checkin(visit_id):
+    v = db.session.get(Visit, visit_id) or abort(404)
+    v.checkin_at = datetime.utcnow()
+    v.checkin_note = request.form.get("checkin_note", "").strip() or None
+    if v.status == "scheduled":
+        v.status = "in_progress"
+    db.session.commit()
+    flash(f"Checked in for {v.label} at {v.checkin_at:%H:%M}.", "success")
+    return redirect(url_for("admin.visit", visit_id=v.id))
+
+
+@admin_bp.route("/visit/<int:visit_id>/checkout", methods=["POST"])
+@login_required
+@staff_required
+def visit_checkout(visit_id):
+    v = db.session.get(Visit, visit_id) or abort(404)
+    if not v.checkin_at:
+        v.checkin_at = datetime.utcnow()
+    v.checkout_at = datetime.utcnow()
+    db.session.commit()
+    flash(f"Checked out — on site {v.onsite_duration_label or '0m'}.", "success")
+    return redirect(url_for("admin.visit", visit_id=v.id))
+
+
+# =========================================================================== #
+# Wave 11 — Photo-based defect reports
+# =========================================================================== #
+@admin_bp.route("/visit/<int:visit_id>/defect", methods=["POST"])
+@login_required
+@staff_required
+def visit_defect_add(visit_id):
+    v = db.session.get(Visit, visit_id) or abort(404)
+    f = request.form
+    name = (f.get("equipment_name") or "").strip()
+    if not name:
+        flash("Name the faulty equipment to log a defect.", "warning")
+        return redirect(url_for("admin.visit", visit_id=v.id))
+    photo = save_upload(request.files.get("defect_photo"),
+                        f"defects/visit{v.id}", {"png", "jpg", "jpeg", "webp"})
+    d = VisitDefect(
+        visit_id=v.id, contract_id=v.contract_id,
+        equipment_name=name, location=f.get("location", "").strip() or None,
+        severity=f.get("severity", "medium"),
+        description=f.get("description", "").strip() or None,
+        photo_path=photo, reported_by_id=current_user.id, status="open")
+    db.session.add(d)
+    db.session.commit()
+    if v.contract and v.contract.customer_id:
+        notify(v.contract.customer_id, "A fault was found during your visit",
+               f"{d.severity_label} severity: {d.equipment_name}. "
+               f"Please review the defect report in your portal.",
+               link=url_for("portal.contract", contract_id=v.contract_id))
+    flash(f"Defect {d.reference} logged.", "success")
+    return redirect(url_for("admin.visit", visit_id=v.id))
+
+
+@admin_bp.route("/defect/<int:defect_id>/status", methods=["POST"])
+@login_required
+@staff_required
+def defect_status(defect_id):
+    d = db.session.get(VisitDefect, defect_id) or abort(404)
+    d.status = request.form.get("status", d.status)
+    db.session.commit()
+    flash(f"Defect {d.reference} marked {d.status}.", "success")
+    return redirect(request.referrer or url_for("admin.visit", visit_id=d.visit_id))
+
+
+# =========================================================================== #
+# Wave 11 — Bulk WhatsApp broadcast
+# =========================================================================== #
+def _broadcast_recipients(audience, value):
+    """Resolve (name, phone) tuples for a broadcast audience."""
+    seen, out = set(), []
+
+    def _add(name, phone):
+        p = (phone or "").strip()
+        if p and p not in seen:
+            seen.add(p)
+            out.append((name or "Customer", p))
+
+    if audience == "all":
+        for u in User.query.filter_by(role="customer").all():
+            _add(u.name, u.phone)
+    elif audience == "active":
+        for c in Contract.query.filter_by(status="active").all():
+            _add((c.customer.name if c.customer else c.applicant_name),
+                 (c.customer.phone if c.customer else c.applicant_phone))
+    elif audience == "expiring":
+        for c in Contract.query.filter_by(status="active").all():
+            if c.renewal_window:
+                _add((c.customer.name if c.customer else c.applicant_name),
+                     (c.customer.phone if c.customer else c.applicant_phone))
+    elif audience == "area" and value:
+        for c in Contract.query.filter(Contract.area.ilike(f"%{value}%")).all():
+            _add((c.customer.name if c.customer else c.applicant_name),
+                 (c.customer.phone if c.customer else c.applicant_phone))
+    elif audience == "plan" and value:
+        for c in Contract.query.filter_by(plan_id=int(value)).all():
+            _add((c.customer.name if c.customer else c.applicant_name),
+                 (c.customer.phone if c.customer else c.applicant_phone))
+    return out
+
+
+@admin_bp.route("/broadcasts")
+@login_required
+@staff_required
+def broadcasts():
+    items = Broadcast.query.order_by(Broadcast.created_at.desc()).limit(50).all()
+    areas = [a[0] for a in db.session.query(Contract.area).distinct().all() if a[0]]
+    plans = AMCPlan.query.filter_by(active=True).all()
+    return render_template("admin/broadcasts.html", items=items,
+                           areas=sorted(areas), plans=plans)
+
+
+@admin_bp.route("/broadcast/new", methods=["POST"])
+@login_required
+@staff_required
+def broadcast_new():
+    f = request.form
+    message = (f.get("message") or "").strip()
+    if not message:
+        flash("Write a message to broadcast.", "warning")
+        return redirect(url_for("admin.broadcasts"))
+    audience = f.get("audience", "all")
+    value = (f.get("audience_value") or "").strip() or None
+    recips = _broadcast_recipients(audience, value)
+    b = Broadcast(title=f.get("title", "").strip() or None, message=message,
+                  audience=audience, audience_value=value,
+                  recipient_count=len(recips), created_by_id=current_user.id)
+    db.session.add(b)
+    db.session.commit()
+    flash(f"Broadcast saved — {len(recips)} recipients ready to send.", "success")
+    return redirect(url_for("admin.broadcast_send", broadcast_id=b.id))
+
+
+@admin_bp.route("/broadcast/<int:broadcast_id>/send")
+@login_required
+@staff_required
+def broadcast_send(broadcast_id):
+    """Show one wa.me 'Send' link per recipient — the staffer taps each (free, no API)."""
+    b = db.session.get(Broadcast, broadcast_id) or abort(404)
+    recips = _broadcast_recipients(b.audience, b.audience_value)
+    rows = [{"name": n, "phone": p,
+             "wa": whatsapp_url(p, b.message.replace("{name}", n))}
+            for n, p in recips]
+    return render_template("admin/broadcast_send.html", b=b, rows=rows)
+
+
+# =========================================================================== #
+# Wave 11 — Instalment / EMI schedule
+# =========================================================================== #
+@admin_bp.route("/contract/<int:contract_id>/installments", methods=["POST"])
+@login_required
+@staff_required
+def contract_installments(contract_id):
+    c = db.session.get(Contract, contract_id) or abort(404)
+    f = request.form
+    n = max(1, min(12, int(f.get("count") or 4)))
+    start = (datetime.strptime(f.get("first_due"), "%Y-%m-%d").date()
+             if f.get("first_due") else date.today())
+    freq_days = {"monthly": 30, "quarterly": 91, "half": 182}.get(
+        f.get("frequency", "quarterly"), 91)
+    total = int(c.price or 0)
+    if total <= 0:
+        flash("Set the contract price before creating an instalment plan.", "warning")
+        return redirect(url_for("admin.contract", contract_id=c.id))
+    # Clear any existing schedule and rebuild
+    Installment.query.filter_by(contract_id=c.id).delete()
+    per = total // n
+    for i in range(n):
+        amt = per if i < n - 1 else total - per * (n - 1)   # last picks up rounding
+        due = start + timedelta(days=freq_days * i)
+        db.session.add(Installment(
+            contract_id=c.id, sequence=i + 1, label=f"Instalment {i + 1}",
+            amount=amt, due_date=due))
+    db.session.commit()
+    flash(f"{n}-part instalment plan created for {c.reference}.", "success")
+    return redirect(url_for("admin.contract", contract_id=c.id))
+
+
+@admin_bp.route("/installment/<int:inst_id>/pay", methods=["POST"])
+@login_required
+@staff_required
+def installment_pay(inst_id):
+    it = db.session.get(Installment, inst_id) or abort(404)
+    it.paid = not it.paid
+    it.paid_date = date.today() if it.paid else None
+    it.payment_mode = request.form.get("payment_mode", "cash")
+    db.session.commit()
+    # If all instalments paid, mark contract fee paid
+    c = it.contract
+    if c and all(x.paid for x in c.installments):
+        c.payment_status = "paid"
+        if not c.payment_date:
+            c.payment_date = date.today()
+        db.session.commit()
+    flash(f"{it.label} marked {'paid' if it.paid else 'unpaid'}.", "success")
+    return redirect(request.referrer or url_for("admin.contract", contract_id=it.contract_id))
+
+
+# =========================================================================== #
+# Wave 11 — Insights / BI dashboard (safety scores, health, forecast, areas)
+# =========================================================================== #
+@admin_bp.route("/insights")
+@login_required
+@staff_required
+def insights():
+    from sqlalchemy import func
+    active = Contract.query.filter_by(status="active").all()
+
+    # Property safety scores (lowest first — these need attention)
+    safety = sorted(
+        [{"c": c, "score": c.safety_score, "grade": c.safety_grade}
+         for c in active],
+        key=lambda r: r["score"])
+
+    # Customer health scores
+    customers = User.query.filter_by(role="customer").all()
+    health = []
+    for u in customers:
+        hs = u.health_score
+        if hs is not None:
+            health.append({"u": u, "score": hs, "band": u.health_band})
+    health.sort(key=lambda r: r["score"])
+
+    # Revenue forecast — confirmed (active fees) vs pipeline (sent/accepted quotes)
+    confirmed = sum(int(c.price or 0) for c in active)
+    pipeline_quotes = ServiceQuotation.query.filter(
+        ServiceQuotation.status.in_(["sent", "viewed", "negotiation_requested", "accepted"])
+    ).all()
+    pipeline = sum(int(q.grand_total or 0) for q in pipeline_quotes)
+    renewals_value = sum(int(c.price or 0) for c in active if c.renewal_window)
+
+    # Area-wise distribution (heat map table)
+    area_rows = {}
+    for c in active:
+        key = (c.area or "Unspecified").strip().title()
+        r = area_rows.setdefault(key, {"area": key, "count": 0, "value": 0})
+        r["count"] += 1
+        r["value"] += int(c.price or 0)
+    areas = sorted(area_rows.values(), key=lambda r: r["count"], reverse=True)
+    max_area = max((r["count"] for r in areas), default=1)
+
+    return render_template("admin/insights.html",
+                           safety=safety, health=health,
+                           confirmed=confirmed, pipeline=pipeline,
+                           renewals_value=renewals_value,
+                           areas=areas, max_area=max_area)

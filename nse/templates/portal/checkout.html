@@ -1,0 +1,41 @@
+{% extends "base_portal.html" %}
+{% block title %}Pay online — {{ COMPANY_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto text-center">
+  <h1 class="text-2xl font-extrabold text-ink mt-2 mb-1">Pay for {{ sq.reference }}</h1>
+  <p class="text-ink-subtle text-sm mb-6">Amount payable: <b class="text-ink">{{ sq.grand_total|rupees }}</b> (incl. GST)</p>
+  <div class="card p-8">
+    <p class="text-sm text-ink-muted mb-5">You'll be redirected to a secure Razorpay window to complete the payment by UPI, card, or net-banking.</p>
+    <button id="payBtn" class="btn btn-primary w-full py-3">Pay {{ sq.grand_total|rupees }} securely</button>
+    <a href="{{ url_for('portal.service_quotation', sq_id=sq.id) }}" class="block mt-4 text-sm text-ink-subtle hover:text-ink">Cancel</a>
+  </div>
+</div>
+
+<form id="verifyForm" method="post" action="{{ url_for('portal.service_quotation_pay_online_verify', sq_id=sq.id) }}" style="display:none">
+  <input type="hidden" name="razorpay_order_id" id="f_order">
+  <input type="hidden" name="razorpay_payment_id" id="f_payment">
+  <input type="hidden" name="razorpay_signature" id="f_sig">
+</form>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+var options = {
+  key: "{{ key_id }}",
+  amount: "{{ order.amount }}",
+  currency: "INR",
+  name: "{{ COMPANY_NAME }}",
+  description: "{{ sq.reference }}",
+  order_id: "{{ order.id }}",
+  prefill: { name: "{{ sq.customer_name }}", contact: "{{ sq.customer_phone }}", email: "{{ sq.customer_email or '' }}" },
+  theme: { color: "#072076" },
+  handler: function (r) {
+    document.getElementById('f_order').value = r.razorpay_order_id;
+    document.getElementById('f_payment').value = r.razorpay_payment_id;
+    document.getElementById('f_sig').value = r.razorpay_signature;
+    document.getElementById('verifyForm').submit();
+  }
+};
+var rzp = new Razorpay(options);
+document.getElementById('payBtn').onclick = function(){ rzp.open(); };
+</script>
+{% endblock %}

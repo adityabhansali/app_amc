@@ -1,0 +1,59 @@
+{% extends "base_ops.html" %}
+{% block title %}My Day Plan — Ops Console{% endblock %}
+{% block content %}
+<section class="max-w-3xl mx-auto px-4 py-10">
+  <div class="mb-6">
+    <h1 class="text-2xl font-extrabold text-ink">My Day Plan</h1>
+    <p class="text-ink-subtle text-sm mt-1">
+      Visits assigned to you — accept or flag conflicts before the day arrives.
+    </p>
+  </div>
+
+  <!-- TODAY -->
+  <div class="mb-8">
+    <h2 class="text-sm font-semibold text-ink-muted uppercase tracking-wider mb-3">
+      Today — {{ today.strftime('%d %b %Y') }}
+    </h2>
+    {% if today_visits %}
+    <div class="space-y-3">
+      {% for v in today_visits %}
+      {% include "admin/_day_plan_card.html" %}
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="card p-6 text-center text-ink-subtle text-sm">No visits scheduled for today.</div>
+    {% endif %}
+  </div>
+
+  <!-- TOMORROW -->
+  <div class="mb-8">
+    <h2 class="text-sm font-semibold text-ink-muted uppercase tracking-wider mb-3">
+      Tomorrow — {{ tomorrow.strftime('%d %b %Y') }}
+    </h2>
+    {% if tomorrow_visits %}
+    <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3">
+      Please confirm or flag conflicts for tomorrow's visits so the ops team can plan.
+    </p>
+    <div class="space-y-3">
+      {% for v in tomorrow_visits %}
+      {% include "admin/_day_plan_card.html" %}
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="card p-6 text-center text-ink-subtle text-sm">No visits scheduled for tomorrow.</div>
+    {% endif %}
+  </div>
+
+  <!-- THIS WEEK -->
+  {% if week_visits %}
+  <div>
+    <h2 class="text-sm font-semibold text-ink-muted uppercase tracking-wider mb-3">Next 7 days</h2>
+    <div class="space-y-3">
+      {% for v in week_visits %}
+      {% include "admin/_day_plan_card.html" %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

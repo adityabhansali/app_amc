@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base_ops.html" %}
 {% from "_macros.html" import status_badge %}
 {% block title %}AMC Contracts — Ops{% endblock %}
 {% block content %}
@@ -20,17 +20,22 @@
     {% set tabs = [
       ('Contracts', url_for('admin.contracts')),
       ('Quotations', url_for('sq.list_quotations')),
+      ('Renewals', url_for('admin.renewals')),
       ('Site Surveys', url_for('admin.surveys')),
+      ('Complaints', url_for('admin.tickets')),
+      ('Day Plan', url_for('admin.day_plan')),
       ('Calendar', url_for('admin.calendar')),
+      ('Insights', url_for('admin.insights')),
       ('Analytics', url_for('admin.analytics')),
       ('Financials', url_for('admin.financials')),
+      ('Broadcast', url_for('admin.broadcasts')),
       ('Reminders', url_for('admin.reminders')),
       ('Health Reports', url_for('admin.health_reports')),
       ('Performance', url_for('admin.technician_performance')),
     ] %}
     {% for label, href in tabs %}
     <a href="{{ href }}" class="px-4 py-2.5 text-sm text-ink-subtle hover:text-ink border-b-2 border-transparent hover:border-primary transition-colors whitespace-nowrap -mb-px">
-      {{ label }}{% if label == 'Quotations' and sq_action_count %}<span class="ml-1.5 inline-grid place-items-center min-w-[16px] h-[16px] px-1 rounded-full text-white text-[10px] font-bold" style="background:var(--amber)">{{ sq_action_count }}</span>{% endif %}{% if label == 'Reminders' and payment_reminder_count %}<span class="ml-1.5 inline-grid place-items-center min-w-[16px] h-[16px] px-1 rounded-full text-white text-[10px] font-bold bg-red-500">{{ payment_reminder_count }}</span>{% endif %}
+      {{ label }}{% if label == 'Quotations' and sq_action_count %}<span class="ml-1.5 inline-grid place-items-center min-w-[16px] h-[16px] px-1 rounded-full text-white text-[10px] font-bold" style="background:var(--amber)">{{ sq_action_count }}</span>{% endif %}{% if label == 'Reminders' and payment_reminder_count %}<span class="ml-1.5 inline-grid place-items-center min-w-[16px] h-[16px] px-1 rounded-full text-white text-[10px] font-bold bg-red-500">{{ payment_reminder_count }}</span>{% endif %}{% if label == 'Complaints' and open_ticket_count %}<span class="ml-1.5 inline-grid place-items-center min-w-[16px] h-[16px] px-1 rounded-full text-white text-[10px] font-bold bg-red-500">{{ open_ticket_count }}</span>{% endif %}{% if label == 'Renewals' and renewal_reminder_count %}<span class="ml-1.5 inline-grid place-items-center min-w-[16px] h-[16px] px-1 rounded-full text-white text-[10px] font-bold bg-red-500">{{ renewal_reminder_count }}</span>{% endif %}
     </a>
     {% endfor %}
   </nav>

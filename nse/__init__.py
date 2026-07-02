@@ -39,11 +39,13 @@ def create_app(config_class=Config):
 
     @app.context_processor
     def inject_globals():
-        from .models import Notification, ServiceQuotation
+        from .models import Notification, ServiceQuotation, SupportTicket
         unread = 0
         recent_notifications = []
         sq_action_count = 0
         reminder_count = 0
+        open_ticket_count = 0
+        renewal_count = 0
         if current_user and current_user.is_authenticated:
             unread = Notification.query.filter_by(
                 user_id=current_user.id, read=False).count()
@@ -51,8 +53,7 @@ def create_app(config_class=Config):
                 .filter_by(user_id=current_user.id)
                 .order_by(Notification.created_at.desc())
                 .limit(8).all())
-            # Staff-only: quotations awaiting action (drives the Quotations badge).
-            # Accepted quotes whose contract is already active need nothing more.
+            # Staff-only: quotations awaiting action + open tickets + payment reminders
             if current_user.is_staff:
                 pending_sq = ServiceQuotation.query.filter(
                     ServiceQuotation.status.in_(
@@ -66,6 +67,24 @@ def create_app(config_class=Config):
                     reminder_count = payment_reminder_count()
                 except Exception:
                     reminder_count = 0
+                try:
+                    open_ticket_count = SupportTicket.query.filter(
+                        SupportTicket.status.in_(["open", "acknowledged"])).count()
+                except Exception:
+                    open_ticket_count = 0
+                try:
+                    from .reminders import renewal_reminder_count
+                    renewal_count = renewal_reminder_count()
+                except Exception:
+                    renewal_count = 0
+                # Process visit reminders + renewal/anniversary milestones
+                # idempotently (fires notifications not yet sent).
+                try:
+                    from .reminders import process_visit_reminders, process_milestones
+                    process_visit_reminders()
+                    process_milestones()
+                except Exception:
+                    pass
         return {
             "COMPANY_NAME": app.config["COMPANY_NAME"],
             "COMPANY_CITY": app.config["COMPANY_CITY"],
@@ -80,6 +99,9 @@ def create_app(config_class=Config):
             "recent_notifications": recent_notifications,
             "sq_action_count": sq_action_count,
             "payment_reminder_count": reminder_count,
+            "open_ticket_count": open_ticket_count,
+            "renewal_reminder_count": renewal_count,
+            "RAZORPAY_ENABLED": Config.razorpay_enabled(),
             "now": datetime.utcnow(),
             "today": date.today(),
         }

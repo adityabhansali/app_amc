@@ -1,0 +1,157 @@
+{% extends "base_ops.html" %}
+{% block title %}Edit {{ sq.reference }} — Quotation{% endblock %}
+{% block content %}
+<section class="max-w-4xl mx-auto px-4 py-10">
+  <a href="{{ url_for('sq.detail_quotation', sq_id=sq.id) }}" class="text-sm text-ink-subtle hover:text-ink">← Back to {{ sq.reference }}</a>
+  <div class="flex items-center justify-between mt-2 mb-6 flex-wrap gap-3">
+    <h1 class="text-2xl font-extrabold text-ink">Edit {{ sq.reference }}</h1>
+    <span class="text-xs text-ink-subtle bg-surface-2 px-3 py-1 rounded-full">All changes are logged in activity history</span>
+  </div>
+
+  <form method="post" id="sqForm" class="space-y-6">
+
+    <!-- Client info -->
+    <div class="card p-6 space-y-4">
+      <h2 class="font-bold text-ink">Client &amp; project details</h2>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <label class="block">
+          <span class="text-sm font-medium text-ink-muted">Project / Site name</span>
+          <input name="project_name" value="{{ sq.project_name or '' }}" class="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-hairline">
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-ink-muted">Customer name</span>
+          <input name="customer_name" required value="{{ sq.customer_name or '' }}" class="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-hairline">
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-ink-muted">Phone</span>
+          <input name="customer_phone" value="{{ sq.customer_phone or '' }}" class="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-hairline">
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-ink-muted">Email</span>
+          <input name="customer_email" type="email" value="{{ sq.customer_email or '' }}" class="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-hairline">
+        </label>
+        <label class="block sm:col-span-2">
+          <span class="text-sm font-medium text-ink-muted">Address</span>
+          <textarea name="customer_address" rows="2" class="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-hairline">{{ sq.customer_address or '' }}</textarea>
+        </label>
+      </div>
+    </div>
+
+    <!-- Line items — pre-populated from existing items -->
+    <datalist id="sq-inv-list">
+      {% for it in inventory %}<option value="{{ it.name }}" data-cat="{{ it.category }}" data-rate="{{ it.rate }}" data-unit="{{ it.unit }}">{{ it.category }} · ₹{{ it.rate }}/{{ it.unit }}</option>{% endfor %}
+    </datalist>
+    <datalist id="sq-unit-list">
+      <option>Nos</option><option>Mtr</option><option>Job</option><option>Set</option><option>Kg</option><option>Ltr</option><option>Sqft</option>
+    </datalist>
+
+    <div class="card p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-bold text-ink">Line Items</h2>
+        <button type="button" onclick="addRow()" class="btn btn-ghost text-sm px-3 py-1.5">+ Add row</button>
+      </div>
+      <p class="text-xs text-ink-subtle mb-3">Type in Description to search inventory — category and rate auto-fill.</p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm" id="itemsTable">
+          <thead class="bg-slate-50 text-xs uppercase text-ink-subtle border-b border-hairline">
+            <tr>
+              <th class="px-2 py-2 text-left w-[20%]">Category</th>
+              <th class="px-2 py-2 text-left w-[38%]">Description</th>
+              <th class="px-2 py-2 text-center w-[8%]">Unit</th>
+              <th class="px-2 py-2 text-center w-[10%]">Qty</th>
+              <th class="px-2 py-2 text-right w-[16%]">Rate (₹)</th>
+              <th class="px-2 py-2 text-right w-[6%]"></th>
+            </tr>
+          </thead>
+          <tbody id="itemsBody">
+            {% for item in sq.items %}
+            <tr class="item-row border-b border-hairline">
+              <td class="px-2 py-1.5"><input name="item_category" value="{{ item.category or '' }}" class="w-full px-2 py-1.5 text-sm rounded border border-hairline"></td>
+              <td class="px-2 py-1.5"><input name="item_desc" value="{{ item.description }}" list="sq-inv-list" oninput="sqFill(this)" class="w-full px-2 py-1.5 text-sm rounded border border-hairline"></td>
+              <td class="px-2 py-1.5"><input name="item_unit" value="{{ item.unit or 'Nos' }}" list="sq-unit-list" class="w-full px-2 py-1.5 text-sm text-center rounded border border-hairline"></td>
+              <td class="px-2 py-1.5"><input name="item_qty" type="number" step="0.01" value="{{ item.quantity }}" class="w-full px-2 py-1.5 text-sm text-center rounded border border-hairline" oninput="calcRow(this)"></td>
+              <td class="px-2 py-1.5"><input name="item_rate" type="number" step="0.01" value="{{ item.rate }}" class="w-full px-2 py-1.5 text-sm text-right rounded border border-hairline" oninput="calcRow(this)"></td>
+              <td class="px-2 py-1.5 text-center"><button type="button" onclick="removeRow(this)" class="text-danger text-lg leading-none hover:opacity-70">×</button></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Totals preview -->
+      <div class="mt-4 flex flex-col items-end gap-1 text-sm">
+        <div class="flex gap-8"><span class="text-ink-subtle">Subtotal:</span><span id="previewSubtotal" class="font-semibold w-28 text-right">₹0.00</span></div>
+        <div class="flex gap-8 items-center">
+          <span class="text-ink-subtle">GST <input name="gst_percent" id="gstPct" type="number" step="0.1" value="{{ sq.gst_percent }}" class="w-14 px-1 py-0.5 text-center text-xs inline border border-hairline-strong rounded" oninput="updateTotals()"> %:</span>
+          <span id="previewGST" class="font-semibold w-28 text-right">₹0.00</span>
+        </div>
+        <div class="flex gap-8 border-t border-hairline pt-2 mt-1"><span class="font-bold text-ink">Grand Total:</span><span id="previewTotal" class="font-extrabold text-ink w-28 text-right">₹0.00</span></div>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="card p-6 grid sm:grid-cols-2 gap-4">
+      <h2 class="font-bold text-ink sm:col-span-2">Settings</h2>
+      <label class="block">
+        <span class="text-sm font-medium text-ink-muted">Valid for (days)</span>
+        <input name="valid_days" type="number" value="{{ sq.valid_days }}" class="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-hairline">
+      </label>
+      <label class="block">
+        <span class="text-sm font-medium text-ink-muted">Notes / special terms</span>
+        <textarea name="notes" rows="2" class="mt-1.5 w-full px-3 py-2.5 rounded-lg border border-hairline">{{ sq.notes or '' }}</textarea>
+      </label>
+    </div>
+
+    <div class="flex gap-3">
+      <button type="submit" class="btn btn-primary">Save changes</button>
+      <a href="{{ url_for('sq.detail_quotation', sq_id=sq.id) }}" class="btn btn-ghost">Cancel</a>
+    </div>
+  </form>
+</section>
+
+<script>
+var SQ_INV = {};
+document.querySelectorAll('#sq-inv-list option').forEach(function(o){
+  SQ_INV[o.value] = {cat: o.dataset.cat, rate: parseFloat(o.dataset.rate)||0, unit: o.dataset.unit||'Nos'};
+});
+function sqFill(descInput) {
+  var match = SQ_INV[descInput.value];
+  if (!match) { updateTotals(); return; }
+  var row = descInput.closest('.item-row');
+  var catIn  = row.querySelector('[name=item_category]');
+  var rateIn = row.querySelector('[name=item_rate]');
+  var unitIn = row.querySelector('[name=item_unit]');
+  if (catIn  && !catIn.value)   catIn.value  = match.cat;
+  if (rateIn && rateIn.value == '0') rateIn.value = match.rate;
+  if (unitIn) unitIn.value = match.unit;
+  updateTotals();
+}
+function rowTemplate() {
+  return `<tr class="item-row border-b border-hairline">
+    <td class="px-2 py-1.5"><input name="item_category" placeholder="Category" class="w-full px-2 py-1.5 text-sm rounded border border-hairline"></td>
+    <td class="px-2 py-1.5"><input name="item_desc" list="sq-inv-list" oninput="sqFill(this)" placeholder="Type to search inventory…" class="w-full px-2 py-1.5 text-sm rounded border border-hairline"></td>
+    <td class="px-2 py-1.5"><input name="item_unit" list="sq-unit-list" value="Nos" class="w-full px-2 py-1.5 text-sm text-center rounded border border-hairline"></td>
+    <td class="px-2 py-1.5"><input name="item_qty" type="number" step="0.01" value="1" class="w-full px-2 py-1.5 text-sm text-center rounded border border-hairline" oninput="calcRow(this)"></td>
+    <td class="px-2 py-1.5"><input name="item_rate" type="number" step="0.01" value="0" class="w-full px-2 py-1.5 text-sm text-right rounded border border-hairline" oninput="calcRow(this)"></td>
+    <td class="px-2 py-1.5 text-center"><button type="button" onclick="removeRow(this)" class="text-danger text-lg leading-none hover:opacity-70">×</button></td>
+  </tr>`;
+}
+function addRow()        { document.getElementById('itemsBody').insertAdjacentHTML('beforeend', rowTemplate()); updateTotals(); }
+function removeRow(btn)  { btn.closest('tr').remove(); updateTotals(); }
+function calcRow()       { updateTotals(); }
+function fmt(n) { return '₹' + n.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function updateTotals() {
+  let sub = 0;
+  document.querySelectorAll('.item-row').forEach(row => {
+    const qty  = parseFloat(row.querySelector('[name=item_qty]')?.value || 0);
+    const rate = parseFloat(row.querySelector('[name=item_rate]')?.value || 0);
+    sub += qty * rate;
+  });
+  const gst = sub * (parseFloat(document.getElementById('gstPct').value || 18) / 100);
+  document.getElementById('previewSubtotal').textContent = fmt(sub);
+  document.getElementById('previewGST').textContent = fmt(gst);
+  document.getElementById('previewTotal').textContent = fmt(sub + gst);
+}
+updateTotals();
+</script>
+{% endblock %}

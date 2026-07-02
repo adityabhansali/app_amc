@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block body %}
+<style>
+  body{overflow:hidden;}
+  .nse-ops-wrap{display:flex;height:100vh;overflow:hidden;background:var(--canvas);}
+  .nse-sidebar{width:238px;flex:none;height:100%;overflow-y:auto;background:linear-gradient(180deg,#171d3a,#141834);border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;}
+  .nse-sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);}
+  .nse-ops-body{flex:1;display:flex;flex-direction:column;min-width:0;height:100%;overflow:hidden;}
+  .nse-ops-hdr{flex:none;display:flex;align-items:center;justify-content:space-between;padding:11px 24px;background:rgba(246,245,242,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--hair);}
+  .nse-ops-scroll{flex:1;overflow-y:auto;}
+  .nse-ops-inner{max-width:1180px;margin:0 auto;padding:24px 26px 60px;}
+  .snav{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:13.5px;font-weight:500;color:rgba(255,255,255,.65);cursor:pointer;transition:background .1s,color .1s;text-decoration:none;}
+  .snav:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.9);}
+  .snav.active{background:rgba(255,255,255,.08);color:#fff;font-weight:600;}
+  .snav svg{flex:none;opacity:.7;}.snav.active svg{opacity:1;}
+  .snav-section{font-size:10.5px;font-weight:600;color:#5c628a;text-transform:uppercase;letter-spacing:.07em;padding:14px 10px 6px;}
+</style>
+
+<div class="nse-ops-wrap">
+
+  <!-- ── Sidebar ── -->
+  <aside class="nse-sidebar">
+    <!-- Logo -->
+    <div style="display:flex;align-items:center;gap:10px;padding:15px 14px 12px;border-bottom:1px solid rgba(255,255,255,.06);">
+      <div style="width:32px;height:32px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;flex:none;overflow:hidden;">
+        <img src="{{ url_for('static', filename='img/logo-emblem.png') }}" style="width:30px;height:30px;object-fit:contain;">
+      </div>
+      <div style="line-height:1.15;min-width:0;">
+        <div style="font-size:13px;font-weight:650;color:#fff;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Northern Star</div>
+        <div style="font-size:10px;font-weight:600;color:#7d84ab;letter-spacing:.02em;">Ops Console</div>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <nav style="flex:1;padding:6px 10px;display:flex;flex-direction:column;gap:1px;overflow-y:auto;">
+      {% set _ep = request.endpoint %}
+      <a href="{{ url_for('admin.dashboard') }}" class="snav {{ 'active' if _ep == 'admin.dashboard' }}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="3" width="7" height="8" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="11" width="7" height="10" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+        Dashboard
+      </a>
+      <a href="{{ url_for('admin.calendar') }}" class="snav {{ 'active' if _ep == 'admin.calendar' }}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        Calendar
+      </a>
+      <a href="{{ url_for('admin.analytics') }}" class="snav {{ 'active' if _ep == 'admin.analytics' }}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>
+        Analytics
+      </a>
+
+      <div class="snav-section">AMC</div>
+      <a href="{{ url_for('admin.contracts') }}" class="snav {{ 'active' if _ep in ('admin.contracts','admin.contract','admin.amc_module','admin.activate_contract') }}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>
+        Contracts
+      </a>
+      <a href="{{ url_for('sq.list_quotations') }}" class="snav {{ 'active' if _ep in ('sq.list_quotations','sq.detail_quotation','sq.new_quotation','sq.edit_quotation') }}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 3h16v18l-4-3-4 3-4-3-4 3z"/><path d="M8 8h8M8 12h5"/></svg>
+        <span style="flex:1;">Quotations</span>
+        {% if sq_action_count %}<span style="background:#f59e0b;color:#18181b;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;">{{ sq_action_count }}</span>{% endif %}
+      </a>
+      <a href="{{ url_for('admin.surveys') }}" class="snav {{ 'active' if _ep in ('admin.surveys','admin.survey','admin.survey_to_quote') }}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Site Surveys
+      </a>
+      <a href="{{ url_for('admin.renewals') }}" class="snav {{ 'active' if _ep in ('admin.renewals','admin.renew_contract') }}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0114.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0020.5 15"/></svg>
+        <span style="flex:1;">Renewals</span>
+        {% if renewal_reminder_count %}<span style="background:#d23f3f;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;">{{ renewal_reminder_count }}</span>{% endif %}
+      </a>
+      <a href="{{ url_for('admin.health_reports') }}" class="snav {{ 'active' if _ep in ('admin.health_reports','admin.health_report') }}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        Health Reports
+      </a>
+
+      <div class="snav-section">Operations</div>
+      <a href="{{ url_for('admin.refills_list') }}" class="snav {{ 'active' if _ep in ('admin.refills_list','admin.refill_order') }}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M14 4c-3 0-5 3-5 8 0 1-1 2-2 3-1 1-2 3 0 4h14c2-1 1-3 0-4-1-1-2-2-2-3 0-5-2-8-5-8z"/></svg>
+        Refill Orders
+      </a>
+      <a href="{{ url_for('admin.requests_list') }}" class="snav {{ 'active' if _ep in ('admin.requests_list','admin.service_request') }}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 2a7 7 0 00-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 00-7-7z"/><path d="M12 9v3M12 15h.01"/></svg>
+        Service Requests
+      </a>
+      <a href="{{ url_for('admin.enquiries') }}" class="snav {{ 'active' if _ep == 'admin.enquiries' }}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        Enquiries
+      </a>
+      <a href="{{ url_for('admin.tickets') }}" class="snav {{ 'active' if _ep in ('admin.tickets','admin.ticket_detail') }}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+        <span style="flex:1;">Complaints</span>
+        {% if open_ticket_count %}<span style="background:#d23f3f;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;">{{ open_ticket_count }}</span>{% endif %}
+      </a>
+      <a href="{{ url_for('admin.reminders') }}" class="snav {{ 'active' if _ep == 'admin.reminders' }}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+        <span style="flex:1;">Reminders</span>
+        {% if payment_reminder_count %}<span style="background:#d23f3f;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;">{{ payment_reminder_count }}</span>{% endif %}
+      </a>
+
+      <div class="snav-section">Insights</div>
+      <a href="{{ url_for('admin.insights') }}" class="snav {{ 'active' if _ep == 'admin.insights' }}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 20v-6M6 20v-4M18 20v-9"/><circle cx="12" cy="8" r="1.5"/><circle cx="6" cy="12" r="1.5"/><circle cx="18" cy="6" r="1.5"/></svg>
+        Insights
+      </a>
+      <a href="{{ url_for('admin.broadcasts') }}" class="snav {{ 'active' if _ep in ('admin.broadcasts','admin.broadcast_send','admin.broadcast_new') }}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 11l18-8-8 18-2-8z"/></svg>
+        Broadcast
+      </a>
+      <a href="{{ url_for('admin.financials') }}" class="snav {{ 'active' if _ep == 'admin.financials' }}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        Financials
+      </a>
+      <a href="{{ url_for('admin.technician_performance') }}" class="snav {{ 'active' if _ep == 'admin.technician_performance' }}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="9" cy="7" r="3.5"/><path d="M2 21a7 7 0 0114 0M17 11l2 2 4-4"/></svg>
+        Performance
+      </a>
+      <a href="{{ url_for('admin.day_plan') }}" class="snav {{ 'active' if _ep == 'admin.day_plan' }}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/></svg>
+        Day Plan
+      </a>
+      <a href="{{ url_for('admin.notifications') }}" class="snav {{ 'active' if _ep == 'admin.notifications' }}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+        <span style="flex:1;">Notifications</span>
+        {% if unread_notifications %}<span style="background:#072076;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;">{{ unread_notifications }}</span>{% endif %}
+      </a>
+    </nav>
+
+    <!-- User -->
+    <div style="padding:10px 12px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:9px;">
+      <div style="width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,#072076,#1f2650);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex:none;">
+        {{ current_user.name[:2]|upper if current_user.is_authenticated else 'ST' }}
+      </div>
+      <div style="flex:1;min-width:0;line-height:1.2;">
+        <div style="font-size:12px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ current_user.name if current_user.is_authenticated else 'Staff' }}</div>
+        <div style="font-size:10px;color:#7d84ab;">{{ current_user.role|title if current_user.is_authenticated else '' }}</div>
+      </div>
+      <a href="{{ url_for('auth.logout') }}" title="Logout">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9aa0c4" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      </a>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div class="nse-ops-body">
+    <!-- Header -->
+    <header class="nse-ops-hdr">
+      <div style="display:flex;align-items:center;gap:8px;font-size:13px;">
+        <span style="color:var(--ink3);font-weight:500;">Northern Star</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#c9c7bf" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        <span style="color:var(--ink);font-weight:600;">{% block crumb %}{% block title_inner %}{% endblock %}{% endblock %}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <!-- Bell -->
+        <details class="nse-bell" style="position:relative;">
+          <summary style="list-style:none;cursor:pointer;width:34px;height:34px;border-radius:8px;background:#fff;border:1px solid var(--hair2);display:flex;align-items:center;justify-content:center;position:relative;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4a4b52" stroke-width="1.9"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+            {% if unread_notifications %}<span style="position:absolute;top:5px;right:6px;width:8px;height:8px;background:#072076;border-radius:50%;border:1.5px solid #fff;"></span>{% endif %}
+          </summary>
+          <div style="position:absolute;right:0;top:calc(100% + 6px);width:300px;background:#fff;border:1px solid var(--hair);border-radius:12px;box-shadow:0 8px 24px -8px rgba(16,24,40,.12);z-index:50;overflow:hidden;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--hair3);">
+              <span style="font-size:13px;font-weight:600;">Notifications</span>
+              {% if unread_notifications %}<a href="{{ url_for('portal.mark_read') }}" style="font-size:11.5px;color:var(--pri);">Mark all read</a>{% endif %}
+            </div>
+            <div style="max-height:300px;overflow-y:auto;">
+              {% for n in recent_notifications %}
+              <a href="{{ n.link or url_for('admin.notifications') }}" style="display:block;padding:10px 14px;font-size:12.5px;border-bottom:1px solid var(--hair3);text-decoration:none;color:var(--ink);{% if not n.read %}font-weight:600;{% endif %}">
+                <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ n.title }}</div>
+                {% if n.body %}<div style="color:var(--ink3);font-size:11.5px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ n.body }}</div>{% endif %}
+                <div style="color:var(--ink4);font-size:11px;margin-top:2px;">{{ n.created_at|datefmt }}</div>
+              </a>
+              {% else %}
+              <div style="padding:20px;text-align:center;color:var(--ink3);font-size:13px;">No notifications.</div>
+              {% endfor %}
+            </div>
+            <a href="{{ url_for('admin.notifications') }}" style="display:block;padding:10px;text-align:center;font-size:12px;color:var(--pri);border-top:1px solid var(--hair3);text-decoration:none;">View all →</a>
+          </div>
+        </details>
+        <a href="{{ url_for('sq.new_quotation') }}" style="display:inline-flex;align-items:center;gap:6px;background:#072076;color:#fff;font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:8px;text-decoration:none;box-shadow:0 1px 2px rgba(7,32,118,.25);">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
+          New Quotation
+        </a>
+      </div>
+    </header>
+
+    <!-- Flash messages -->
+    <div style="padding:0 24px;">
+      {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}
+      {% set ns_flash = namespace(chime=false) %}
+      <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">
+      {% for category, msg in messages %}
+      {% set cat = category.replace('_chime','') %}{% if '_chime' in category %}{% set ns_flash.chime = true %}{% endif %}
+      {% set fc = {'success':'#e7f4ec','warning':'#fbf0dc','danger':'#fdecea','error':'#fdecea','info':'#eef1fb'}.get(cat,'#f1f0ee') %}
+      {% set ft = {'success':'#17864a','warning':'#b45309','danger':'#d23f3f','error':'#d23f3f','info':'#2f6fed'}.get(cat,'#4a4b52') %}
+      <div {% if ns_flash.chime %}data-nse-chime{% endif %} style="background:{{ fc }};color:{{ ft }};border-radius:8px;padding:10px 14px;font-size:13px;font-weight:550;">{{ msg }}</div>
+      {% endfor %}</div>{% endif %}{% endwith %}
+    </div>
+
+    <!-- Page content -->
+    <div class="nse-ops-scroll">
+      <div class="nse-ops-inner">
+        {% block content %}{% endblock %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% block scripts %}{% endblock %}
+{% endblock body %}

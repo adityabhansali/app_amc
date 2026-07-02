@@ -87,6 +87,19 @@ class Config:
     COMPANY_UPI_ID   = os.getenv("COMPANY_UPI_ID", "")
     COMPANY_UPI_NAME = os.getenv("COMPANY_UPI_NAME", COMPANY_NAME)
 
+    # ── Razorpay payment gateway (Wave 11 — gateway-ready) ─────────────────────
+    # When both keys are set, quotation pages offer a "Pay online" button that
+    # opens Razorpay Checkout; the webhook flips payment_status='paid'
+    # automatically. Until set, the app falls back to the manual UPI/cash flow
+    # (exactly like OPENROUTER — degrades gracefully, never hard-fails).
+    RAZORPAY_KEY_ID        = os.getenv("RAZORPAY_KEY_ID", "")
+    RAZORPAY_KEY_SECRET    = os.getenv("RAZORPAY_KEY_SECRET", "")
+    RAZORPAY_WEBHOOK_SECRET = os.getenv("RAZORPAY_WEBHOOK_SECRET", "")
+
+    @staticmethod
+    def razorpay_enabled():
+        return bool(os.getenv("RAZORPAY_KEY_ID") and os.getenv("RAZORPAY_KEY_SECRET"))
+
     # Public base URL used when building shareable links (quotation WhatsApp links,
     # email links, etc.) that must be clickable on a client's phone.
     # Options:

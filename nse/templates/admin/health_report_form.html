@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base_ops.html" %}
 {% set answers = r.answers if r else {} %}
 {% block title %}{{ (r.reference + ' — ') if r else 'New ' }}Health Checkup Report — Ops{% endblock %}
 {% block content %}

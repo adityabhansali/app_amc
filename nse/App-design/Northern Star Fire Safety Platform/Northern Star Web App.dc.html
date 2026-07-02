@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;550;600;650;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Inter',system-ui,sans-serif;background:#f6f5f2;color:#1b1c22;-webkit-font-smoothing:antialiased;letter-spacing:-0.006em;}
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.14);border-radius:8px;border:3px solid transparent;background-clip:content-box;}
+  .mono{font-family:'JetBrains Mono',monospace;letter-spacing:0;}
+  .navrow:hover{background:rgba(255,255,255,.06)!important;}
+  .lift{transition:box-shadow .14s,transform .14s,border-color .14s;}
+  .lift:hover{box-shadow:0 6px 22px -12px rgba(16,22,52,.28)!important;border-color:#dedcd5!important;}
+  .btnp:hover{background:#0a2a8f!important;}
+  .btnd:hover{background:#262f5f!important;}
+  .btns:hover{background:#faf9f7!important;}
+  .rowh:hover{background:#faf9f6!important;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+</style>
+</helmet>
+
+<div style="display:flex;height:100vh;overflow:hidden;">
+
+  <!-- ============ SIDEBAR RAIL ============ -->
+  <aside style="width:238px;flex:none;background:linear-gradient(180deg,#171d3a,#141834);display:flex;flex-direction:column;border-right:1px solid rgba(255,255,255,.06);">
+    <div style="display:flex;align-items:center;gap:11px;padding:16px 16px 14px;">
+      <div style="width:34px;height:34px;border-radius:9px;background:#fff;border:1px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;flex:none;overflow:hidden;">
+        <img src="assets/mark-navy.png" alt="Northern Star" style="width:30px;height:30px;object-fit:contain;"></img>
+      </div>
+      <div style="line-height:1.15;">
+        
+        <div style="font-size: 13.5px; font-weight: 650; color: #fff; letter-spacing: -0.01em; width: 174px; height: 25px">Northern Star Engineering&nbsp;</div><div style="font-size:10.5px;font-weight:600;color:#7d84ab;letter-spacing:.02em;">Enlightening Safety</div>
+      </div>
+      <div style="margin-left:auto;width:20px;height:20px;border-radius:6px;border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9aa0c4" stroke-width="2.4"><path d="M6 9l6 6 6-6"></path></svg>
+      </div>
+    </div>
+
+    <div style="padding:2px 12px;">
+      <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:7px 10px;color:#8b91b8;font-size:12.5px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4-4"></path></svg>
+        <span style="flex:1;">Search</span>
+        <span class="mono" style="font-size:10px;background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px;">⌘K</span>
+      </div>
+    </div>
+
+    <nav style="flex:1;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:2px;">
+      <div class="navrow" onClick="{{ nav.dashboard }}" style="{{ navStyle.dashboard }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="3" width="7" height="8" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="11" width="7" height="10" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect></svg>Dashboard
+      </div>
+      <div class="navrow" onClick="{{ nav.calendar }}" style="{{ navStyle.calendar }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>Calendar
+      </div>
+      <div class="navrow" onClick="{{ nav.analytics }}" style="{{ navStyle.analytics }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 3v18h18"></path><path d="M7 15l4-5 3 3 5-7"></path></svg>Analytics
+      </div>
+
+      <div style="font-size:10.5px;font-weight:600;color:#5c628a;text-transform:uppercase;letter-spacing:.07em;padding:14px 10px 6px;">AMC</div>
+      <div class="navrow" onClick="{{ nav.contracts }}" style="{{ navStyle.contracts }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path><path d="M14 2v6h6M9 13h6M9 17h4"></path></svg>Contracts
+      </div>
+      <div class="navrow" onClick="{{ nav.quotations }}" style="{{ navStyle.quotations }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 3h16v18l-4-3-4 3-4-3-4 3z"></path><path d="M8 8h8M8 12h5"></path></svg>Quotations
+      </div>
+      <div class="navrow" onClick="{{ nav.surveys }}" style="{{ navStyle.surveys }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path></svg>Site Surveys
+      </div>
+      <div class="navrow" onClick="{{ nav.health }}" style="{{ navStyle.health }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>Health Reports
+      </div>
+
+      <div style="font-size:10.5px;font-weight:600;color:#5c628a;text-transform:uppercase;letter-spacing:.07em;padding:14px 10px 6px;">Operations</div>
+      <div class="navrow" onClick="{{ nav.refills }}" style="{{ navStyle.refills }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M14 4c-3 0-5 3-5 8 0 1-1 2-2 3-1 1-2 3 0 4h14c2-1 1-3 0-4-1-1-2-2-2-3 0-5-2-8-5-8z"></path></svg>Refill Orders
+      </div>
+      <div class="navrow" onClick="{{ nav.requests }}" style="{{ navStyle.requests }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 2a7 7 0 00-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 00-7-7z"></path><path d="M12 6v4M12 13h.01"></path></svg>Service Requests
+      </div>
+      <div class="navrow" onClick="{{ nav.enquiries }}" style="{{ navStyle.enquiries }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path></svg>Enquiries
+      </div>
+      <div class="navrow" onClick="{{ nav.reminders }}" style="{{ navStyle.reminders }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.7 21a2 2 0 01-3.4 0"></path></svg>
+        <span style="flex:1;">Reminders</span>
+        <span style="background:#e5484d;color:#fff;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:999px;">7</span>
+      </div>
+
+      <div style="font-size:10.5px;font-weight:600;color:#5c628a;text-transform:uppercase;letter-spacing:.07em;padding:14px 10px 6px;">Insights</div>
+      <div class="navrow" onClick="{{ nav.financials }}" style="{{ navStyle.financials }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"></path></svg>Financials
+      </div>
+      <div class="navrow" onClick="{{ nav.technicians }}" style="{{ navStyle.technicians }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="9" cy="7" r="3.5"></circle><path d="M2 21a7 7 0 0114 0M17 11l2 2 4-4"></path></svg>Technicians
+      </div>
+      <div class="navrow" onClick="{{ nav.clients }}" style="{{ navStyle.clients }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 00-3-3.87"></path></svg>Clients
+      </div>
+    </nav>
+
+    <div style="padding:12px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px;">
+      <div style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#072076,#0a2a8f);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex:none;">RP</div>
+      <div style="line-height:1.2;flex:1;min-width:0;">
+        <div style="font-size:12.5px;font-weight:600;color:#fff;">Rahul Patel</div>
+        <div style="font-size:10.5px;font-weight:500;color:#7d84ab;">Admin · Surat HQ</div>
+      </div>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7d84ab" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"></path></svg>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main style="flex:1;display:flex;flex-direction:column;min-width:0;">
+    <header style="display:flex;align-items:center;justify-content:space-between;padding:12px 26px;background:rgba(246,245,242,.85);backdrop-filter:blur(8px);border-bottom:1px solid #eae8e2;flex:none;">
+      <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+        <span style="color:#9a9aa2;font-weight:500;">Northern Star</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c9c7bf" stroke-width="2"><path d="M9 18l6-6-6-6"></path></svg>
+        <span style="color:#1b1c22;font-weight:600;">{{ crumb }}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="btns" style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #e6e4dd;color:#4a4b52;font-size:12.5px;font-weight:550;padding:7px 12px;border-radius:8px;cursor:pointer;box-shadow:0 1px 1px rgba(16,24,40,.03);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg>New
+        </button>
+        <button onClick="{{ nav.notifications }}" style="width:34px;height:34px;border-radius:8px;background:#fff;border:1px solid #e6e4dd;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4a4b52" stroke-width="1.9"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.7 21a2 2 0 01-3.4 0"></path></svg>
+          <span style="position:absolute;top:6px;right:7px;width:7px;height:7px;background:#072076;border-radius:50%;border:1.5px solid #fff;"></span>
+        </button>
+        <button onClick="{{ nav.newQuotation }}" class="btnp" style="display:inline-flex;align-items:center;gap:6px;background:#072076;color:#fff;border:none;font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:8px;cursor:pointer;box-shadow:0 1px 2px rgba(7,32,118,.3);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"></path></svg>New Quotation
+        </button>
+      </div>
+    </header>
+
+    <div ref="{{ setRef }}" style="flex:1;overflow-y:auto;">
+      <div style="max-width:1180px;margin:0 auto;padding:26px 26px 60px;">
+
+        <!-- ========== DASHBOARD ========== -->
+        <sc-if value="{{ is.dashboard }}" hint-placeholder-val="{{ true }}">
+          <div style="animation:fadeUp .3s ease both;">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:20px;">
+              <div>
+                <h1 style="font-size:24px;font-weight:650;letter-spacing:-0.025em;margin:0;">Good morning, Rahul</h1>
+                <p style="font-size:13.5px;color:#8a8a90;font-weight:450;margin:5px 0 0;">Wednesday, 1 July 2026 · 9 visits scheduled today</p>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button class="btns" style="background:#fff;border:1px solid #e6e4dd;color:#4a4b52;font-size:12.5px;font-weight:550;padding:7px 13px;border-radius:8px;cursor:pointer;">This week</button>
+                <button class="btnd" style="background:#1f2650;color:#fff;font-size:12.5px;font-weight:550;padding:7px 13px;border-radius:8px;border:none;cursor:pointer;">Export</button>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;">
+              <div class="lift" style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12.5px;font-weight:550;color:#8a8a90;">Active Contracts</span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#17864a" stroke-width="2"><path d="M20 6L9 17l-5-5"></path></svg></div>
+                <div style="font-size:30px;font-weight:650;letter-spacing:-0.03em;margin-top:10px;line-height:1;">128</div>
+                <div style="font-size:12px;font-weight:500;color:#17864a;margin-top:9px;">+12 this month</div>
+              </div>
+              <div class="lift" style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12.5px;font-weight:550;color:#8a8a90;">Today's Visits</span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2f6fed" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg></div>
+                <div style="font-size:30px;font-weight:650;letter-spacing:-0.03em;margin-top:10px;line-height:1;">9</div>
+                <div style="font-size:12px;font-weight:500;color:#8a8a90;margin-top:9px;">3 done · 6 upcoming</div>
+              </div>
+              <div class="lift" style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12.5px;font-weight:550;color:#8a8a90;">Pending Quotes</span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></div>
+                <div style="font-size:30px;font-weight:650;letter-spacing:-0.03em;margin-top:10px;line-height:1;">14</div>
+                <div style="font-size:12px;font-weight:500;color:#b45309;margin-top:9px;">4 awaiting reply</div>
+              </div>
+              <div class="lift" style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12.5px;font-weight:550;color:#8a8a90;">Overdue Equipment</span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#d23f3f" stroke-width="2"><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"></path><path d="M12 9v4M12 17h.01"></path></svg></div>
+                <div style="font-size:30px;font-weight:650;letter-spacing:-0.03em;margin-top:10px;line-height:1;color:#d23f3f;">23</div>
+                <div style="font-size:12px;font-weight:500;color:#d23f3f;margin-top:9px;">Needs refill scheduling</div>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-top:24px;">
+              <div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                  <h2 style="font-size:15px;font-weight:600;letter-spacing:-0.01em;margin:0;">Upcoming visits</h2>
+                  <span onClick="{{ nav.calendar }}" style="font-size:12.5px;font-weight:550;color:#072076;cursor:pointer;">Open calendar →</span>
+                </div>
+                <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                  <sc-for list="{{ upcoming }}" as="v" hint-placeholder-count="4">
+                    <div class="rowh" onClick="{{ nav.contractDetail }}" style="display:flex;align-items:center;gap:14px;padding:13px 16px;border-bottom:1px solid #f2f0ea;cursor:pointer;">
+                      <div style="text-align:center;width:38px;flex:none;">
+                        <div style="font-size:10px;font-weight:600;color:#a9a9ae;text-transform:uppercase;">{{ v.mon }}</div>
+                        <div style="font-size:18px;font-weight:650;letter-spacing:-0.02em;line-height:1;">{{ v.day }}</div>
+                      </div>
+                      <div style="width:1px;height:30px;background:#eeece6;flex:none;"></div>
+                      <div style="flex:1;min-width:0;">
+                        <div style="font-size:13.5px;font-weight:600;">{{ v.site }}</div>
+                        <div style="font-size:12px;color:#8a8a90;font-weight:450;">{{ v.meta }}</div>
+                      </div>
+                      <span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:{{ v.bBg }};color:{{ v.bFg }};">{{ v.status }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                  <h2 style="font-size:15px;font-weight:600;letter-spacing:-0.01em;margin:0;">Pending applications</h2>
+                  <span style="font-size:11px;font-weight:600;color:#b45309;background:#fbf0dc;padding:2px 8px;border-radius:999px;">5 new</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                  <div class="lift" style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:14px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:13.5px;font-weight:600;">Sun Pharma Depot</span><span class="mono" style="font-size:11px;color:#a9a9ae;">APP-0442</span></div>
+                    <div style="font-size:12px;color:#8a8a90;margin-top:2px;">Industrial · Gold · Pandesara</div>
+                    <div style="display:flex;gap:7px;margin-top:11px;"><button class="btnp" style="flex: 1; color: #F4F4F4FE; border: none; font-size: 12px; font-weight: 600; padding: 7px; border-radius: 7px; cursor: pointer; background-color: #072076">Activate</button><button class="btns" style="background:#fff;border:1px solid #e6e4dd;color:#4a4b52;font-size:12px;font-weight:550;padding:7px 11px;border-radius:7px;cursor:pointer;">Review</button></div>
+                  </div>
+                  <div class="lift" style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:14px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:13.5px;font-weight:600;">Laxmi Enclave</span><span class="mono" style="font-size:11px;color:#a9a9ae;">APP-0441</span></div>
+                    <div style="font-size:12px;color:#8a8a90;margin-top:2px;">Residential · Silver · Katargam</div>
+                    <div style="display:inline-flex;align-items:center;gap:5px;margin-top:10px;background:#fbf0dc;color:#b45309;font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>Awaiting quote acceptance</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ========== CONTRACTS ========== -->
+        <sc-if value="{{ is.contracts }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .3s ease both;">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px;">
+              <div><h1 style="font-size:22px;font-weight:650;letter-spacing:-0.025em;margin:0;">AMC Contracts</h1><p style="font-size:13px;color:#8a8a90;margin:5px 0 0;">128 active · 12 pending activation</p></div>
+              <button onClick="{{ nav.newQuotation }}" class="btnp" style="background:#072076;color:#fff;border:none;font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:8px;cursor:pointer;">New contract</button>
+            </div>
+            <div style="display:flex;gap:6px;margin-bottom:14px;">
+              <span style="font-size:12.5px;font-weight:600;color:#1b1c22;background:#fff;border:1px solid #e6e4dd;padding:6px 12px;border-radius:8px;">All</span>
+              <span style="font-size:12.5px;font-weight:500;color:#8a8a90;padding:6px 12px;">Active</span>
+              <span style="font-size:12.5px;font-weight:500;color:#8a8a90;padding:6px 12px;">Pending</span>
+              <span style="font-size:12.5px;font-weight:500;color:#8a8a90;padding:6px 12px;">Completed</span>
+            </div>
+            <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+              <div style="display:grid;grid-template-columns:140px 1.4fr 1fr 110px 90px 60px;padding:11px 18px;background:#faf9f6;font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #f2f0ea;"><div>Reference</div><div>Client / Site</div><div>Plan</div><div>Status</div><div>Visits</div><div></div></div>
+              <sc-for list="{{ contracts }}" as="c" hint-placeholder-count="6">
+                <div class="rowh" onClick="{{ nav.contractDetail }}" style="display:grid;grid-template-columns:140px 1.4fr 1fr 110px 90px 60px;padding:14px 18px;border-bottom:1px solid #f5f3ee;align-items:center;cursor:pointer;">
+                  <div class="mono" style="font-size:12px;font-weight:500;color:#2a336b;">{{ c.ref }}</div>
+                  <div><div style="font-size:13.5px;font-weight:600;">{{ c.client }}</div><div style="font-size:12px;color:#9a9aa2;">{{ c.site }}</div></div>
+                  <div style="font-size:13px;color:#4a4b52;font-weight:500;">{{ c.plan }}</div>
+                  <div><span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:{{ c.bBg }};color:{{ c.bFg }};">{{ c.status }}</span></div>
+                  <div style="font-size:13px;color:#4a4b52;font-weight:600;">{{ c.visits }}</div>
+                  <div style="text-align:right;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c9c7bf" stroke-width="2"><path d="M9 18l6-6-6-6"></path></svg></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ========== CONTRACT DETAIL ========== -->
+        <sc-if value="{{ is.contractDetail }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .3s ease both;">
+            <div onClick="{{ nav.contracts }}" style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:550;color:#8a8a90;cursor:pointer;margin-bottom:14px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"></path></svg>Contracts</div>
+            <div style="background:#fff;border:1px solid #eceae4;border-radius:14px;padding:22px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+                <div>
+                  <div style="display:flex;align-items:center;gap:10px;"><span class="mono" style="font-size:12px;font-weight:500;color:#072076;background:#1f2650;padding:4px 9px;border-radius:6px;">NSE-AMC-0001</span><span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;background:#e7f4ec;color:#17864a;">● Active</span></div>
+                  <h1 style="font-size:23px;font-weight:650;letter-spacing:-0.025em;margin:12px 0 3px;">Rajhans Textile Mills</h1>
+                  <p style="font-size:13px;color:#8a8a90;margin:0;">Plot 214, Sachin GIDC, Surat — 394230</p>
+                </div>
+                <div style="display:flex;gap:30px;">
+                  <div><div style="font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;letter-spacing:.03em;">Plan</div><div style="font-size:14px;font-weight:600;margin-top:4px;">Gold — Industrial</div></div>
+                  <div><div style="font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;letter-spacing:.03em;">Start</div><div style="font-size:14px;font-weight:600;margin-top:4px;">15 Jan 2026</div></div>
+                  <div><div style="font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;letter-spacing:.03em;">End</div><div style="font-size:14px;font-weight:600;margin-top:4px;">14 Jan 2027</div></div>
+                </div>
+              </div>
+              <div style="margin-top:22px;padding-top:20px;border-top:1px solid #f2f0ea;display:flex;align-items:center;">
+                <sc-for list="{{ roadmap }}" as="s" hint-placeholder-count="6">
+                  <div style="display:flex;align-items:center;flex:1;">
+                    <div style="display:flex;flex-direction:column;align-items:center;flex:none;width:74px;">
+                      <div style="width:26px;height:26px;border-radius:50%;background:{{ s.dotBg }};border:{{ s.dotBorder }};display:flex;align-items:center;justify-content:center;">
+                        <sc-if value="{{ s.done }}" hint-placeholder-val="{{ false }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M20 6L9 17l-5-5"></path></svg></sc-if>
+                        <sc-if value="{{ s.current }}" hint-placeholder-val="{{ false }}"><div style="width:8px;height:8px;border-radius:50%;background:#fff;"></div></sc-if>
+                      </div>
+                      <div style="font-size:10.5px;font-weight:600;color:{{ s.txt }};margin-top:6px;text-align:center;line-height:1.2;">{{ s.label }}</div>
+                    </div>
+                    <div style="flex:1;height:2px;background:{{ s.line }};margin-bottom:22px;"></div>
+                  </div>
+                </sc-for>
+                <div style="display:flex;flex-direction:column;align-items:center;flex:none;width:74px;">
+                  <div style="width:26px;height:26px;border-radius:50%;background:#fff;border:2px solid #e6e4dd;display:flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#c9c7bf" stroke-width="1.8"><path d="M12 2l2.4 5.2L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.8z"></path></svg></div>
+                  <div style="font-size:10.5px;font-weight:600;color:#b6b4ac;margin-top:6px;">Certificate</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:8px;margin:26px 0 12px;"><h2 style="font-size:15px;font-weight:600;margin:0;">Maintenance visits</h2><span style="font-size:11.5px;color:#9a9aa2;">1 of 4 completed</span></div>
+            <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+              <div style="display:grid;grid-template-columns:60px 1fr 1fr 120px 120px;padding:11px 18px;background:#faf9f6;font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #f2f0ea;"><div>Visit</div><div>Date</div><div>Technician</div><div>Status</div><div>Report</div></div>
+              <sc-for list="{{ visits }}" as="v" hint-placeholder-count="4">
+                <div class="rowh" onClick="{{ nav.visitDetail }}" style="display:grid;grid-template-columns:60px 1fr 1fr 120px 120px;padding:14px 18px;border-bottom:1px solid #f5f3ee;align-items:center;cursor:pointer;">
+                  <div style="font-size:14px;font-weight:650;">{{ v.n }}</div>
+                  <div style="font-size:13px;font-weight:500;">{{ v.date }}</div>
+                  <div style="font-size:13px;color:#4a4b52;">{{ v.tech }}</div>
+                  <div><span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:{{ v.bBg }};color:{{ v.bFg }};">{{ v.status }}</span></div>
+                  <div>
+                    <sc-if value="{{ v.done }}" hint-placeholder-val="{{ false }}"><button style="background:#1f2650;color:#fff;border:none;font-size:12px;font-weight:550;padding:6px 12px;border-radius:7px;cursor:pointer;">View report</button></sc-if>
+                    <sc-if value="{{ v.pending }}" hint-placeholder-val="{{ true }}"><span style="font-size:12px;color:#b6b4ac;">—</span></sc-if>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+
+            <h2 style="font-size:15px;font-weight:600;margin:26px 0 12px;">Fire equipment</h2>
+            <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+              <div style="display:grid;grid-template-columns:1.5fr 1fr 1fr 120px 110px;padding:11px 18px;background:#faf9f6;font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #f2f0ea;"><div>Equipment</div><div>Location</div><div>Serial</div><div>Status</div><div>Next due</div></div>
+              <sc-for list="{{ equipment }}" as="e" hint-placeholder-count="4">
+                <div style="display:grid;grid-template-columns:1.5fr 1fr 1fr 120px 110px;padding:13px 18px;border-bottom:1px solid #f5f3ee;align-items:center;">
+                  <div style="font-size:13px;font-weight:600;">{{ e.name }}</div>
+                  <div style="font-size:12.5px;color:#4a4b52;">{{ e.loc }}</div>
+                  <div class="mono" style="font-size:12px;color:#9a9aa2;">{{ e.serial }}</div>
+                  <div><span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:{{ e.bBg }};color:{{ e.bFg }};">● {{ e.status }}</span></div>
+                  <div style="font-size:12.5px;color:#4a4b52;font-weight:500;">{{ e.due }}</div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="margin-top:26px;background:linear-gradient(115deg,#1a2148,#12172f);border-radius:14px;padding:22px 24px;display:flex;align-items:center;justify-content:space-between;gap:20px;position:relative;overflow:hidden;">
+              <div style="position:absolute;right:-20px;top:-30px;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(7,32,118,.2),transparent 70%);"></div>
+              <div style="display:flex;align-items:center;gap:18px;z-index:1;">
+                <div style="width:50px;height:50px;border-radius:12px;background:rgba(7,32,118,.16);border:1px solid rgba(7,32,118,.35);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#072076" stroke-width="1.7"><circle cx="12" cy="9" r="6"></circle><path d="M9 14.5L8 22l4-2 4 2-1-7.5"></path></svg></div>
+                <div><div style="font-size:11px;font-weight:600;color:#072076;text-transform:uppercase;letter-spacing:.06em;">AMC Fire Safety Certificate</div><div style="font-size:17px;font-weight:600;color:#fff;margin-top:4px;">Unlocks after the 4th completed visit</div><div style="font-size:12.5px;color:#aab0cc;margin-top:3px;">Expected 15 Dec 2026 · NBC · BIS · IS · NFPA</div></div>
+              </div>
+              <button style="background:rgba(255,255,255,.1);color:#aab0cc;border:1px solid rgba(255,255,255,.14);font-weight:600;font-size:12.5px;padding:10px 18px;border-radius:9px;z-index:1;flex:none;">Locked</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ========== QUOTATIONS ========== -->
+        <sc-if value="{{ is.quotations }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .3s ease both;">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px;">
+              <div><h1 style="font-size:22px;font-weight:650;letter-spacing:-0.025em;margin:0;">Quotations</h1><p style="font-size:13px;color:#8a8a90;margin:5px 0 0;">14 pending · 62 total this quarter</p></div>
+              <button onClick="{{ nav.newQuotation }}" class="btnp" style="background:#072076;color:#fff;border:none;font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:8px;cursor:pointer;">New quotation</button>
+            </div>
+            <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+              <span style="font-size:12.5px;font-weight:600;background:#fff;border:1px solid #e6e4dd;padding:6px 12px;border-radius:8px;">All</span>
+              <span style="font-size:12.5px;font-weight:500;color:#8a8a90;padding:6px 12px;">Draft</span>
+              <span style="font-size:12.5px;font-weight:500;color:#8a8a90;padding:6px 12px;">Sent</span>
+              <span style="font-size:12.5px;font-weight:500;color:#8a8a90;padding:6px 12px;">Negotiation</span>
+              <span style="font-size:12.5px;font-weight:500;color:#8a8a90;padding:6px 12px;">Accepted</span>
+            </div>
+            <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+              <div style="display:grid;grid-template-columns:110px 1.3fr 1fr 120px 110px 100px;padding:11px 18px;background:#faf9f6;font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #f2f0ea;"><div>Ref</div><div>Client</div><div>Service</div><div>Status</div><div>Date</div><div style="text-align:right;">Total</div></div>
+              <sc-for list="{{ quotations }}" as="q" hint-placeholder-count="6">
+                <div class="rowh" onClick="{{ nav.quotationDetail }}" style="display:grid;grid-template-columns:110px 1.3fr 1fr 120px 110px 100px;padding:14px 18px;border-bottom:1px solid #f5f3ee;align-items:center;cursor:pointer;">
+                  <div class="mono" style="font-size:12px;color:#2a336b;font-weight:500;">{{ q.ref }}</div>
+                  <div style="font-size:13.5px;font-weight:600;">{{ q.client }}</div>
+                  <div style="font-size:12.5px;color:#4a4b52;">{{ q.service }}</div>
+                  <div><span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:{{ q.bBg }};color:{{ q.bFg }};">{{ q.status }}</span></div>
+                  <div style="font-size:12.5px;color:#8a8a90;">{{ q.date }}</div>
+                  <div style="text-align:right;font-size:13px;font-weight:650;">{{ q.total }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ========== NEW QUOTATION ========== -->
+        <sc-if value="{{ is.newQuotation }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .3s ease both;">
+            <div onClick="{{ nav.quotations }}" style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:550;color:#8a8a90;cursor:pointer;margin-bottom:14px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"></path></svg>Quotations</div>
+            <div style="display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start;">
+              <div style="display:flex;flex-direction:column;gap:22px;">
+                <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:20px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                  <div style="display:flex;align-items:center;gap:9px;margin-bottom:16px;"><div style="width:22px;height:22px;border-radius:6px;background:#1f2650;color:#072076;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">1</div><h2 style="font-size:14px;font-weight:600;margin:0;">Client &amp; service</h2></div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                    <div><label style="font-size:11.5px;font-weight:600;color:#8a8a90;display:block;margin-bottom:6px;">Client name</label><div style="border:1px solid #e6e4dd;border-radius:9px;padding:10px 12px;font-size:13.5px;font-weight:550;background:#fff;">Meghdoot Complex Assoc.</div></div>
+                    <div><label style="font-size:11.5px;font-weight:600;color:#8a8a90;display:block;margin-bottom:6px;">Phone</label><div style="border:1px solid #e6e4dd;border-radius:9px;padding:10px 12px;font-size:13.5px;font-weight:550;background:#fff;">+91 98250 44120</div></div>
+                    <div><label style="font-size:11.5px;font-weight:600;color:#8a8a90;display:block;margin-bottom:6px;">Site name</label><div style="border:1px solid #e6e4dd;border-radius:9px;padding:10px 12px;font-size:13.5px;font-weight:550;background:#fff;">Meghdoot Complex — Tower B</div></div>
+                    <div><label style="font-size:11.5px;font-weight:600;color:#8a8a90;display:block;margin-bottom:6px;">Service type</label><div style="border:1px solid #e6e4dd;border-radius:9px;padding:10px 12px;font-size:13.5px;font-weight:550;background:#fff;display:flex;justify-content:space-between;align-items:center;">AMC — Annual<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9a9aa2" stroke-width="2"><path d="M6 9l6 6 6-6"></path></svg></div></div>
+                  </div>
+                </div>
+
+                <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:20px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;"><div style="display:flex;align-items:center;gap:9px;"><div style="width:22px;height:22px;border-radius:6px;background:#1f2650;color:#072076;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">2</div><h2 style="font-size:14px;font-weight:600;margin:0;">Line items</h2></div><span style="font-size:11px;color:#9a9aa2;display:flex;align-items:center;gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4-4"></path></svg>Search 1,273 items</span></div>
+                  <div style="border:1px solid #eceae4;border-radius:10px;overflow:hidden;">
+                    <div style="display:grid;grid-template-columns:1fr 2fr 55px 50px 80px 90px;padding:9px 13px;background:#faf9f6;font-size:10.5px;font-weight:600;color:#9a9aa2;text-transform:uppercase;">
+                      <div>Category</div><div>Description</div><div>Unit</div><div>Qty</div><div>Rate</div><div style="text-align:right;">Total</div></div>
+                    <sc-for list="{{ lineItems }}" as="li" hint-placeholder-count="3">
+                      <div style="display:grid;grid-template-columns:1fr 2fr 55px 50px 80px 90px;padding:10px 13px;border-top:1px solid #f2f0ea;font-size:12.5px;align-items:center;">
+                        <div style="color:#6b6b73;">{{ li.cat }}</div><div style="font-weight:600;">{{ li.desc }}</div><div style="color:#9a9aa2;">{{ li.unit }}</div><div style="font-weight:600;">{{ li.qty }}</div><div style="color:#4a4b52;">{{ li.rate }}</div><div style="text-align:right;font-weight:650;">{{ li.total }}</div>
+                      </div>
+                    </sc-for>
+                    <div style="padding:9px 13px;border-top:1px dashed #e6e4dd;"><button style="display:inline-flex;align-items:center;gap:6px;background:#fbf0dc;color:#b45309;border:none;font-size:12px;font-weight:600;padding:7px 12px;border-radius:8px;cursor:pointer;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"></path></svg>Add row</button></div>
+                  </div>
+                </div>
+
+                <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:20px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                  <div style="display:flex;align-items:center;gap:9px;margin-bottom:16px;"><div style="width:22px;height:22px;border-radius:6px;background:#1f2650;color:#072076;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">3</div><h2 style="font-size:14px;font-weight:600;margin:0;">Settings</h2></div>
+                  <div style="display:grid;grid-template-columns:150px 1fr;gap:14px;">
+                    <div><label style="font-size:11.5px;font-weight:600;color:#8a8a90;display:block;margin-bottom:6px;">Valid for</label><div style="border:1px solid #e6e4dd;border-radius:9px;padding:10px 12px;font-size:13.5px;font-weight:550;">15 days</div></div>
+                    <div><label style="font-size:11.5px;font-weight:600;color:#8a8a90;display:block;margin-bottom:6px;">Notes</label><div style="border:1px solid #e6e4dd;border-radius:9px;padding:10px 12px;font-size:12.5px;color:#6b6b73;min-height:42px;">50% advance, balance on completion. Transport within Surat included.</div></div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="position:sticky;top:0;background:#1a2148;border-radius:12px;padding:20px;">
+                <div style="font-size:11px;font-weight:600;color:#8b91b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px;">Summary</div>
+                <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.09);"><span style="font-size:13px;color:#c3c8e0;">Subtotal</span><span style="font-size:13.5px;font-weight:600;color:#fff;">₹43,200</span></div>
+                <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.09);"><span style="font-size:13px;color:#c3c8e0;">GST (18%)</span><span style="font-size:13.5px;font-weight:600;color:#fff;">₹7,776</span></div>
+                <div style="margin-top:16px;background:rgba(7,32,118,.13);border:1px solid rgba(7,32,118,.3);border-radius:11px;padding:15px;"><div style="font-size:11px;font-weight:600;color:#072076;text-transform:uppercase;letter-spacing:.05em;">Grand total</div><div style="font-size:28px;font-weight:650;color:#fff;margin-top:5px;letter-spacing:-0.02em;">₹50,976</div></div>
+                <button class="btnp" style="margin-top:16px;width:100%;background:#072076;color:#fff;border:none;font-weight:600;font-size:13.5px;padding:12px;border-radius:10px;cursor:pointer;">Save quotation</button>
+                <button class="btns" style="margin-top:8px;width:100%;background:rgba(255,255,255,.06);color:#c3c8e0;border:1px solid rgba(255,255,255,.12);font-weight:550;font-size:12.5px;padding:10px;border-radius:10px;cursor:pointer;">Save draft</button>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ========== CALENDAR ========== -->
+        <sc-if value="{{ is.calendar }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .3s ease both;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+              <div style="display:flex;align-items:center;gap:14px;"><h1 style="font-size:22px;font-weight:650;letter-spacing:-0.025em;margin:0;">July 2026</h1><div style="display:flex;gap:4px;"><button style="width:30px;height:30px;border-radius:8px;border:1px solid #e6e4dd;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4a4b52" stroke-width="2"><path d="M15 18l-6-6 6-6"></path></svg></button><button style="width:30px;height:30px;border-radius:8px;border:1px solid #e6e4dd;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4a4b52" stroke-width="2"><path d="M9 18l6-6-6-6"></path></svg></button></div></div>
+              <div style="display:flex;gap:14px;font-size:11.5px;font-weight:550;color:#6b6b73;align-items:center;"><span style="display:flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:2px;background:#2f6fed;"></span>Scheduled</span><span style="display:flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:2px;background:#072076;"></span>In progress</span><span style="display:flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:2px;background:#17864a;"></span>Completed</span></div>
+            </div>
+            <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+              <div style="display:grid;grid-template-columns:repeat(7,1fr);background:#faf9f6;border-bottom:1px solid #f2f0ea;">
+                <div style="padding:9px 12px;font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;">Sun</div><div style="padding:9px 12px;font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;">Mon</div><div style="padding:9px 12px;font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;">Tue</div><div style="padding:9px 12px;font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;">Wed</div><div style="padding:9px 12px;font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;">Thu</div><div style="padding:9px 12px;font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;">Fri</div><div style="padding:9px 12px;font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;">Sat</div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(7,1fr);">
+                <sc-for list="{{ calCells }}" as="d" hint-placeholder-count="35">
+                  <div style="min-height:96px;padding:8px;border-right:1px solid #f5f3ee;border-bottom:1px solid #f5f3ee;background:{{ d.bg }};">
+                    <div style="font-size:12px;font-weight:{{ d.wt }};color:{{ d.fg }};">{{ d.day }}</div>
+                    <div style="display:flex;flex-direction:column;gap:3px;margin-top:5px;">
+                      <div style="display:{{ d.d1 }};font-size:10px;font-weight:600;padding:2px 6px;border-radius:5px;background:{{ d.c1bg }};color:{{ d.c1fg }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ d.c1t }}</div>
+                      <div style="display:{{ d.d2 }};font-size:10px;font-weight:600;padding:2px 6px;border-radius:5px;background:{{ d.c2bg }};color:{{ d.c2fg }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ d.c2t }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ========== ANALYTICS ========== -->
+        <sc-if value="{{ is.analytics }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .3s ease both;">
+            <h1 style="font-size:22px;font-weight:650;letter-spacing:-0.025em;margin:0 0 18px;">Analytics</h1>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;">
+              <div class="lift" style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(16,24,40,.04);"><div style="font-size:12px;font-weight:550;color:#8a8a90;">Contract value</div><div style="font-size:26px;font-weight:650;letter-spacing:-0.03em;margin-top:8px;">₹1.84 Cr</div><div style="font-size:11.5px;color:#17864a;margin-top:6px;">+18% YoY</div></div>
+              <div class="lift" style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(16,24,40,.04);"><div style="font-size:12px;font-weight:550;color:#8a8a90;">Total customers</div><div style="font-size:26px;font-weight:650;letter-spacing:-0.03em;margin-top:8px;">614</div><div style="font-size:11.5px;color:#17864a;margin-top:6px;">+9 this month</div></div>
+              <div class="lift" style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(16,24,40,.04);"><div style="font-size:12px;font-weight:550;color:#8a8a90;">Completion rate</div><div style="font-size:26px;font-weight:650;letter-spacing:-0.03em;margin-top:8px;">94.2%</div><div style="font-size:11.5px;color:#8a8a90;margin-top:6px;">visits on schedule</div></div>
+              <div class="lift" style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(16,24,40,.04);"><div style="font-size:12px;font-weight:550;color:#8a8a90;">Open emergencies</div><div style="font-size:26px;font-weight:650;letter-spacing:-0.03em;margin-top:8px;color:#d23f3f;">2</div><div style="font-size:11.5px;color:#d23f3f;margin-top:6px;">avg response 34 min</div></div>
+            </div>
+            <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:22px;box-shadow:0 1px 2px rgba(16,24,40,.04);margin-top:16px;">
+              <h2 style="font-size:14px;font-weight:600;margin:0 0 20px;">New contracts — last 6 months</h2>
+              <div style="display:flex;align-items:flex-end;gap:26px;height:200px;padding:0 10px;">
+                <sc-for list="{{ bars }}" as="b" hint-placeholder-count="6">
+                  <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:9px;justify-content:flex-end;height:100%;">
+                    <div style="font-size:12px;font-weight:650;color:#1b1c22;">{{ b.val }}</div>
+                    <div style="width:100%;max-width:52px;height:{{ b.h }};background:linear-gradient(180deg,#2a336b,#1f2650);border-radius:7px 7px 0 0;"></div>
+                    <div style="font-size:11.5px;font-weight:550;color:#8a8a90;">{{ b.m }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ========== SITE SURVEYS ========== -->
+        <sc-if value="{{ is.surveys }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .3s ease both;">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px;"><div><h1 style="font-size:22px;font-weight:650;letter-spacing:-0.025em;margin:0;">Site Surveys</h1><p style="font-size:13px;color:#8a8a90;margin:5px 0 0;">Equipment audits before quotation</p></div><button class="btnp" style="background:#072076;color:#fff;border:none;font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:8px;cursor:pointer;">New survey</button></div>
+            <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+              <div style="display:grid;grid-template-columns:100px 1.4fr 1fr 110px 120px;padding:11px 18px;background:#faf9f6;font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #f2f0ea;"><div>Ref</div><div>Site</div><div>Client</div><div>Status</div><div>Surveyed by</div></div>
+              <sc-for list="{{ surveys }}" as="s" hint-placeholder-count="5">
+                <div class="rowh" onClick="{{ nav.surveyForm }}" style="display:grid;grid-template-columns:100px 1.4fr 1fr 110px 120px;padding:14px 18px;border-bottom:1px solid #f5f3ee;align-items:center;cursor:pointer;">
+                  <div class="mono" style="font-size:12px;color:#2a336b;font-weight:500;">{{ s.ref }}</div>
+                  <div style="font-size:13.5px;font-weight:600;">{{ s.site }}</div>
+                  <div style="font-size:12.5px;color:#4a4b52;">{{ s.client }}</div>
+                  <div><span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:{{ s.bBg }};color:{{ s.bFg }};">{{ s.status }}</span></div>
+                  <div style="font-size:12.5px;color:#4a4b52;">{{ s.by }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ========== REFILLS ========== -->
+        <sc-if value="{{ is.refills }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .3s ease both;">
+            <h1 style="font-size:22px;font-weight:650;letter-spacing:-0.025em;margin:0 0 18px;">Refill Orders</h1>
+            <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+              <div style="display:grid;grid-template-columns:110px 1.4fr 90px 90px 120px 110px;padding:11px 18px;background:#faf9f6;font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #f2f0ea;"><div>Ref</div><div>Client</div><div>Items</div><div>Units</div><div>Status</div><div>Date</div></div>
+              <sc-for list="{{ refills }}" as="r" hint-placeholder-count="5">
+                <div class="rowh" onClick="{{ nav.refillDetail }}" style="display:grid;grid-template-columns:110px 1.4fr 90px 90px 120px 110px;padding:14px 18px;border-bottom:1px solid #f5f3ee;align-items:center;cursor:pointer;">
+                  <div class="mono" style="font-size:12px;color:#2a336b;font-weight:500;">{{ r.ref }}</div>
+                  <div style="font-size:13.5px;font-weight:600;">{{ r.client }}</div>
+                  <div style="font-size:13px;color:#4a4b52;">{{ r.items }}</div>
+                  <div style="font-size:13px;color:#4a4b52;font-weight:600;">{{ r.units }}</div>
+                  <div><span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:{{ r.bBg }};color:{{ r.bFg }};">{{ r.status }}</span></div>
+                  <div style="font-size:12.5px;color:#8a8a90;">{{ r.date }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ========== SERVICE REQUESTS ========== -->
+        <sc-if value="{{ is.requests }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .3s ease both;">
+            <h1 style="font-size:22px;font-weight:650;letter-spacing:-0.025em;margin:0 0 18px;">Service Requests</h1>
+            <div style="display:flex;flex-direction:column;gap:11px;">
+              <sc-for list="{{ requests }}" as="r" hint-placeholder-count="4">
+                <div class="lift" style="background:#fff;border:1px solid {{ r.border }};border-radius:12px;padding:16px 18px;box-shadow:0 1px 2px rgba(16,24,40,.04);display:flex;align-items:center;gap:16px;">
+                  <div style="width:40px;height:40px;border-radius:10px;background:{{ r.bBg }};display:flex;align-items:center;justify-content:center;flex:none;">
+                    <sc-if value="{{ r.emergency }}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d23f3f" stroke-width="2"><path d="M12 2a7 7 0 00-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 00-7-7z"></path></svg></sc-if>
+                    <sc-if value="{{ r.noc }}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2f6fed" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path><path d="M14 2v6h6"></path></svg></sc-if>
+                  </div>
+                  <div style="flex:1;"><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:14px;font-weight:600;">{{ r.client }}</span><span style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:{{ r.bBg }};color:{{ r.bFg }};">{{ r.type }}</span></div><div style="font-size:12.5px;color:#8a8a90;margin-top:2px;">{{ r.detail }}</div></div>
+                  <div style="text-align:right;"><div style="font-size:12px;color:#8a8a90;">{{ r.time }}</div><div style="font-size:12.5px;font-weight:600;color:{{ r.bFg }};margin-top:3px;">{{ r.status }}</div></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ========== ENQUIRIES ========== -->
+        <sc-if value="{{ is.enquiries }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .3s ease both;">
+            <h1 style="font-size:22px;font-weight:650;letter-spacing:-0.025em;margin:0 0 18px;">Enquiries</h1>
+            <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+              <sc-for list="{{ enquiries }}" as="e" hint-placeholder-count="5">
+                <div class="rowh" style="padding:15px 18px;border-bottom:1px solid #f5f3ee;cursor:pointer;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:13.5px;font-weight:600;">{{ e.name }}</span><span class="mono" style="font-size:11.5px;color:#9a9aa2;">{{ e.phone }}</span></div><span style="font-size:11.5px;color:#8a8a90;">{{ e.date }}</span></div>
+                  <div style="font-size:12.5px;font-weight:550;color:#4a4b52;margin-top:5px;">{{ e.subject }}</div>
+                  <div style="font-size:12.5px;color:#8a8a90;margin-top:2px;">{{ e.msg }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ========== REMINDERS ========== -->
+        <sc-if value="{{ is.reminders }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .3s ease both;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;"><h1 style="font-size:22px;font-weight:650;letter-spacing:-0.025em;margin:0;">Payment Reminders</h1><span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:#fbe9e7;color:#d23f3f;">7 open</span></div>
+            <div style="display:flex;flex-direction:column;gap:11px;">
+              <sc-for list="{{ reminders }}" as="r" hint-placeholder-count="4">
+                <div style="background:#fff;border:1px solid #eceae4;border-left:3px solid {{ r.accent }};border-radius:12px;padding:16px 18px;box-shadow:0 1px 2px rgba(16,24,40,.04);display:flex;align-items:center;gap:16px;">
+                  <div style="flex:1;"><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:14px;font-weight:600;">{{ r.client }}</span><span style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:{{ r.bBg }};color:{{ r.bFg }};">{{ r.sev }}</span></div><div style="font-size:12.5px;color:#8a8a90;margin-top:2px;">{{ r.reason }}</div></div>
+                  <div style="text-align:right;"><div style="font-size:15px;font-weight:650;">{{ r.amount }}</div><div style="font-size:11.5px;color:#d23f3f;margin-top:2px;">{{ r.days }}</div></div>
+                  <button class="btnd" style="background:#1f2650;color:#fff;border:none;font-size:12px;font-weight:550;padding:8px 14px;border-radius:8px;cursor:pointer;flex:none;">Send</button>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ========== FINANCIALS ========== -->
+        <sc-if value="{{ is.financials }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .3s ease both;">
+            <h1 style="font-size:22px;font-weight:650;letter-spacing:-0.025em;margin:0 0 18px;">Financials</h1>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">
+              <div class="lift" style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(16,24,40,.04);"><div style="font-size:12px;font-weight:550;color:#8a8a90;">Total billed</div><div style="font-size:26px;font-weight:650;letter-spacing:-0.03em;margin-top:8px;">₹42.6 L</div></div>
+              <div class="lift" style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(16,24,40,.04);"><div style="font-size:12px;font-weight:550;color:#8a8a90;">Received</div><div style="font-size:26px;font-weight:650;letter-spacing:-0.03em;margin-top:8px;color:#17864a;">₹34.1 L</div></div>
+              <div class="lift" style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(16,24,40,.04);"><div style="font-size:12px;font-weight:550;color:#8a8a90;">Outstanding</div><div style="font-size:26px;font-weight:650;letter-spacing:-0.03em;margin-top:8px;color:#d23f3f;">₹8.5 L</div></div>
+            </div>
+            <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+              <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 110px;padding:11px 18px;background:#faf9f6;font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #f2f0ea;"><div>Contract</div><div>AMC fee</div><div>Material quotes</div><div style="text-align:right;">Status</div></div>
+              <sc-for list="{{ finance }}" as="f" hint-placeholder-count="5">
+                <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 110px;padding:14px 18px;border-bottom:1px solid #f5f3ee;align-items:center;">
+                  <div><div style="font-size:13.5px;font-weight:600;">{{ f.client }}</div><div class="mono" style="font-size:11px;color:#9a9aa2;">{{ f.ref }}</div></div>
+                  <div style="font-size:13px;color:#4a4b52;font-weight:500;">{{ f.fee }}</div>
+                  <div style="font-size:13px;color:#4a4b52;font-weight:500;">{{ f.mat }}</div>
+                  <div style="text-align:right;"><span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:{{ f.bBg }};color:{{ f.bFg }};">{{ f.status }}</span></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ========== TECHNICIANS ========== -->
+        <sc-if value="{{ is.technicians }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .3s ease both;">
+            <h1 style="font-size:22px;font-weight:650;letter-spacing:-0.025em;margin:0 0 18px;">Technician Performance</h1>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">
+              <sc-for list="{{ topTechs }}" as="t" hint-placeholder-count="3">
+                <div class="lift" style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(16,24,40,.04);text-align:center;">
+                  <div style="font-size:11px;font-weight:600;color:#9a9aa2;">RANK {{ t.rank }}</div>
+                  <div style="width:52px;height:52px;border-radius:50%;background:{{ t.av }};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:650;font-size:17px;margin:10px auto;">{{ t.initials }}</div>
+                  <div style="font-size:14.5px;font-weight:600;">{{ t.name }}</div>
+                  <div style="display:flex;align-items:center;justify-content:center;gap:5px;margin-top:6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="#072076"><path d="M12 2l2.4 5.2L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.8z"></path></svg><span style="font-size:14px;font-weight:650;">{{ t.rating }}</span></div>
+                  <div style="font-size:11.5px;color:#8a8a90;margin-top:4px;">{{ t.ontime }} on-time · {{ t.visits }} visits</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+              <div style="display:grid;grid-template-columns:1.4fr 90px 90px 90px 90px 90px;padding:11px 18px;background:#faf9f6;font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #f2f0ea;"><div>Technician</div><div>Overall</div><div>Quality</div><div>Punctual</div><div>On-time</div><div>Visits</div></div>
+              <sc-for list="{{ allTechs }}" as="t" hint-placeholder-count="5">
+                <div style="display:grid;grid-template-columns:1.4fr 90px 90px 90px 90px 90px;padding:13px 18px;border-bottom:1px solid #f5f3ee;align-items:center;font-size:13px;">
+                  <div style="font-weight:600;">{{ t.name }}</div><div style="font-weight:600;">{{ t.overall }}</div><div style="color:#4a4b52;">{{ t.quality }}</div><div style="color:#4a4b52;">{{ t.punctual }}</div><div style="color:#17864a;font-weight:550;">{{ t.ontime }}</div><div style="color:#4a4b52;">{{ t.visits }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ========== CLIENTS ========== -->
+        <sc-if value="{{ is.clients }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .3s ease both;">
+            <h1 style="font-size:22px;font-weight:650;letter-spacing:-0.025em;margin:0 0 18px;">Clients</h1>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;">
+              <sc-for list="{{ clients }}" as="c" hint-placeholder-count="6">
+                <div class="lift" onClick="{{ nav.clientPortfolio }}" style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(16,24,40,.04);display:flex;align-items:center;gap:14px;cursor:pointer;">
+                  <div style="width:44px;height:44px;border-radius:11px;background:{{ c.av }};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:650;font-size:15px;flex:none;">{{ c.initials }}</div>
+                  <div style="flex:1;"><div style="font-size:14px;font-weight:600;">{{ c.name }}</div><div style="font-size:12px;color:#8a8a90;">{{ c.meta }}</div></div>
+                  <div style="text-align:right;"><div style="font-size:13px;font-weight:650;">{{ c.contracts }}</div><div style="font-size:11px;color:#9a9aa2;">contracts</div></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ========== HEALTH REPORTS ========== -->
+        <sc-if value="{{ is.health }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .3s ease both;">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px;"><div><h1 style="font-size:22px;font-weight:650;letter-spacing:-0.025em;margin:0;">Health Reports</h1><p style="font-size:13px;color:#8a8a90;margin:5px 0 0;">Fire System Health Checkup Reports (FSHCR)</p></div><button class="btnp" style="background:#072076;color:#fff;border:none;font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:8px;cursor:pointer;">New report</button></div>
+            <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+              <div style="display:grid;grid-template-columns:110px 1.4fr 1fr 110px 110px;padding:11px 18px;background:#faf9f6;font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #f2f0ea;"><div>Ref</div><div>Site</div><div>Client</div><div>Status</div><div>Date</div></div>
+              <sc-for list="{{ health }}" as="h" hint-placeholder-count="4">
+                <div class="rowh" style="display:grid;grid-template-columns:110px 1.4fr 1fr 110px 110px;padding:14px 18px;border-bottom:1px solid #f5f3ee;align-items:center;cursor:pointer;">
+                  <div class="mono" style="font-size:12px;color:#2a336b;font-weight:500;">{{ h.ref }}</div>
+                  <div style="font-size:13.5px;font-weight:600;">{{ h.site }}</div>
+                  <div style="font-size:12.5px;color:#4a4b52;">{{ h.client }}</div>
+                  <div><span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:{{ h.bBg }};color:{{ h.bFg }};">{{ h.status }}</span></div>
+                  <div style="font-size:12.5px;color:#8a8a90;">{{ h.date }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ========== VISIT DETAIL (OPS) ========== -->
+        <sc-if value="{{ is.visitDetail }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .3s ease both;">
+            <div onClick="{{ nav.contractDetail }}" style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:550;color:#8a8a90;cursor:pointer;margin-bottom:14px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Rajhans Textile Mills</div>
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:18px;">
+              <div><div style="display:flex;align-items:center;gap:10px;"><h1 style="font-size:22px;font-weight:650;letter-spacing:-0.025em;margin:0;">Visit 2</h1><span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;background:#fbf0dc;color:#b45309;">In Progress</span></div><p style="font-size:13px;color:#8a8a90;margin:5px 0 0;">Scheduled 2 Jul 2026 · Technician Amit Desai</p></div>
+              <div style="display:flex;gap:8px;"><button class="btns" style="background:#fff;border:1px solid #e6e4dd;color:#4a4b52;font-size:12.5px;font-weight:550;padding:8px 14px;border-radius:8px;cursor:pointer;">Reschedule</button><button class="btnp" style="background:#072076;color:#fff;border:none;font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:8px;cursor:pointer;">Mark complete</button></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start;">
+              <div style="display:flex;flex-direction:column;gap:16px;">
+                <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                  <h2 style="font-size:14px;font-weight:600;margin:0 0 12px;">Work done</h2>
+                  <div style="border:1px solid #e6e4dd;border-radius:9px;padding:12px;font-size:13px;color:#4a4b52;min-height:60px;line-height:1.5;">Refilled 4 ABC extinguishers, tested hydrant line pressure on north yard, replaced 2 signage tags. CO₂ unit in server room flagged for refill.</div>
+                </div>
+                <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><h2 style="font-size:14px;font-weight:600;margin:0;">Maintenance checklist</h2><span style="font-size:11.5px;color:#9a9aa2;">12 standard items</span></div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                    <sc-for list="{{ opsChecklist }}" as="c" hint-placeholder-count="12">
+                      <div style="display:flex;align-items:center;gap:9px;padding:9px 11px;background:#faf9f6;border-radius:9px;"><span style="width:8px;height:8px;border-radius:50%;background:{{ c.dot }};flex:none;"></span><span style="font-size:12px;font-weight:500;flex:1;">{{ c.item }}</span><span style="font-size:10.5px;font-weight:600;color:{{ c.dot }};">{{ c.st }}</span></div>
+                    </sc-for>
+                  </div>
+                </div>
+                <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                  <h2 style="font-size:14px;font-weight:600;margin:0 0 12px;">Photos &amp; report</h2>
+                  <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:12px;">
+                    <div style="border:1.5px dashed #d8d0c2;border-radius:11px;padding:20px;text-align:center;background:#faf9f6;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#072076" stroke-width="1.8" style="margin:0 auto;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg><div style="font-size:12.5px;font-weight:600;margin-top:8px;">Drag site photos</div></div>
+                    <div style="border:1px solid #e6e4dd;border-radius:11px;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#072076" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg><div style="font-size:12px;font-weight:600;">Upload service PDF</div></div>
+                  </div>
+                </div>
+                <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><h2 style="font-size:14px;font-weight:600;margin:0;">Material quotation</h2><span style="font-size:11.5px;color:#9a9aa2;">from inventory · 1,273 items</span></div>
+                  <div style="border:1px solid #e6e4dd;border-radius:9px;padding:10px 12px;font-size:12.5px;color:#9a9aa2;display:flex;align-items:center;gap:8px;margin-bottom:12px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>Search inventory to add rows…</div>
+                  <div style="border:1px solid #eceae4;border-radius:10px;overflow:hidden;">
+                    <div style="display:grid;grid-template-columns:1fr 2fr 60px 90px;padding:9px 13px;background:#faf9f6;font-size:10.5px;font-weight:600;color:#9a9aa2;text-transform:uppercase;"><div>Category</div><div>Item</div><div>Qty</div><div style="text-align:right;">Rate</div></div>
+                    <div style="display:grid;grid-template-columns:1fr 2fr 60px 90px;padding:10px 13px;border-top:1px solid #f2f0ea;font-size:12.5px;align-items:center;"><div style="color:#6b6b73;">Extinguisher</div><div style="font-weight:600;">CO₂ refill 4.5kg</div><div>1</div><div style="text-align:right;color:#4a4b52;">₹900</div></div>
+                  </div>
+                  <button class="btnp" style="margin-top:12px;background:#072076;color:#fff;border:none;font-size:12.5px;font-weight:600;padding:9px 16px;border-radius:8px;cursor:pointer;">Submit &amp; notify client</button>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:16px;position:sticky;top:0;">
+                <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                  <h2 style="font-size:13.5px;font-weight:600;margin:0 0 12px;">Assignment</h2>
+                  <div style="font-size:11.5px;font-weight:600;color:#8a8a90;margin-bottom:5px;">Technician</div>
+                  <div style="border:1px solid #e6e4dd;border-radius:9px;padding:9px 11px;font-size:12.5px;font-weight:550;display:flex;justify-content:space-between;align-items:center;">Amit Desai<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9a9aa2" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+                  <div style="font-size:11.5px;font-weight:600;color:#8a8a90;margin:12px 0 5px;">Scheduled date</div>
+                  <div style="border:1px solid #e6e4dd;border-radius:9px;padding:9px 11px;font-size:12.5px;font-weight:550;">2 Jul 2026</div>
+                </div>
+                <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;"><h2 style="font-size:13.5px;font-weight:600;margin:0;">Client feedback</h2><span style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:#e7f4ec;color:#17864a;">Excellent</span></div>
+                  <sc-for list="{{ opsFeedback }}" as="f" hint-placeholder-count="5">
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;"><span style="font-size:12px;color:#4a4b52;">{{ f.dim }}</span><span style="font-size:12px;font-weight:650;">{{ f.score }}</span></div>
+                  </sc-for>
+                  <div style="margin-top:8px;padding-top:10px;border-top:1px solid #f2f0ea;display:flex;justify-content:space-between;"><span style="font-size:12.5px;font-weight:600;">Average</span><span style="font-size:14px;font-weight:700;color:#072076;">4.8</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ========== QUOTATION DETAIL ========== -->
+        <sc-if value="{{ is.quotationDetail }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .3s ease both;">
+            <div onClick="{{ nav.quotations }}" style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:550;color:#8a8a90;cursor:pointer;margin-bottom:14px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Quotations</div>
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:18px;">
+              <div><div style="display:flex;align-items:center;gap:10px;"><span class="mono" style="font-size:12px;font-weight:500;color:#072076;background:#eef1fb;padding:4px 9px;border-radius:6px;">QUO-0185</span><span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;background:#fbf0dc;color:#b45309;">Negotiation</span></div><h1 style="font-size:21px;font-weight:650;letter-spacing:-0.02em;margin:11px 0 2px;">Orbit Business Hub</h1><p style="font-size:12.5px;color:#8a8a90;margin:0;">AMC — Annual · created 27 Jun 2026 · +91 90000 55510</p></div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btns" style="background:#fff;border:1px solid #e6e4dd;color:#4a4b52;font-size:12.5px;font-weight:550;padding:8px 13px;border-radius:8px;cursor:pointer;">Download PDF</button><button onClick="{{ nav.editQuotation }}" class="btns" style="background:#fff;border:1px solid #e6e4dd;color:#4a4b52;font-size:12.5px;font-weight:550;padding:8px 13px;border-radius:8px;cursor:pointer;">Edit / revise</button><button class="btnp" style="background:#072076;color:#fff;border:none;font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:8px;cursor:pointer;">Re-send</button></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start;">
+              <div style="display:flex;flex-direction:column;gap:16px;">
+                <div style="background:#fdf3d6;border:1px solid #f0dca8;border-radius:12px;padding:16px 18px;">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2"><path d="M12 8v4M12 16h.01"/><circle cx="12" cy="12" r="9"/></svg><span style="font-size:13px;font-weight:700;color:#b45309;">Client requested negotiation</span></div>
+                  <div style="font-size:12.5px;color:#7a5a1a;background:rgba(255,255,255,.6);border-radius:8px;padding:10px 12px;line-height:1.5;">"The labour component seems high for a 6-floor building. Can we bring the annual servicing closer to ₹90,000? Happy to proceed today if workable."</div>
+                  <div style="margin-top:12px;border:1px solid #e6d3ad;border-radius:8px;padding:10px 12px;background:#fff;font-size:12.5px;color:#9a9aa2;">Type a staff response…</div>
+                </div>
+                <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                  <div style="display:grid;grid-template-columns:1fr 2fr 60px 90px 100px;padding:10px 16px;background:#faf9f6;font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;"><div>Category</div><div>Description</div><div>Qty</div><div>Rate</div><div style="text-align:right;">Total</div></div>
+                  <sc-for list="{{ qdItems }}" as="q" hint-placeholder-count="3">
+                    <div style="display:grid;grid-template-columns:1fr 2fr 60px 90px 100px;padding:12px 16px;border-top:1px solid #f2f0ea;font-size:12.5px;align-items:center;"><div style="color:#6b6b73;">{{ q.cat }}</div><div style="font-weight:600;">{{ q.desc }}</div><div>{{ q.qty }}</div><div style="color:#4a4b52;">{{ q.rate }}</div><div style="text-align:right;font-weight:650;">{{ q.total }}</div></div>
+                  </sc-for>
+                  <div style="padding:14px 16px;border-top:1px solid #eceae4;background:#faf9f6;"><div style="display:flex;justify-content:flex-end;"><div style="width:240px;"><div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12.5px;"><span style="color:#8a8a90;">Subtotal</span><span style="font-weight:600;">₹1,05,000</span></div><div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12.5px;"><span style="color:#8a8a90;">GST (18%)</span><span style="font-weight:600;">₹18,900</span></div><div style="display:flex;justify-content:space-between;padding:8px 0 0;margin-top:6px;border-top:1px solid #e6e4dd;"><span style="font-size:13px;font-weight:600;">Grand total</span><span style="font-size:16px;font-weight:700;color:#072076;">₹1,23,900</span></div></div></div></div>
+                </div>
+                <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                  <h2 style="font-size:14px;font-weight:600;margin:0 0 14px;">Activity log</h2>
+                  <div style="display:flex;flex-direction:column;">
+                    <sc-for list="{{ qdLog }}" as="l" hint-placeholder-count="5">
+                      <div style="display:flex;gap:12px;padding-bottom:14px;"><div style="display:flex;flex-direction:column;align-items:center;flex:none;"><span style="width:9px;height:9px;border-radius:50%;background:{{ l.dot }};margin-top:3px;"></span><span style="width:2px;flex:1;background:#eeece6;margin-top:3px;"></span></div><div><div style="font-size:12.5px;font-weight:600;">{{ l.title }}</div><div style="font-size:11.5px;color:#9a9aa2;">{{ l.time }}</div></div></div>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:16px;position:sticky;top:0;">
+                <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                  <h2 style="font-size:13.5px;font-weight:600;margin:0 0 12px;">Share with client</h2>
+                  <div style="display:flex;align-items:center;gap:8px;border:1px solid #e6e4dd;border-radius:8px;padding:8px 10px;margin-bottom:10px;"><span class="mono" style="font-size:11px;color:#8a8a90;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">nse.in/q/8fk2p9</span><button style="background:#eef1fb;color:#072076;border:none;font-size:11px;font-weight:600;padding:4px 9px;border-radius:6px;cursor:pointer;">Copy</button></div>
+                  <button style="width:100%;background:#1faf5a;color:#fff;border:none;font-size:12.5px;font-weight:600;padding:10px;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 01-12.6 7.3L3 21l2.3-5.4A8.4 8.4 0 1121 11.5z"/></svg>Send on WhatsApp</button>
+                </div>
+                <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><h2 style="font-size:13.5px;font-weight:600;margin:0;">Payment</h2><span style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:#efeeeb;color:#6b6b73;">Not paid</span></div>
+                  <div style="font-size:11.5px;font-weight:600;color:#8a8a90;margin-bottom:5px;">Method</div>
+                  <div style="border:1px solid #e6e4dd;border-radius:9px;padding:9px 11px;font-size:12.5px;font-weight:550;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">UPI<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9a9aa2" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+                  <button class="btnp" style="width:100%;background:#072076;color:#fff;border:none;font-size:12.5px;font-weight:600;padding:10px;border-radius:9px;cursor:pointer;">Mark as paid</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ========== EDIT QUOTATION ========== -->
+        <sc-if value="{{ is.editQuotation }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .3s ease both;">
+            <div onClick="{{ nav.quotationDetail }}" style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:550;color:#8a8a90;cursor:pointer;margin-bottom:14px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>QUO-0185</div>
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:8px;"><h1 style="font-size:22px;font-weight:650;letter-spacing:-0.025em;margin:0;">Revise quotation</h1></div>
+            <div style="background:#fdf3d6;border:1px solid #f0dca8;border-radius:10px;padding:11px 15px;font-size:12.5px;color:#7a5a1a;margin-bottom:16px;display:flex;align-items:center;gap:8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2"><path d="M12 8v4M12 16h.01"/><circle cx="12" cy="12" r="9"/></svg>All changes are logged in the activity history and the client is notified on re-send.</div>
+            <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start;">
+              <div style="display:flex;flex-direction:column;gap:16px;">
+                <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                  <h2 style="font-size:14px;font-weight:600;margin:0 0 14px;">Client details</h2>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                    <div><label style="font-size:11.5px;font-weight:600;color:#8a8a90;display:block;margin-bottom:6px;">Client name</label><div style="border:1px solid #e6e4dd;border-radius:9px;padding:10px 12px;font-size:13.5px;font-weight:550;">Orbit Business Hub</div></div>
+                    <div><label style="font-size:11.5px;font-weight:600;color:#8a8a90;display:block;margin-bottom:6px;">Phone</label><div style="border:1px solid #e6e4dd;border-radius:9px;padding:10px 12px;font-size:13.5px;font-weight:550;">+91 90000 55510</div></div>
+                  </div>
+                </div>
+                <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><h2 style="font-size:14px;font-weight:600;margin:0;">Line items — editable rates</h2><span style="font-size:11px;color:#9a9aa2;">datalist active</span></div>
+                  <div style="border:1px solid #eceae4;border-radius:10px;overflow:hidden;">
+                    <div style="display:grid;grid-template-columns:1fr 2fr 55px 90px 100px;padding:9px 13px;background:#faf9f6;font-size:10.5px;font-weight:600;color:#9a9aa2;text-transform:uppercase;"><div>Category</div><div>Description</div><div>Qty</div><div>Rate</div><div style="text-align:right;">Total</div></div>
+                    <sc-for list="{{ qdItems }}" as="q" hint-placeholder-count="3">
+                      <div style="display:grid;grid-template-columns:1fr 2fr 55px 90px 100px;padding:9px 13px;border-top:1px solid #f2f0ea;font-size:12.5px;align-items:center;"><div style="color:#6b6b73;">{{ q.cat }}</div><div style="font-weight:600;">{{ q.desc }}</div><div>{{ q.qty }}</div><div style="border:1px solid #d5ddf5;border-radius:6px;padding:4px 7px;background:#f9fafe;color:#072076;font-weight:600;">{{ q.rate }}</div><div style="text-align:right;font-weight:650;">{{ q.total }}</div></div>
+                    </sc-for>
+                    <div style="padding:9px 13px;border-top:1px dashed #e6e4dd;"><button style="display:inline-flex;align-items:center;gap:6px;background:#eef1fb;color:#072076;border:none;font-size:12px;font-weight:600;padding:7px 12px;border-radius:8px;cursor:pointer;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>Add row</button></div>
+                  </div>
+                  <div style="margin-top:14px;"><label style="font-size:11.5px;font-weight:600;color:#8a8a90;display:block;margin-bottom:6px;">Note to client (optional)</label><div style="border:1px solid #e6e4dd;border-radius:9px;padding:10px 12px;font-size:12.5px;color:#9a9aa2;min-height:44px;">Revised labour to reflect building size…</div></div>
+                </div>
+              </div>
+              <div style="position:sticky;top:0;background:#1a2148;border-radius:12px;padding:18px;">
+                <div style="font-size:11px;font-weight:600;color:#8b91b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;">Revised total</div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.09);"><span style="font-size:12.5px;color:#c3c8e0;">Subtotal</span><span style="font-size:13px;font-weight:600;color:#fff;">₹90,000</span></div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.09);"><span style="font-size:12.5px;color:#c3c8e0;">GST (18%)</span><span style="font-size:13px;font-weight:600;color:#fff;">₹16,200</span></div>
+                <div style="margin-top:14px;background:rgba(120,150,255,.15);border:1px solid rgba(120,150,255,.3);border-radius:10px;padding:14px;"><div style="font-size:10.5px;font-weight:600;color:#a9baff;text-transform:uppercase;">New grand total</div><div style="font-size:26px;font-weight:700;color:#fff;margin-top:4px;">₹1,06,200</div><div style="font-size:11px;color:#9fa8cf;margin-top:3px;">was ₹1,23,900</div></div>
+                <button class="btnp" style="width:100%;margin-top:14px;background:#072076;color:#fff;border:none;font-size:13px;font-weight:600;padding:11px;border-radius:9px;cursor:pointer;">Save &amp; re-send</button>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ========== SITE SURVEY FORM ========== -->
+        <sc-if value="{{ is.surveyForm }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .3s ease both;">
+            <div onClick="{{ nav.surveys }}" style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:550;color:#8a8a90;cursor:pointer;margin-bottom:14px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Site Surveys</div>
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px;"><div><h1 style="font-size:22px;font-weight:650;letter-spacing:-0.025em;margin:0;">Site Survey — SCL-0031</h1><p style="font-size:13px;color:#8a8a90;margin:5px 0 0;">Meghdoot Complex — Tower B · surveyed by Amit Desai</p></div><button class="btnp" style="background:#072076;color:#fff;border:none;font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:8px;cursor:pointer;">Save survey</button></div>
+            <div style="display:flex;flex-direction:column;gap:16px;">
+              <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                <h2 style="font-size:14px;font-weight:600;margin:0 0 12px;">Floors present</h2>
+                <div style="display:flex;flex-wrap:wrap;gap:7px;">
+                  <sc-for list="{{ floors }}" as="f" hint-placeholder-count="12">
+                    <span style="font-size:12px;font-weight:600;padding:6px 12px;border-radius:8px;border:1px solid {{ f.border }};background:{{ f.bg }};color:{{ f.color }};">{{ f.label }}</span>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(16,24,40,.04);overflow-x:auto;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><h2 style="font-size:14px;font-weight:600;margin:0;">Equipment matrix</h2><button style="font-size:12px;font-weight:600;color:#072076;background:#eef1fb;border:none;padding:6px 12px;border-radius:8px;cursor:pointer;">+ Add custom item</button></div>
+                <div style="min-width:560px;">
+                  <div style="display:grid;grid-template-columns:1.6fr repeat(5,1fr) 1.4fr;gap:0;font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;border-bottom:1px solid #f2f0ea;padding-bottom:8px;"><div>Equipment</div><div style="text-align:center;">GF</div><div style="text-align:center;">1F</div><div style="text-align:center;">2F</div><div style="text-align:center;">3F</div><div style="text-align:center;">Terr.</div><div>Remarks</div></div>
+                  <sc-for list="{{ matrix }}" as="m" hint-placeholder-count="8">
+                    <div style="display:grid;grid-template-columns:1.6fr repeat(5,1fr) 1.4fr;gap:0;font-size:12.5px;align-items:center;border-bottom:1px solid #f5f3ee;padding:9px 0;"><div style="font-weight:600;">{{ m.name }}</div><div style="text-align:center;color:#4a4b52;">{{ m.gf }}</div><div style="text-align:center;color:#4a4b52;">{{ m.f1 }}</div><div style="text-align:center;color:#4a4b52;">{{ m.f2 }}</div><div style="text-align:center;color:#4a4b52;">{{ m.f3 }}</div><div style="text-align:center;color:#4a4b52;">{{ m.tr }}</div><div style="font-size:11.5px;color:#9a9aa2;">{{ m.rem }}</div></div>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:18px;box-shadow:0 1px 2px rgba(16,24,40,.04);overflow-x:auto;">
+                <h2 style="font-size:14px;font-weight:600;margin:0 0 12px;">Pump room</h2>
+                <div style="min-width:560px;">
+                  <div style="display:grid;grid-template-columns:1.4fr repeat(5,1fr);font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;border-bottom:1px solid #f2f0ea;padding-bottom:8px;"><div>Pump / Panel</div><div style="text-align:center;">Qty</div><div style="text-align:center;">HP</div><div style="text-align:center;">LPM</div><div style="text-align:center;">Make</div><div style="text-align:center;">Condition</div></div>
+                  <sc-for list="{{ pumps }}" as="p" hint-placeholder-count="4">
+                    <div style="display:grid;grid-template-columns:1.4fr repeat(5,1fr);font-size:12.5px;align-items:center;border-bottom:1px solid #f5f3ee;padding:9px 0;"><div style="font-weight:600;">{{ p.name }}</div><div style="text-align:center;color:#4a4b52;">{{ p.qty }}</div><div style="text-align:center;color:#4a4b52;">{{ p.hp }}</div><div style="text-align:center;color:#4a4b52;">{{ p.lpm }}</div><div style="text-align:center;color:#4a4b52;">{{ p.make }}</div><div style="text-align:center;">{{ p.cond }}</div></div>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="background:linear-gradient(115deg,#0a1a52,#061238);border-radius:12px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+                <div><div style="font-size:11px;font-weight:600;color:#a9baff;text-transform:uppercase;letter-spacing:.06em;">Next step</div><div style="font-size:15px;font-weight:600;color:#fff;margin-top:3px;">Create a quotation from this survey</div><div style="font-size:12px;color:#9fa8cf;margin-top:2px;">Client details will be pre-filled.</div></div>
+                <button onClick="{{ nav.newQuotation }}" class="btnp" style="background:#072076;color:#fff;border:none;font-size:12.5px;font-weight:600;padding:11px 18px;border-radius:9px;cursor:pointer;flex:none;">Create quotation</button>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ========== NOTIFICATIONS (OPS) ========== -->
+        <sc-if value="{{ is.notifications }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .3s ease both;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;"><h1 style="font-size:22px;font-weight:650;letter-spacing:-0.025em;margin:0;">Notifications</h1><span style="font-size:12.5px;color:#072076;font-weight:600;cursor:pointer;">Mark all read</span></div>
+            <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+              <sc-for list="{{ opsNotifs }}" as="n" hint-placeholder-count="6">
+                <div class="rowh" style="display:flex;gap:14px;padding:15px 18px;border-bottom:1px solid #f5f3ee;cursor:pointer;background:{{ n.bg }};">
+                  <span style="width:8px;height:8px;border-radius:50%;background:{{ n.dot }};flex:none;margin-top:6px;"></span>
+                  <div style="flex:1;"><div style="font-size:13.5px;font-weight:600;">{{ n.title }}</div><div style="font-size:12.5px;color:#8a8a90;margin-top:2px;">{{ n.body }}</div></div>
+                  <span style="font-size:11.5px;color:#b6b4ac;flex:none;">{{ n.time }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ========== CLIENT PORTFOLIO ========== -->
+        <sc-if value="{{ is.clientPortfolio }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .3s ease both;">
+            <div onClick="{{ nav.clients }}" style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:550;color:#8a8a90;cursor:pointer;margin-bottom:14px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Clients</div>
+            <div style="background:#fff;border:1px solid #eceae4;border-radius:14px;padding:20px;box-shadow:0 1px 2px rgba(16,24,40,.04);display:flex;align-items:center;gap:16px;">
+              <div style="width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#2a336b,#1f2650);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:19px;flex:none;">RT</div>
+              <div style="flex:1;"><h1 style="font-size:20px;font-weight:650;margin:0;letter-spacing:-0.02em;">Rajhans Textile Mills Pvt Ltd</h1><div style="font-size:12.5px;color:#8a8a90;margin-top:3px;">+91 98250 10001 · GST 24AABCR1234F1Z5 · Sachin GIDC</div></div>
+              <div style="text-align:right;"><div style="font-size:22px;font-weight:700;color:#072076;">₹1.86 L</div><div style="font-size:11.5px;color:#9a9aa2;">lifetime value</div></div>
+            </div>
+            <div style="display:flex;gap:4px;margin:18px 0 14px;border-bottom:1px solid #eceae4;">
+              <sc-for list="{{ portfolioTabs }}" as="t" hint-placeholder-count="4">
+                <span onClick="{{ t.click }}" style="{{ t.style }}">{{ t.label }}</span>
+              </sc-for>
+            </div>
+            <sc-if value="{{ pfIs.contracts }}" hint-placeholder-val="{{ true }}">
+              <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                <div style="display:grid;grid-template-columns:130px 1.4fr 100px 120px;padding:11px 18px;background:#faf9f6;font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;border-bottom:1px solid #f2f0ea;"><div>Ref</div><div>Site</div><div>Status</div><div>Agreement</div></div>
+                <sc-for list="{{ pfContracts }}" as="c" hint-placeholder-count="2">
+                  <div class="rowh" style="display:grid;grid-template-columns:130px 1.4fr 100px 120px;padding:13px 18px;border-bottom:1px solid #f5f3ee;align-items:center;"><div class="mono" style="font-size:12px;color:#2a336b;font-weight:500;">{{ c.ref }}</div><div style="font-size:13px;font-weight:600;">{{ c.site }}</div><div><span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:{{ c.bBg }};color:{{ c.bFg }};">{{ c.status }}</span></div><div style="font-size:12px;color:{{ c.agC }};font-weight:600;">{{ c.agreement }}</div></div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ pfIs.referrals }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr 110px;padding:11px 18px;background:#faf9f6;font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;border-bottom:1px solid #f2f0ea;"><div>Referee</div><div>Phone</div><div>Area</div><div>Status</div></div>
+                <sc-for list="{{ pfReferrals }}" as="rf" hint-placeholder-count="2">
+                  <div class="rowh" style="display:grid;grid-template-columns:1.2fr 1fr 1fr 110px;padding:13px 18px;border-bottom:1px solid #f5f3ee;align-items:center;"><div style="font-size:13px;font-weight:600;">{{ rf.name }}</div><div class="mono" style="font-size:12px;color:#8a8a90;">{{ rf.phone }}</div><div style="font-size:12.5px;color:#4a4b52;">{{ rf.area }}</div><div><span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:{{ rf.bBg }};color:{{ rf.bFg }};">{{ rf.status }}</span></div></div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ pfIs.other }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:40px;text-align:center;box-shadow:0 1px 2px rgba(16,24,40,.04);"><span style="font-size:13px;color:#9a9aa2;">{{ pfOtherMsg }}</span></div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- ========== REFILL ORDER DETAIL ========== -->
+        <sc-if value="{{ is.refillDetail }}" hint-placeholder-val="{{ false }}">
+          <div style="animation:fadeUp .3s ease both;">
+            <div onClick="{{ nav.refills }}" style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:550;color:#8a8a90;cursor:pointer;margin-bottom:14px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Refill Orders</div>
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:18px;">
+              <div><div style="display:flex;align-items:center;gap:10px;"><span class="mono" style="font-size:12px;font-weight:500;color:#072076;background:#eef1fb;padding:4px 9px;border-radius:6px;">RF-00041</span><span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;background:#fbf0dc;color:#b45309;">In Progress</span></div><h1 style="font-size:21px;font-weight:650;margin:11px 0 2px;letter-spacing:-0.02em;">Metro Mall</h1><p style="font-size:12.5px;color:#8a8a90;margin:0;">Ordered 30 Jun 2026 · Ring Road</p></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start;">
+              <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                <div style="display:grid;grid-template-columns:1.6fr 1fr 80px;padding:10px 16px;background:#faf9f6;font-size:11px;font-weight:600;color:#9a9aa2;text-transform:uppercase;"><div>Type</div><div>Capacity</div><div>Qty</div></div>
+                <div style="display:grid;grid-template-columns:1.6fr 1fr 80px;padding:13px 16px;border-top:1px solid #f2f0ea;font-size:13px;align-items:center;"><div style="font-weight:600;">ABC Powder</div><div style="color:#4a4b52;">6 kg</div><div style="font-weight:600;">10</div></div>
+                <div style="display:grid;grid-template-columns:1.6fr 1fr 80px;padding:13px 16px;border-top:1px solid #f2f0ea;font-size:13px;align-items:center;"><div style="font-weight:600;">CO₂</div><div style="color:#4a4b52;">4.5 kg</div><div style="font-weight:600;">6</div></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:16px;">
+                <div style="background:#fff;border:1px solid #eceae4;border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(16,24,40,.04);">
+                  <h2 style="font-size:13.5px;font-weight:600;margin:0 0 12px;">Status</h2>
+                  <div style="border:1px solid #e6e4dd;border-radius:9px;padding:9px 11px;font-size:12.5px;font-weight:550;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">In Progress<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9a9aa2" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+                  <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12.5px;"><span style="color:#8a8a90;">ETA</span><span style="font-weight:600;">2 Jul 2026</span></div>
+                  <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12.5px;"><span style="color:#8a8a90;">Final amount</span><span style="font-weight:600;">₹11,200</span></div>
+                  <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12.5px;"><span style="color:#8a8a90;">Payment</span><span style="font-weight:600;color:#b45309;">Awaiting</span></div>
+                </div>
+                <button class="btnp" style="background:#072076;color:#fff;border:none;font-size:12.5px;font-weight:600;padding:11px;border-radius:9px;cursor:pointer;">Update order</button>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { route: 'dashboard', pfTab: 'contracts' };
+
+  go(r){ return () => { this.setState({ route: r }); if(this.contentRef) this.contentRef.scrollTop = 0; }; }
+  goPf(t){ return () => this.setState({ pfTab: t }); }
+  setRef = (el) => { this.contentRef = el; };
+
+  pal(t){
+    const m = {
+      green:['#e7f4ec','#17864a'], blue:['#e8effb','#2f6fed'], amber:['#fbf0dc','#b45309'],
+      red:['#fbe9e7','#d23f3f'], grey:['#efeeeb','#6b6b73'], navy:['#e9eaf1','#2a336b'], indigo:['#ecebfb','#5b4fd6']
+    };
+    return m[t] || m.grey;
+  }
+  tag(list){ return list.map(x => { const [bg,fg] = this.pal(x.tone); return { ...x, bBg:bg, bFg:fg }; }); }
+
+
+
+  renderVals(){
+    const r = this.state.route;
+    const routes = ['dashboard','calendar','analytics','contracts','quotations','surveys','health','refills','requests','enquiries','reminders','financials','technicians','clients','contractDetail','newQuotation','visitDetail','quotationDetail','editQuotation','surveyForm','notifications','clientPortfolio','refillDetail'];
+    const nav = {}, navStyle = {}, is = {};
+    const base = 'display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;';
+    routes.forEach(id => {
+      nav[id] = this.go(id);
+      let active = id === r;
+      if((r === 'contractDetail' || r === 'visitDetail') && id === 'contracts') active = true;
+      if((r === 'newQuotation' || r === 'quotationDetail' || r === 'editQuotation') && id === 'quotations') active = true;
+      if(r === 'surveyForm' && id === 'surveys') active = true;
+      if(r === 'refillDetail' && id === 'refills') active = true;
+      if(r === 'clientPortfolio' && id === 'clients') active = true;
+      navStyle[id] = base + (active ? 'background:rgba(255,255,255,.055);color:#fff;' : 'color:#9298bd;');
+      is[id] = id === r;
+    });
+
+    const crumbMap = { dashboard:'Dashboard', calendar:'Calendar', analytics:'Analytics', contracts:'AMC Contracts', quotations:'Quotations', surveys:'Site Surveys', health:'Health Reports', refills:'Refill Orders', requests:'Service Requests', enquiries:'Enquiries', reminders:'Reminders', financials:'Financials', technicians:'Technicians', clients:'Clients', contractDetail:'Rajhans Textile Mills', newQuotation:'New Quotation', visitDetail:'Visit 2', quotationDetail:'QUO-0185', editQuotation:'Revise quotation', surveyForm:'SCL-0031', notifications:'Notifications', clientPortfolio:'Rajhans Textile Mills', refillDetail:'RF-00041' };
+
+    // portfolio tabs
+    const pf = this.state.pfTab;
+    const pfIs = { contracts: pf==='contracts', referrals: pf==='referrals', other: pf==='visits'||pf==='quotations' };
+    const pfOtherMsg = pf==='visits' ? 'All visits across contracts appear here.' : 'All service quotations for this client appear here.';
+    const tabBase = 'font-size:13px;font-weight:600;padding:9px 14px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;';
+    const portfolioTabs = [
+      { label:'Contracts', key:'contracts' }, { label:'Visits', key:'visits' }, { label:'Quotations', key:'quotations' }, { label:'Referrals', key:'referrals' },
+    ].map(t => ({ label:t.label, click:this.goPf(t.key), style: tabBase + (pf===t.key ? 'color:#072076;border-bottom-color:#072076;' : 'color:#8a8a90;') }));
+
+    const opsChecklist = ['Extinguisher pressure','Hydrant valves','Hose reels','Smoke detectors','Sprinkler heads','Alarm panel','Emergency lights','Exit signage','Fire doors','Pump room','Water tank level','Signage & tags'].map((item,i)=>{ const st=(i===3)?['Issue','#b45309']:(i===9?['N/A','#9a9aa2']:['OK','#17864a']); return {item,st:st[0],dot:st[1]}; });
+    const opsFeedback = [ {dim:'Behaviour',score:'5.0'},{dim:'Quality',score:'4.8'},{dim:'Punctuality',score:'4.5'},{dim:'Communication',score:'5.0'},{dim:'Overall',score:'4.8'} ];
+
+    const qdItems = [
+      { cat:'Labour', desc:'Annual servicing — 4 visits', qty:'1', rate:'₹72,000', total:'₹72,000' },
+      { cat:'Hydrant', desc:'Landing valve servicing', qty:'14', rate:'₹1,200', total:'₹16,800' },
+      { cat:'Extinguisher', desc:'ABC powder refill 6kg', qty:'24', rate:'₹675', total:'₹16,200' },
+    ];
+    const qdLog = [
+      { title:'Client requested negotiation', time:'28 Jun 2026, 9:12 AM', dot:'#b45309' },
+      { title:'Quotation viewed by client', time:'27 Jun 2026, 6:40 PM', dot:'#5b4fd6' },
+      { title:'Sent to customer via WhatsApp', time:'27 Jun 2026, 5:02 PM', dot:'#2f6fed' },
+      { title:'Quotation created', time:'27 Jun 2026, 4:48 PM', dot:'#17864a' },
+    ];
+
+    const floorList = ['Basement','Ground','1st','2nd','3rd','4th','5th','6th','7th','8th','Terrace'];
+    const activeFloors = ['Ground','1st','2nd','3rd','Terrace'];
+    const floors = floorList.map(f => { const on = activeFloors.includes(f); return { label:f, bg: on?'#eef1fb':'#fff', border: on?'#072076':'#e6e1d6', color: on?'#072076':'#9a9aa2' }; });
+    const matrix = [
+      { name:'Hydrant Valve', gf:'2', f1:'2', f2:'2', f3:'2', tr:'1', rem:'—' },
+      { name:'Hose Box', gf:'2', f1:'2', f2:'2', f3:'2', tr:'1', rem:'2 need paint' },
+      { name:'Fire Extinguisher ABC', gf:'6', f1:'4', f2:'4', f3:'4', tr:'2', rem:'—' },
+      { name:'CO₂ Extinguisher', gf:'2', f1:'1', f2:'1', f3:'1', tr:'—', rem:'server rooms' },
+      { name:'Smoke Detector', gf:'8', f1:'8', f2:'8', f3:'8', tr:'2', rem:'—' },
+      { name:'Emergency Light', gf:'4', f1:'4', f2:'4', f3:'4', tr:'2', rem:'—' },
+      { name:'Exit Signage', gf:'3', f1:'2', f2:'2', f3:'2', tr:'1', rem:'1 missing GF' },
+      { name:'Fire Door', gf:'2', f1:'2', f2:'2', f3:'2', tr:'1', rem:'—' },
+    ];
+    const pumps = [
+      { name:'Hydrant Pump', qty:'1', hp:'30', lpm:'2280', make:'Kirloskar', cond:'Good' },
+      { name:'Sprinkler Pump', qty:'1', hp:'20', lpm:'1620', make:'Kirloskar', cond:'Good' },
+      { name:'Jockey Pump', qty:'2', hp:'3', lpm:'180', make:'Grundfos', cond:'Fair' },
+      { name:'Diesel Engine', qty:'1', hp:'35', lpm:'2280', make:'Cummins', cond:'Good' },
+    ];
+
+    const opsNotifs = [
+      { title:'Negotiation requested — QUO-0185', body:'Orbit Business Hub responded to their quotation', time:'2h ago', dot:'#072076', bg:'#f9fafe' },
+      { title:'Visit 3 completed', body:'Suresh Rana marked Green Valley Hospital Visit 3 complete', time:'4h ago', dot:'#072076', bg:'#f9fafe' },
+      { title:'New emergency request', body:'Ashok Nagar Society — smoke in basement parking', time:'Today', dot:'transparent', bg:'#fff' },
+      { title:'Refill order RF-00041 in progress', body:'Metro Mall · 16 units', time:'Yesterday', dot:'transparent', bg:'#fff' },
+      { title:'AMC fee overdue', body:'Diamond Tower — 18 days overdue', time:'2 days ago', dot:'transparent', bg:'#fff' },
+      { title:'New application', body:'Sun Pharma Depot applied for Gold Industrial', time:'3 days ago', dot:'transparent', bg:'#fff' },
+    ];
+
+    const pfContracts = this.tag([
+      { ref:'NSE-AMC-0001', site:'Rajhans Textile Mills', status:'Active', tone:'green', agreement:'Accepted', agC:'#17864a' },
+      { ref:'NSE-AMC-0007', site:'Rajhans Warehouse Unit 2', status:'Active', tone:'green', agreement:'Pending', agC:'#b45309' },
+    ]);
+    const pfReferrals = this.tag([
+      { name:'Kunal Traders', phone:'+91 98240 77120', area:'Sachin GIDC', status:'Converted', tone:'green' },
+      { name:'Sagar Textiles', phone:'+91 99090 22014', area:'Pandesara', status:'Contacted', tone:'blue' },
+    ]);
+
+
+    const upcoming = this.tag([
+      { mon:'JUL', day:'02', site:'Rajhans Textile Mills', meta:'Visit 2 · Amit Desai · 10:30 AM', status:'Scheduled', tone:'blue' },
+      { mon:'JUL', day:'02', site:'Green Valley Hospital', meta:'Visit 3 · Suresh Rana · 2:00 PM', status:'In Progress', tone:'amber' },
+      { mon:'JUL', day:'03', site:'Shivam Residency', meta:'Visit 1 · Amit Desai · 11:00 AM', status:'Scheduled', tone:'blue' },
+      { mon:'JUL', day:'04', site:'Metro Mall', meta:'Visit 4 · Suresh Rana · 9:30 AM', status:'Completed', tone:'green' },
+    ]);
+
+    const contracts = this.tag([
+      { ref:'NSE-AMC-0001', client:'Rajhans Textile Mills', site:'Sachin GIDC', plan:'Gold — Industrial', status:'Active', tone:'green', visits:'1 / 4' },
+      { ref:'NSE-AMC-0002', client:'Green Valley Hospital', site:'Adajan', plan:'Platinum — Hospital', status:'Active', tone:'green', visits:'2 / 4' },
+      { ref:'NSE-AMC-0003', client:'Metro Mall', site:'Ring Road', plan:'Gold — Commercial', status:'Completed', tone:'navy', visits:'4 / 4' },
+      { ref:'NSE-AMC-0004', client:'Shivam Residency', site:'Vesu', plan:'Silver — Residential', status:'Active', tone:'green', visits:'0 / 4' },
+      { ref:'NSE-AMC-0005', client:'Orbit Business Hub', site:'Piplod', plan:'Platinum — Commercial', status:'Pending', tone:'grey', visits:'— / 4' },
+      { ref:'NSE-AMC-0006', client:'Sun Pharma Depot', site:'Pandesara', plan:'Gold — Industrial', status:'Pending', tone:'grey', visits:'— / 4' },
+    ]);
+
+    const roadmap = [
+      { label:'Quote', dotBg:'#17864a', dotBorder:'none', done:true, current:false, txt:'#1b1c22', line:'#17864a' },
+      { label:'Started', dotBg:'#17864a', dotBorder:'none', done:true, current:false, txt:'#1b1c22', line:'#17864a' },
+      { label:'Visit 1', dotBg:'#17864a', dotBorder:'none', done:true, current:false, txt:'#1b1c22', line:'#e6e4dd' },
+      { label:'Visit 2', dotBg:'#072076', dotBorder:'none', done:false, current:true, txt:'#1b1c22', line:'#e6e4dd' },
+      { label:'Visit 3', dotBg:'#fff', dotBorder:'2px solid #e6e4dd', done:false, current:false, txt:'#b6b4ac', line:'#e6e4dd' },
+    ];
+
+    const visits = this.tag([
+      { n:'01', date:'16 Feb 2026', tech:'Amit Desai', status:'Completed', tone:'green', done:true, pending:false },
+      { n:'02', date:'02 Jul 2026', tech:'Amit Desai', status:'In Progress', tone:'amber', done:false, pending:true },
+      { n:'03', date:'15 Sep 2026', tech:'Suresh Rana', status:'Scheduled', tone:'blue', done:false, pending:true },
+      { n:'04', date:'15 Dec 2026', tech:'Unassigned', status:'Scheduled', tone:'blue', done:false, pending:true },
+    ]);
+
+    const equipment = this.tag([
+      { name:'ABC Extinguisher 6kg', loc:'Ground Floor', serial:'EX-1042', status:'OK', tone:'green', due:'Feb 2027' },
+      { name:'CO₂ Extinguisher 4.5kg', loc:'Server Room', serial:'EX-1043', status:'Due Soon', tone:'amber', due:'Aug 2026' },
+      { name:'Water CO₂ 9L', loc:'Loading Bay', serial:'EX-1044', status:'Overdue', tone:'red', due:'May 2026' },
+      { name:'Fire Hydrant Point', loc:'Yard — North', serial:'HY-0210', status:'OK', tone:'green', due:'Jan 2027' },
+    ]);
+
+    const quotations = this.tag([
+      { ref:'QUO-0187', client:'Meghdoot Complex', service:'AMC — Annual', status:'Draft', tone:'grey', date:'1 Jul 2026', total:'₹50,976' },
+      { ref:'QUO-0186', client:'Rajhans Textile Mills', service:'Material — Spares', status:'Sent', tone:'blue', date:'29 Jun 2026', total:'₹18,400' },
+      { ref:'QUO-0185', client:'Orbit Business Hub', service:'AMC — Annual', status:'Negotiation', tone:'amber', date:'27 Jun 2026', total:'₹1,24,000' },
+      { ref:'QUO-0184', client:'Green Valley Hospital', service:'NOC Assistance', status:'Accepted', tone:'green', date:'24 Jun 2026', total:'₹42,500' },
+      { ref:'QUO-0183', client:'Laxmi Enclave', service:'Refilling', status:'Rejected', tone:'red', date:'20 Jun 2026', total:'₹9,600' },
+      { ref:'QUO-0182', client:'Metro Mall', service:'AMC — Annual', status:'Accepted', tone:'green', date:'18 Jun 2026', total:'₹88,000' },
+    ]);
+
+    const lineItems = [
+      { cat:'Extinguisher', desc:'ABC Powder Refill 6kg', unit:'nos', qty:'24', rate:'₹650', total:'₹15,600' },
+      { cat:'Hydrant', desc:'Landing Valve Servicing', unit:'nos', qty:'8', rate:'₹1,200', total:'₹9,600' },
+      { cat:'Labour', desc:'Annual Servicing — 4 visits', unit:'lot', qty:'1', rate:'₹18,000', total:'₹18,000' },
+    ];
+
+    // Calendar July 2026 (July 1 = Wednesday)
+    const first = new Date(2026,6,1).getDay();
+    const dim = 31;
+    const visitMap = {
+      2:[['Rajhans V2','blue'],['Green Valley V3','amber']], 3:[['Shivam V1','blue']], 4:[['Metro V4','green']],
+      9:[['Orbit V1','blue']], 14:[['Laxmi V2','blue']], 16:[['Sun Pharma','amber']], 21:[['Rajhans V3','blue']],
+      23:[['Green Valley V4','green']], 28:[['Metro Refill','blue']],
+    };
+    const calCells = [];
+    for(let i=0;i<35;i++){
+      const dnum = i - first + 1;
+      const inMonth = dnum >= 1 && dnum <= dim;
+      const today = dnum === 1;
+      const raw = inMonth && visitMap[dnum] ? visitMap[dnum] : [];
+      const c1 = raw[0], c2 = raw[1];
+      const p1 = c1 ? this.pal(c1[1]) : ['',''];
+      const p2 = c2 ? this.pal(c2[1]) : ['',''];
+      calCells.push({ day: inMonth ? String(dnum) : '', bg: today?'#fffdf7':(inMonth?'#fff':'#faf9f6'), fg: today?'#b45309':(inMonth?'#1b1c22':'#c9c7bf'), wt: today?'700':'500',
+        d1:c1?'block':'none', c1t:c1?c1[0]:'', c1bg:p1[0]||'transparent', c1fg:p1[1]||'transparent',
+        d2:c2?'block':'none', c2t:c2?c2[0]:'', c2bg:p2[0]||'transparent', c2fg:p2[1]||'transparent' });
+    }
+
+    const bars = [
+      { m:'Feb', val:'14', h:'46%' }, { m:'Mar', val:'19', h:'62%' }, { m:'Apr', val:'16', h:'53%' },
+      { m:'May', val:'23', h:'76%' }, { m:'Jun', val:'21', h:'70%' }, { m:'Jul', val:'12', h:'40%' },
+    ];
+
+    const surveys = this.tag([
+      { ref:'SCL-0031', site:'Meghdoot Complex — Tower B', client:'Meghdoot Assoc.', status:'Completed', tone:'green', by:'Amit Desai' },
+      { ref:'SCL-0030', site:'Orbit Business Hub', client:'Orbit Ventures', status:'Completed', tone:'green', by:'Suresh Rana' },
+      { ref:'SCL-0029', site:'Sun Pharma Depot', client:'Sun Pharma', status:'Draft', tone:'grey', by:'Amit Desai' },
+      { ref:'SCL-0028', site:'Laxmi Enclave', client:'Laxmi Housing', status:'Completed', tone:'green', by:'Kiran Shah' },
+      { ref:'SCL-0027', site:'Ganesh Textiles', client:'Ganesh Group', status:'Draft', tone:'grey', by:'Suresh Rana' },
+    ]);
+
+    const refills = this.tag([
+      { ref:'RF-00042', client:'Rajhans Textile Mills', items:'3 types', units:'24', status:'Completed', tone:'green', date:'28 Jun 2026' },
+      { ref:'RF-00041', client:'Metro Mall', items:'2 types', units:'16', status:'In Progress', tone:'amber', date:'30 Jun 2026' },
+      { ref:'RF-00040', client:'Shivam Residency', items:'1 type', units:'8', status:'Scheduled', tone:'blue', date:'2 Jul 2026' },
+      { ref:'RF-00039', client:'Green Valley Hospital', items:'4 types', units:'32', status:'Pending', tone:'grey', date:'1 Jul 2026' },
+      { ref:'RF-00038', client:'Orbit Business Hub', items:'2 types', units:'12', status:'Completed', tone:'green', date:'25 Jun 2026' },
+    ]);
+
+    const requests = [
+      { client:'Ashok Nagar Society', type:'Emergency', emergency:true, noc:false, detail:'Smoke reported in basement parking · Katargam', time:'12 min ago', status:'Dispatched', border:'#f4c9c4', bBg:'#fbe9e7', bFg:'#d23f3f' },
+      { client:'Diamond Tower', type:'Emergency', emergency:true, noc:false, detail:'Fire alarm panel fault · Varachha', time:'40 min ago', status:'On site', border:'#f4c9c4', bBg:'#fbe9e7', bFg:'#d23f3f' },
+      { client:'Nexus Corporate Park', type:'NOC', emergency:false, noc:true, detail:'New building fire clearance certificate', time:'2 hrs ago', status:'In review', border:'#eceae4', bBg:'#e8effb', bFg:'#2f6fed' },
+      { client:'Silver Oak Apartments', type:'NOC', emergency:false, noc:true, detail:'Renewal — existing NOC expiring Aug 2026', time:'Yesterday', status:'Documents pending', border:'#eceae4', bBg:'#e8effb', bFg:'#2f6fed' },
+    ];
+
+    const enquiries = [
+      { name:'Nikhil Mehta', phone:'+91 99250 11234', date:'1 Jul', subject:'Custom plan — 12-floor commercial', msg:'Need hydrant + sprinkler + alarm coverage for new tower at Adajan…' },
+      { name:'Priya Shah', phone:'+91 98795 55210', date:'30 Jun', subject:'AMC enquiry for hotel', msg:'Looking for annual maintenance for a 60-room hotel property…' },
+      { name:'Rakesh Jain', phone:'+91 90999 87651', date:'29 Jun', subject:'Extinguisher refilling', msg:'Have 40 extinguishers due for refill across 2 warehouses…' },
+      { name:'Anita Desai', phone:'+91 97250 33445', date:'28 Jun', subject:'NOC assistance', msg:'Require guidance on fire NOC for restaurant fit-out…' },
+      { name:'Suresh Patel', phone:'+91 94080 22119', date:'27 Jun', subject:'General enquiry', msg:'What does a Gold industrial plan typically cover?…' },
+    ];
+
+    const reminders = [
+      { client:'Diamond Tower', sev:'High', reason:'AMC fee unpaid after 2 completed visits', amount:'₹64,000', days:'18 days overdue', accent:'#d23f3f', bBg:'#fbe9e7', bFg:'#d23f3f' },
+      { client:'Laxmi Enclave', sev:'High', reason:'AMC fee unpaid after 2 completed visits', amount:'₹28,500', days:'12 days overdue', accent:'#d23f3f', bBg:'#fbe9e7', bFg:'#d23f3f' },
+      { client:'Ganesh Textiles', sev:'Medium', reason:'Approved material quote unpaid', amount:'₹15,200', days:'6 days overdue', accent:'#072076', bBg:'#fbf0dc', bFg:'#b45309' },
+      { client:'Nexus Corporate Park', sev:'Medium', reason:'Accepted service quotation unpaid', amount:'₹42,500', days:'4 days overdue', accent:'#072076', bBg:'#fbf0dc', bFg:'#b45309' },
+    ];
+
+    const finance = this.tag([
+      { client:'Rajhans Textile Mills', ref:'NSE-AMC-0001', fee:'₹68,000 · Paid', mat:'₹18,400 · Unpaid', status:'Partial', tone:'amber' },
+      { client:'Green Valley Hospital', ref:'NSE-AMC-0002', fee:'₹1,20,000 · Paid', mat:'—', status:'Cleared', tone:'green' },
+      { client:'Metro Mall', ref:'NSE-AMC-0003', fee:'₹88,000 · Paid', mat:'₹9,600 · Paid', status:'Cleared', tone:'green' },
+      { client:'Diamond Tower', ref:'NSE-AMC-0009', fee:'₹64,000 · Unpaid', mat:'—', status:'Overdue', tone:'red' },
+      { client:'Orbit Business Hub', ref:'NSE-AMC-0005', fee:'Pending activation', mat:'—', status:'Draft', tone:'grey' },
+    ]);
+
+    const topTechs = [
+      { rank:'1', initials:'AD', name:'Amit Desai', rating:'4.9', ontime:'97%', visits:'142', av:'linear-gradient(135deg,#2a336b,#1f2650)' },
+      { rank:'2', initials:'SR', name:'Suresh Rana', rating:'4.8', ontime:'94%', visits:'128', av:'linear-gradient(135deg,#17864a,#0f6b39)' },
+      { rank:'3', initials:'KS', name:'Kiran Shah', rating:'4.7', ontime:'91%', visits:'103', av:'linear-gradient(135deg,#b45309,#92400e)' },
+    ];
+    const allTechs = [
+      { name:'Amit Desai', overall:'4.9', quality:'4.9', punctual:'5.0', ontime:'97%', visits:'142' },
+      { name:'Suresh Rana', overall:'4.8', quality:'4.7', punctual:'4.9', ontime:'94%', visits:'128' },
+      { name:'Kiran Shah', overall:'4.7', quality:'4.8', punctual:'4.5', ontime:'91%', visits:'103' },
+      { name:'Vijay More', overall:'4.5', quality:'4.6', punctual:'4.4', ontime:'88%', visits:'96' },
+      { name:'Deepak Rao', overall:'4.3', quality:'4.4', punctual:'4.2', ontime:'85%', visits:'74' },
+    ];
+
+    const clients = [
+      { initials:'RT', name:'Rajhans Textile Mills', meta:'Industrial · Sachin GIDC', contracts:'2', av:'linear-gradient(135deg,#2a336b,#1f2650)' },
+      { initials:'GV', name:'Green Valley Hospital', meta:'Hospital · Adajan', contracts:'1', av:'linear-gradient(135deg,#17864a,#0f6b39)' },
+      { initials:'MM', name:'Metro Mall', meta:'Commercial · Ring Road', contracts:'3', av:'linear-gradient(135deg,#b45309,#92400e)' },
+      { initials:'OB', name:'Orbit Business Hub', meta:'Commercial · Piplod', contracts:'1', av:'linear-gradient(135deg,#5b4fd6,#4a3fc0)' },
+      { initials:'SR', name:'Shivam Residency', meta:'Residential · Vesu', contracts:'1', av:'linear-gradient(135deg,#2f6fed,#2258c9)' },
+      { initials:'SP', name:'Sun Pharma Depot', meta:'Industrial · Pandesara', contracts:'1', av:'linear-gradient(135deg,#c0392b,#a03024)' },
+    ];
+
+    const health = this.tag([
+      { ref:'HR-0044', site:'Rajhans Textile Mills', client:'Rajhans Group', status:'Completed', tone:'green', date:'20 Jun 2026' },
+      { ref:'HR-0043', site:'Green Valley Hospital', client:'Green Valley', status:'Completed', tone:'green', date:'15 Jun 2026' },
+      { ref:'HR-0042', site:'Orbit Business Hub', client:'Orbit Ventures', status:'Draft', tone:'grey', date:'12 Jun 2026' },
+      { ref:'HR-0041', site:'Metro Mall', client:'Metro Retail', status:'Completed', tone:'green', date:'8 Jun 2026' },
+    ]);
+
+    return {
+      route:r, nav, navStyle, is, setRef:this.setRef, crumb:crumbMap[r]||'Dashboard',
+      upcoming, contracts, roadmap, visits, equipment, quotations, lineItems,
+      calCells, bars, surveys, refills, requests, enquiries, reminders, finance, topTechs, allTechs, clients, health,
+      opsChecklist, opsFeedback, qdItems, qdLog, floors, matrix, pumps, opsNotifs,
+      portfolioTabs, pfIs, pfOtherMsg, pfContracts, pfReferrals
+    };
+  }
+}
+</script>
+</body>
+</html>

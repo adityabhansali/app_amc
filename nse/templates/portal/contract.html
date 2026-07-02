@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base_portal.html" %}
 {% from "_macros.html" import status_badge, refill_badge, workflow_track %}
 {% block title %}{{ c.reference }} — {{ COMPANY_NAME }}{% endblock %}
 {% block content %}
@@ -46,6 +46,94 @@
     {% endif %}
   {% endif %}
 
+  <!-- ── Wave 11: renewal banner ───────────────────────────────────────────── -->
+  {% if c.status == 'active' and c.renewal_window %}
+  <div class="mt-4 rounded-xl p-4 flex items-center justify-between gap-3 flex-wrap"
+       style="background:{{ '#fdecea' if c.renewal_window in ('expired','30') else '#fbf0dc' }};
+              border:1px solid {{ '#f5c2c0' if c.renewal_window in ('expired','30') else '#f0d9a8' }}">
+    <div>
+      <div class="font-bold text-navy-800 text-sm">
+        {% if c.renewal_window == 'expired' %}Your AMC has expired{% else %}Renew your AMC{% endif %}
+      </div>
+      <p class="text-xs text-ink-muted mt-0.5">
+        {% set dte = c.days_to_expiry %}
+        {% if dte is not none and dte >= 0 %}Expires in {{ dte }} days ({{ c.end_date|datefmt }}). Renew now to stay protected.
+        {% else %}Renew to restore continuous fire-safety cover.{% endif %}
+      </p>
+    </div>
+    <form method="post" action="{{ url_for('portal.request_renewal', contract_id=c.id) }}">
+      <button class="btn btn-primary px-5 text-sm">Renew now</button>
+    </form>
+  </div>
+  {% endif %}
+
+  <!-- ── Wave 11: safety score + upgrade ───────────────────────────────────── -->
+  {% if c.status == 'active' %}
+  {% set grade = c.safety_grade %}
+  <div class="mt-4 grid sm:grid-cols-2 gap-3">
+    <div class="card p-4 flex items-center gap-3">
+      <div class="w-14 h-14 rounded-2xl grid place-items-center font-extrabold text-white text-xl flex-none"
+           style="background:{{ {'green':'#17864a','blue':'#2f6fed','amber':'#b45309','red':'#d23f3f'}[grade[1]] }}">{{ grade[0] }}</div>
+      <div>
+        <div class="text-xs uppercase tracking-wide text-ink-subtle font-semibold">Your Fire Safety Score</div>
+        <div class="text-xl font-extrabold text-navy-800">{{ c.safety_score }}<span class="text-sm text-ink-subtle font-normal">/100</span></div>
+      </div>
+    </div>
+    <div class="card p-4 flex items-center justify-between">
+      <div>
+        <div class="text-xs uppercase tracking-wide text-ink-subtle font-semibold">Want more visits?</div>
+        <div class="text-sm text-ink-muted mt-0.5">Upgrade your plan any time.</div>
+      </div>
+      <a href="{{ url_for('portal.upgrade_plan', contract_id=c.id) }}" class="btn btn-ghost text-sm border border-hairline">Upgrade</a>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Wave 11: open defects (acknowledge) ───────────────────────────────── -->
+  {% if c.open_defects %}
+  <div class="mt-4 card p-4 border border-red-200">
+    <h2 class="font-bold text-red-700 text-sm mb-2">Faults found — please acknowledge</h2>
+    <div class="space-y-2">
+      {% for d in c.open_defects %}
+      <div class="flex items-center gap-3 border border-slate-100 rounded-lg p-2.5">
+        {% if d.photo_path %}<img src="{{ d.photo_path|upload_url }}" class="w-12 h-12 rounded object-cover flex-none" alt="">{% endif %}
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-semibold text-navy-800">{{ d.equipment_name }}
+            <span class="text-xs px-1.5 py-0.5 rounded-full font-semibold
+              {{ 'bg-red-50 text-red-700' if d.severity=='high' else 'bg-amber-50 text-amber-800' if d.severity=='medium' else 'bg-blue-50 text-blue-700' }}">{{ d.severity_label }}</span>
+          </div>
+          {% if d.description %}<div class="text-xs text-ink-muted">{{ d.description }}</div>{% endif %}
+        </div>
+        {% if d.status == 'open' %}
+        <form method="post" action="{{ url_for('portal.acknowledge_defect', defect_id=d.id) }}" class="flex-none">
+          <button class="text-xs px-3 py-1.5 rounded-lg bg-navy-800 text-white hover:bg-navy-700">Acknowledge</button>
+        </form>
+        {% else %}<span class="text-xs text-green-700 font-medium flex-none">Acknowledged ✓</span>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Wave 11: instalment schedule ──────────────────────────────────────── -->
+  {% if c.installment_plan %}
+  <div class="mt-4 card p-4">
+    <h2 class="font-bold text-navy-800 text-sm mb-2">Your instalment plan</h2>
+    <div class="space-y-1.5">
+      {% for it in c.installment_plan %}
+      <div class="flex items-center justify-between text-sm border-b border-slate-100 pb-1.5">
+        <span class="text-navy-800">{{ it.label }} <span class="text-xs text-ink-subtle">· due {{ it.due_date|datefmt }}</span>
+          {% if it.is_overdue %}<span class="text-xs text-red-600 font-semibold ml-1">overdue</span>{% endif %}</span>
+        <span class="flex items-center gap-2">
+          <span class="font-semibold">{{ it.amount|rupees }}</span>
+          <span class="text-xs px-2 py-0.5 rounded-full font-semibold {{ 'bg-green-50 text-green-700' if it.paid else 'bg-slate-100 text-slate-500' }}">{{ 'Paid' if it.paid else 'Due' }}</span>
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Service roadmap -->
   <div class="mt-6">{{ workflow_track(c) }}</div>
 
@@ -61,6 +149,20 @@
           <div>
             <div class="font-semibold text-navy-800">{{ v.label }}</div>
             <div class="text-xs text-slate-500">{{ v.scheduled_date|datefmt }}{% if v.technician %} · {{ v.technician.name }}{% endif %}</div>
+            {# Days-until countdown badge #}
+            {% set du = v.days_until %}
+            {% if du is not none %}
+            <span class="inline-block mt-1 text-xs px-2 py-0.5 rounded-full font-medium
+              {{ 'bg-red-50 text-red-700' if du <= 0 else
+                 'bg-amber-50 text-amber-700' if du <= 7 else
+                 'bg-blue-50 text-blue-700' }}">
+              {% if du == 0 %}Visit is today
+              {% elif du == 1 %}1 day to go
+              {% elif du < 0 %}{{ du|abs }} days overdue
+              {% else %}{{ du }} days away
+              {% endif %}
+            </span>
+            {% endif %}
           </div>
         </div>
         <div class="flex items-center gap-3">
@@ -248,5 +350,69 @@
   if(typeof nseChime === 'function') nseChime();
 })();
 </script>
+{% endif %}
+
+<!-- Raise a Complaint button (always visible on active/pending contracts) -->
+{% if c.status in ('active', 'pending') %}
+<div class="max-w-4xl mx-auto px-4 mb-8">
+  <div class="card p-5 flex items-center justify-between flex-wrap gap-3">
+    <div>
+      <p class="font-semibold text-ink text-sm">Having an issue?</p>
+      <p class="text-xs text-ink-subtle mt-0.5">Raise a complaint and our team will respond within 24 hours.</p>
+    </div>
+    <button onclick="document.getElementById('contractComplaintModal').classList.remove('hidden')"
+            class="btn btn-ghost text-sm border border-hairline">Raise a complaint</button>
+  </div>
+</div>
+
+<!-- Complaint modal scoped to this contract -->
+<div id="contractComplaintModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4"
+     style="background:rgba(0,0,0,0.5)">
+  <div class="bg-white dark:bg-[var(--s1)] rounded-2xl shadow-2xl w-full max-w-lg">
+    <div class="flex items-center justify-between px-6 pt-5 pb-3 border-b border-hairline">
+      <h2 class="font-bold text-ink">Raise a complaint — {{ c.reference }}</h2>
+      <button onclick="document.getElementById('contractComplaintModal').classList.add('hidden')"
+              class="text-ink-subtle hover:text-ink text-xl leading-none">&times;</button>
+    </div>
+    <form method="post" action="{{ url_for('portal.raise_ticket') }}"
+          enctype="multipart/form-data" class="p-6 space-y-4">
+      <input type="hidden" name="contract_id" value="{{ c.id }}">
+      <div>
+        <label class="block text-sm font-medium text-ink-muted mb-1">Subject <span class="text-danger">*</span></label>
+        <input name="title" required placeholder="e.g. Technician did not arrive"
+               class="w-full px-3 py-2.5 rounded-lg border border-hairline text-sm">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-ink-muted mb-1">Describe the issue <span class="text-danger">*</span></label>
+        <textarea name="description" required rows="3"
+                  class="w-full px-3 py-2.5 rounded-lg border border-hairline text-sm"
+                  placeholder="Please describe what happened…"></textarea>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-ink-muted mb-1">Priority</label>
+        <select name="priority" class="w-full px-3 py-2.5 rounded-lg border border-hairline text-sm">
+          <option value="normal">Normal</option>
+          <option value="high">High — urgent</option>
+          <option value="low">Low — general feedback</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-ink-muted mb-1">Photos (optional)</label>
+        <input type="file" name="attachments" multiple accept="image/*,video/*"
+               class="block w-full text-sm text-ink-subtle file:mr-3 file:py-1.5 file:px-3
+                      file:rounded-lg file:border-0 file:text-sm file:font-medium
+                      file:bg-amber-50 file:text-amber-800">
+      </div>
+      {% from "_macros.html" import voice_note_widget %}
+      {{ voice_note_widget("voice_note", "Voice note (optional)") }}
+      <div class="flex gap-3 pt-1">
+        <button type="submit" class="btn btn-primary text-sm flex-1">Submit complaint</button>
+        <button type="button"
+                onclick="document.getElementById('contractComplaintModal').classList.add('hidden')"
+                class="btn btn-ghost text-sm">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
 {% endif %}
 {% endblock %}

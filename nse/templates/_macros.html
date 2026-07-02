@@ -1,23 +1,36 @@
 {% macro status_badge(status) %}
-  {% set map = {
-    'pending':'bg-amber-100 text-amber-800','active':'bg-green-100 text-green-800',
-    'expired':'bg-slate-200 text-slate-700','cancelled':'bg-slate-200 text-slate-600',
-    'scheduled':'bg-blue-100 text-blue-800','in_progress':'bg-indigo-100 text-indigo-800',
-    'completed':'bg-green-100 text-green-800','new':'bg-amber-100 text-amber-800',
-    'dispatched':'bg-indigo-100 text-indigo-800','approved':'bg-green-100 text-green-800',
-    'rejected':'bg-red-100 text-red-700','responded':'bg-green-100 text-green-800',
-    'paid':'bg-green-100 text-green-800',
-  } %}
-  <span class="inline-block text-xs font-semibold px-2.5 py-1 rounded-full {{ map.get(status,'bg-slate-100 text-slate-700') }}">
-    {{ status.replace('_',' ')|title }}
-  </span>
+{# Pill colours match the new design system #}
+{% set bg = {
+  'pending':     '#fbf0dc', 'active':     '#e7f4ec', 'expired':    '#f1f0ee',
+  'cancelled':   '#f1f0ee', 'scheduled':  '#eef1fb', 'in_progress':'#ede9fe',
+  'completed':   '#e7f4ec', 'new':        '#fbf0dc', 'dispatched': '#ede9fe',
+  'approved':    '#e7f4ec', 'rejected':   '#fdecea', 'responded':  '#e7f4ec',
+  'paid':        '#e7f4ec', 'open':       '#fdecea', 'acknowledged':'#fbf0dc',
+  'resolved':    '#e7f4ec', 'closed':     '#f1f0ee', 'draft':      '#f1f0ee',
+  'sent':        '#eef1fb', 'viewed':     '#ede9fe', 'accepted':   '#e7f4ec',
+  'negotiation_requested':'#fbf0dc',
+}.get(status,'#f1f0ee') %}
+{% set fc = {
+  'pending':     '#b45309', 'active':     '#17864a', 'expired':    '#6b6b72',
+  'cancelled':   '#6b6b72', 'scheduled':  '#2f6fed', 'in_progress':'#5b21b6',
+  'completed':   '#17864a', 'new':        '#b45309', 'dispatched': '#5b21b6',
+  'approved':    '#17864a', 'rejected':   '#d23f3f', 'responded':  '#17864a',
+  'paid':        '#17864a', 'open':       '#d23f3f', 'acknowledged':'#b45309',
+  'resolved':    '#17864a', 'closed':     '#6b6b72', 'draft':      '#6b6b72',
+  'sent':        '#2f6fed', 'viewed':     '#5b21b6', 'accepted':   '#17864a',
+  'negotiation_requested':'#b45309',
+}.get(status,'#6b6b72') %}
+<span style="display:inline-flex;align-items:center;font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;background:{{ bg }};color:{{ fc }};">
+  {{ status.replace('_',' ')|title }}
+</span>
 {% endmacro %}
 
 {% macro refill_badge(e) %}
-  {% set s = e.refill_status %}
-  {% set map = {'ok':'bg-green-100 text-green-800','due_soon':'bg-amber-100 text-amber-800','overdue':'bg-red-100 text-red-700','unknown':'bg-slate-100 text-slate-600'} %}
-  {% set label = {'ok':'On track','due_soon':'Due soon','overdue':'Overdue','unknown':'No data'} %}
-  <span class="inline-block text-xs font-semibold px-2.5 py-1 rounded-full {{ map[s] }}">{{ label[s] }}</span>
+{% set s = e.refill_status %}
+{% set bg = {'ok':'#e7f4ec','due_soon':'#fbf0dc','overdue':'#fdecea','unknown':'#f1f0ee'} %}
+{% set fc = {'ok':'#17864a','due_soon':'#b45309','overdue':'#d23f3f','unknown':'#6b6b72'} %}
+{% set label = {'ok':'On track','due_soon':'Due soon','overdue':'Overdue','unknown':'No data'} %}
+<span style="display:inline-flex;align-items:center;font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;background:{{ bg[s] }};color:{{ fc[s] }};">{{ label[s] }}</span>
 {% endmacro %}
 
 {# ── workflow_track ─────────────────────────────────────────────────────────

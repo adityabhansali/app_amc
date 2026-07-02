@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import (Blueprint, render_template, request, redirect, url_for,
                    flash, current_app)
@@ -221,12 +221,17 @@ def emergency():
             description=f.get("description"),
             payment_mode=f.get("payment_mode", "cash"),
             status="new",
+            # Wave 11 — emergency SLA: respond within 4 hours
+            sla_due_at=datetime.utcnow() + timedelta(hours=4),
         )
         existing = User.query.filter_by(phone=f.get("phone"), role="customer").first()
         if existing:
             sr.customer_id = existing.id
         db.session.add(sr)
         db.session.commit()
+        notify_staff(f"Emergency request {sr.reference}",
+                     f"{sr.name} · {sr.area or sr.location or ''} — respond within 4h.",
+                     link=url_for("admin.service_request", req_id=sr.id))
         return render_template("public/submitted.html",
                                kind="Emergency visit request", reference=sr.reference,
                                message="Our Fire Emergency Response team has been alerted. "
@@ -578,3 +583,68 @@ def public_quote_thanks(token):
     sq = _get_sq_by_token(token)
     method = request.args.get("m", sq.payment_method or "")
     return render_template("public/quote_thanks.html", sq=sq, method=method)
+
+
+# --------------------------------------------------------------------------- #
+# Wave 11 — Razorpay online payment (gateway-ready; degrades to manual flow)
+# --------------------------------------------------------------------------- #
+@public_bp.route("/q/<token>/pay-online")
+def public_quote_pay_online(token):
+    """Open Razorpay Checkout for a public quotation (no login). Falls back to
+    the UPI page when the gateway is not configured."""
+    from .. import payments
+    sq = _get_sq_by_token(token)
+    if not payments.enabled():
+        return redirect(url_for("public.public_quote_upi", token=token))
+    order = payments.create_order(sq.grand_total, receipt=sq.reference,
+                                  notes={"quotation": sq.reference})
+    if not order:
+        flash("Online payment is temporarily unavailable — please use UPI or cash.",
+              "warning")
+        return redirect(url_for("public.public_quote", token=token))
+    sq.gateway_order_id = order["id"]
+    _ensure_customer_account(sq)
+    db.session.commit()
+    return render_template("public/quote_checkout.html", sq=sq, order=order,
+                           key_id=payments.key_id())
+
+
+@public_bp.route("/q/<token>/pay-online/verify", methods=["POST"])
+def public_quote_pay_online_verify(token):
+    """Razorpay Checkout success handler posts the payment id + signature here."""
+    from .. import payments
+    sq = _get_sq_by_token(token)
+    order_id = request.form.get("razorpay_order_id")
+    payment_id = request.form.get("razorpay_payment_id")
+    signature = request.form.get("razorpay_signature")
+    if payments.verify_payment_signature(order_id, payment_id, signature):
+        payments.mark_quote_paid(sq, payment_id=payment_id, method="online")
+        notify_staff(f"Online payment received — {sq.reference}",
+                     f"{sq.customer_name} paid ₹{sq.grand_total:,.0f} online (Razorpay).",
+                     link=url_for("sq.detail_quotation", sq_id=sq.id))
+        return redirect(url_for("public.public_quote_thanks", token=token, m="online"))
+    flash("We could not verify the payment. If money was deducted it will be "
+          "reconciled — please contact us.", "warning")
+    return redirect(url_for("public.public_quote", token=token))
+
+
+@public_bp.route("/pay/webhook", methods=["POST"])
+def razorpay_webhook():
+    """Razorpay webhook — auto-confirms payment by matching gateway_order_id."""
+    from .. import payments
+    raw = request.get_data()
+    sig = request.headers.get("X-Razorpay-Signature", "")
+    if not payments.verify_webhook_signature(raw, sig):
+        return ("invalid signature", 400)
+    payload = request.get_json(silent=True) or {}
+    try:
+        entity = payload["payload"]["payment"]["entity"]
+        order_id = entity.get("order_id")
+        payment_id = entity.get("id")
+    except (KeyError, TypeError):
+        return ("ignored", 200)
+    if order_id:
+        sq = ServiceQuotation.query.filter_by(gateway_order_id=order_id).first()
+        if sq:
+            payments.mark_quote_paid(sq, payment_id=payment_id, method="online")
+    return ("ok", 200)

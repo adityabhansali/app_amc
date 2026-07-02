@@ -6,924 +6,302 @@
   <title>{% block title %}{{ COMPANY_NAME }}{% endblock %}</title>
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/logo-emblem.png') }}">
 
-  <!-- Anti-FOUC: apply saved theme before any CSS paints -->
-  <script>
-    (function(){
-      if (localStorage.getItem('nse-theme') === 'dark')
-        document.documentElement.classList.add('dark');
-    })();
-  </script>
+  <!-- Inter + JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;550;600;650;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
+  <!-- Anti-FOUC -->
+  <script>(function(){if(localStorage.getItem('nse-theme')==='dark')document.documentElement.classList.add('dark')})();</script>
+
+  <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
       theme: { extend: {
         colors: {
-          canvas: '#faf8f5',
-          'surface-1': '#ffffff', 'surface-2': '#f3f0eb',
-          'surface-3': '#e8e3db', 'surface-4': '#ddd8cf',
-          hairline: '#e8e3db', 'hairline-strong': '#d5cfc6',
-          ink: '#18181b', 'ink-muted': '#3f3f46',
-          'ink-subtle': '#71717a', 'ink-tertiary': '#a1a1aa',
-          primary: { DEFAULT: '#16235b', hover: '#0f1942', focus: '#16235b' },
-          amber: { DEFAULT:'#f59e0b', hover:'#d97706', light:'#fef3c7', dark:'#92400e' },
-          success: '#16a34a', danger: '#dc2626',
-          navy: { 50:'#eef2fb',100:'#dce4f4',600:'#2a3d7a',700:'#1c2c5e',800:'#142149',900:'#0b1334' },
-          star: { 50:'#eef2fb',400:'#cfd8ee',500:'#16235b',600:'#1c2c5e' },
+          canvas:  '#f6f5f2',
+          'surface-1':'#ffffff','surface-2':'#f6f5f2','surface-3':'#eceae4','surface-4':'#e6e4dd',
+          hairline:'#eceae4','hairline-strong':'#e6e4dd',
+          ink:'#1b1c22','ink-muted':'#4a4b52','ink-subtle':'#8a8a90','ink-tertiary':'#9a9aa2',
+          primary:{ DEFAULT:'#072076', hover:'#0a2a8f' },
+          amber:{  DEFAULT:'#f59e0b', hover:'#d97706', light:'#fbf0dc', dark:'#b45309' },
+          success:'#17864a', danger:'#d23f3f',
+          navy:{ 50:'#eef1fb',100:'#dce4f4',600:'#2a336b',700:'#1f2650',800:'#141834',900:'#0e1228' },
         },
-        fontFamily: {
-          sans: ['Inter','SF Pro Display','-apple-system','system-ui','Segoe UI','Roboto','sans-serif'],
-        },
+        fontFamily:{ sans:['Inter','system-ui','sans-serif'], mono:['JetBrains Mono','monospace'] },
       }}
     }
   </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <style>
-    /* ══════════════════════════════════════════════════════════════════
-       LIGHT MODE — design tokens
-       ══════════════════════════════════════════════════════════════════ */
-    :root {
-      --canvas: #faf8f5;
-      --s1: #ffffff;   --s2: #f3f0eb;  --s3: #e8e3db;  --s4: #ddd8cf;
-      --hair: #e8e3db; --hair2: #d5cfc6;
-      --ink: #18181b;  --ink2: #3f3f46; --ink3: #71717a; --ink4: #a1a1aa;
-      --pri: #16235b;  --pri-h: #0f1942;
-      --amber: #f59e0b; --amber-h: #d97706; --amber-lt: #fef3c7;
-      --succ: #16a34a; --danger: #dc2626;
+    *,*::before,*::after{box-sizing:border-box;}
+    html{background:#f6f5f2;scroll-behavior:smooth;}
+    body{margin:0;font-family:'Inter',system-ui,sans-serif;color:#1b1c22;-webkit-font-smoothing:antialiased;letter-spacing:-0.006em;}
+    h1{letter-spacing:-0.03em;}h2{letter-spacing:-0.02em;}h3{letter-spacing:-0.015em;}
+    ::-webkit-scrollbar{width:8px;height:8px;}
+    ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.12);border-radius:6px;border:2px solid transparent;background-clip:content-box;}
+
+    /* ── Design tokens ─────────────────────────────────────────── */
+    :root{
+      --canvas:#f6f5f2;--s1:#ffffff;--s2:#f6f5f2;
+      --hair:#eceae4;--hair2:#e6e4dd;--hair3:#f2f0ea;
+      --ink:#1b1c22;--ink2:#4a4b52;--ink3:#8a8a90;--ink4:#9a9aa2;
+      --pri:#072076;--pri-h:#0a2a8f;--pri-dk:#1f2650;
+      --amber:#f59e0b;--amber-h:#d97706;--amber-lt:#fbf0dc;
+      --succ:#17864a;--danger:#d23f3f;
+    }
+    html.dark{
+      --canvas:#0d1117;--s1:#161c2d;--s2:#1c2338;
+      --hair:#1e2a44;--hair2:#2d3f66;--hair3:#1a2438;
+      --ink:#dde6f8;--ink2:#9aafc8;--ink3:#6a7d9f;--ink4:#4a5b78;
     }
 
-    /* ══════════════════════════════════════════════════════════════════
-       DARK MODE — token overrides
-       ══════════════════════════════════════════════════════════════════ */
-    html.dark {
-      --canvas: #0d1117;
-      --s1: #161c2d;  --s2: #1c2338;  --s3: #222b44;  --s4: #29345a;
-      --hair: #1e2a44; --hair2: #2d3f66;
-      --ink: #dde6f8; --ink2: #9aafc8; --ink3: #6a7d9f; --ink4: #4a5b78;
-      --pri: #7b9af0; --pri-h: #90aaff;
-      --succ: #34d058; --danger: #f87171;
-    }
+    /* ── Core components ───────────────────────────────────────── */
+    .mono{font-family:'JetBrains Mono',monospace;letter-spacing:0;}
+    .card{background:var(--s1);border:1px solid var(--hair);border-radius:12px;box-shadow:0 1px 2px rgba(16,24,40,.04);}
+    .card-hover{transition:box-shadow .14s,border-color .14s,transform .14s;}
+    .card-hover:hover{box-shadow:0 6px 22px -12px rgba(7,32,118,.2);border-color:var(--hair2);transform:translateY(-2px);}
 
-    /* ══════════════════════════════════════════════════════════════════
-       BASE
-       ══════════════════════════════════════════════════════════════════ */
-    html { background: var(--canvas); scroll-behavior: smooth; }
-    body {
-      font-family: 'Inter','SF Pro Display',-apple-system,system-ui,sans-serif;
-      color: var(--ink); letter-spacing: -0.011em;
-      -webkit-font-smoothing: antialiased;
-    }
-    h1, h2 { letter-spacing: -0.035em; }
-    h3, h4  { letter-spacing: -0.02em; }
-    ::selection { background: rgba(22,35,91,.15); color: var(--pri); }
-    html.dark ::selection { background: rgba(123,154,240,.25); color: var(--pri); }
+    /* Buttons */
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;font-weight:600;font-size:.875rem;line-height:1;border-radius:8px;padding:.56rem 1rem;transition:background .12s,box-shadow .12s,transform .12s;cursor:pointer;white-space:nowrap;border:none;text-decoration:none;}
+    .btn-primary{background:var(--pri);color:#fff;box-shadow:0 1px 2px rgba(7,32,118,.25);}
+    .btn-primary:hover{background:var(--pri-h);box-shadow:0 4px 14px -4px rgba(7,32,118,.4);transform:translateY(-1px);}
+    .btn-amber{background:var(--amber);color:#18181b;font-weight:700;}
+    .btn-amber:hover{background:var(--amber-h);transform:translateY(-1px);}
+    .btn-white,.btn-ghost{background:#fff;color:var(--ink2);border:1px solid var(--hair2);box-shadow:0 1px 1px rgba(16,24,40,.03);}
+    .btn-white:hover,.btn-ghost:hover{background:var(--s2);color:var(--ink);}
+    .btn-emergency{background:var(--danger);color:#fff;}
+    .btn-emergency:hover{background:#b91c1c;}
+    .btn-outline{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);}
+    .btn-outline:hover{background:rgba(255,255,255,.1);}
+    /* Keep amber as btn-primary on public (hero etc.) */
+    html:not(.ops-mode) .btn-primary{background:var(--amber);color:#18181b;font-weight:700;}
+    html:not(.ops-mode) .btn-primary:hover{background:var(--amber-h);}
 
-    /* ══════════════════════════════════════════════════════════════════
-       HERO
-       ══════════════════════════════════════════════════════════════════ */
-    .hero-bg {
-      background: radial-gradient(110% 120% at 85% -10%, #2a3d7a 0%, #16235b 42%, #0b1334 100%);
-    }
-    .hero-grid {
-      background-image:
-        linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
-      background-size: 46px 46px;
-    }
+    /* Status pills */
+    .pill,.filter-chip.active{display:inline-flex;align-items:center;font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;}
+    .pill-green{background:#e7f4ec;color:#17864a;}.pill-amber{background:#fbf0dc;color:#b45309;}
+    .pill-red{background:#fdecea;color:#d23f3f;}.pill-blue{background:#eef1fb;color:#2f6fed;}
+    .pill-indigo{background:#ede9fe;color:#5b21b6;}.pill-slate{background:#f1f0ee;color:#6b6b72;}
 
-    /* ══════════════════════════════════════════════════════════════════
-       TYPOGRAPHY
-       ══════════════════════════════════════════════════════════════════ */
-    .eyebrow {
-      font-size: .72rem; font-weight: 700; letter-spacing: .14em;
-      text-transform: uppercase; color: var(--pri);
-    }
+    /* Table chrome */
+    .tbl-head{background:#faf9f6;font-size:11px;font-weight:600;color:var(--ink4);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--hair3);}
+    .tbl-row{border-bottom:1px solid #f5f3ee;}.tbl-row:hover{background:#faf9f6;}
 
-    /* ══════════════════════════════════════════════════════════════════
-       BUTTONS
-       ══════════════════════════════════════════════════════════════════ */
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center;
-      gap: .5rem; font-weight: 600; font-size: .94rem; line-height: 1;
-      border-radius: .75rem; padding: .78rem 1.4rem;
-      transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
-      cursor: pointer; white-space: nowrap;
-    }
-    .btn-primary {
-      background: #f59e0b; color: #18181b;
-      box-shadow: 0 1px 2px rgba(245,158,11,.25);
-      font-weight: 700;
-    }
-    .btn-primary:hover {
-      background: #d97706;
-      box-shadow: 0 12px 24px -8px rgba(245,158,11,.5);
-      transform: translateY(-1px);
-    }
-    html.dark .btn-primary { background: #d97706; color: #18181b; }
-    html.dark .btn-primary:hover {
-      background: #b45309;
-      box-shadow: 0 12px 28px -8px rgba(245,158,11,.45);
-    }
-    .btn-white { background: #fff; color: #16235b; box-shadow: 0 1px 2px rgba(11,19,52,.12); }
-    .btn-white:hover { box-shadow: 0 10px 22px -8px rgba(11,19,52,.28); transform: translateY(-1px); }
-    html.dark .btn-white { background: var(--s2); color: var(--ink); }
-    html.dark .btn-white:hover { box-shadow: 0 10px 22px -8px rgba(0,0,0,.5); }
-    .btn-outline {
-      background: transparent; color: #fff;
-      border: 1px solid rgba(255,255,255,.35);
-    }
-    .btn-outline:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.6); }
-    .btn-ghost {
-      background: var(--s1); color: var(--ink);
-      border: 1px solid var(--hair2);
-    }
-    .btn-ghost:hover { border-color: var(--pri); color: var(--pri); transform: translateY(-1px); }
-    .btn-emergency {
-      background: #dc2626; color: #fff;
-      box-shadow: 0 1px 2px rgba(153,27,27,.3);
-    }
-    .btn-emergency:hover {
-      background: #b91c1c;
-      box-shadow: 0 10px 22px -8px rgba(220,38,38,.5);
-      transform: translateY(-1px);
-    }
-    html.dark .btn-emergency { background: #dc2626; }
-    html.dark .btn-emergency:hover { background: #ef4444; }
+    /* Filter chips */
+    .filter-chip{display:inline-flex;align-items:center;font-size:12.5px;font-weight:500;color:var(--ink3);padding:6px 12px;border-radius:8px;transition:.1s;text-decoration:none;}
+    .filter-chip:hover{color:var(--ink);}
+    .filter-chip.active{font-weight:600;color:var(--ink);background:#fff;border:1px solid var(--hair2);}
 
-    /* ══════════════════════════════════════════════════════════════════
-       CARDS
-       ══════════════════════════════════════════════════════════════════ */
-    .card {
-      background: var(--s1); border: 1px solid var(--hair);
-      border-radius: 1.125rem; box-shadow: 0 1px 4px rgba(15,23,41,.05);
-    }
-    html.dark .card { box-shadow: 0 1px 6px rgba(0,0,0,.35); }
-    .card-hover {
-      transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
-    }
-    .card-hover:hover {
-      transform: translateY(-4px); border-color: var(--hair2);
-      box-shadow: 0 20px 44px -16px rgba(16,35,91,.18);
-    }
-    html.dark .card-hover:hover {
-      box-shadow: 0 20px 44px -16px rgba(0,0,0,.6);
-    }
+    /* Form inputs */
+    input,select,textarea{font-family:'Inter',system-ui,sans-serif;font-size:13.5px;color:var(--ink);background:var(--s1);border:1px solid var(--hair2);border-radius:8px;padding:.5rem .75rem;outline:none;transition:border-color .15s,box-shadow .15s;width:100%;}
+    input:focus,select:focus,textarea:focus{border-color:var(--pri);box-shadow:0 0 0 3px rgba(7,32,118,.08);}
+    html.dark input,html.dark select,html.dark textarea{background:var(--s2);color:var(--ink);border-color:var(--hair2);}
 
-    /* ══════════════════════════════════════════════════════════════════
-       ICON CHIPS / BADGES
-       ══════════════════════════════════════════════════════════════════ */
-    .icon-chip {
-      display: inline-grid; place-items: center; width: 3rem; height: 3rem;
-      border-radius: .8rem;
-      background: linear-gradient(150deg,#22326f,#16235b); color: #fff;
-      box-shadow: 0 6px 16px -8px rgba(11,19,52,.6);
-    }
-    .icon-chip-soft {
-      display: inline-grid; place-items: center; width: 2.75rem; height: 2.75rem;
-      border-radius: .7rem;
-      background: var(--s2); color: var(--pri); border: 1px solid var(--hair2);
-    }
-    .num-badge {
-      display: grid; place-items: center; width: 3rem; height: 3rem;
-      border-radius: .85rem;
-      background: linear-gradient(150deg,#22326f,#0f1942); color: #fff;
-      font-weight: 800; box-shadow: 0 8px 18px -8px rgba(11,19,52,.55);
-    }
-    .star-badge { background: linear-gradient(150deg,#22326f,#16235b); color: #fff; }
-
-    /* ══════════════════════════════════════════════════════════════════
-       FORM CONTROLS
-       ══════════════════════════════════════════════════════════════════ */
-    input, select, textarea {
-      background-color: var(--s1) !important;
-      color: var(--ink) !important;
-      border: 1px solid var(--hair2);
-      border-radius: .6rem;
-    }
-    input::placeholder, textarea::placeholder { color: var(--ink4) !important; }
-    select option { background: var(--s1); color: var(--ink); }
-    input[type=radio], input[type=checkbox] { accent-color: var(--pri); }
-    input:focus, select:focus, textarea:focus {
-      outline: none; border-color: var(--pri) !important;
-      box-shadow: 0 0 0 3px rgba(22,35,91,.13);
-    }
-    html.dark input:focus, html.dark select:focus, html.dark textarea:focus {
-      box-shadow: 0 0 0 3px rgba(123,154,240,.2);
-    }
-
-    /* ══════════════════════════════════════════════════════════════════
-       NAV glass background (handles bg-canvas/90 opacity equiv)
-       ══════════════════════════════════════════════════════════════════ */
-    .nse-nav { background: rgba(250,248,245,0.94); }
-    html.dark .nse-nav { background: rgba(13,17,23,0.94); }
-
-    /* ══════════════════════════════════════════════════════════════════
-       DARK MODE — global Tailwind utility overrides
-       ══════════════════════════════════════════════════════════════════ */
-    html.dark { color-scheme: dark; }
-    html.dark body { background-color: var(--canvas); color: var(--ink); }
-
-    /* Surfaces */
-    html.dark .bg-canvas    { background-color: var(--canvas) !important; }
-    html.dark .bg-white     { background-color: var(--s1) !important; }
-    html.dark .bg-surface-1 { background-color: var(--s1) !important; }
-    html.dark .bg-surface-2 { background-color: var(--s2) !important; }
-    html.dark .bg-slate-50  { background-color: var(--s2) !important; }
-    html.dark .bg-slate-100 { background-color: var(--s3) !important; }
-    html.dark .bg-amber-light { background-color: #3d2a00 !important; }
-    html.dark .bg-navy-50   { background-color: #101b2e !important; }
-    html.dark .bg-navy-100  { background-color: #162040 !important; }
-
-    /* Text */
-    html.dark .text-ink          { color: var(--ink)  !important; }
-    html.dark .text-ink-muted    { color: var(--ink2) !important; }
-    html.dark .text-ink-subtle   { color: var(--ink3) !important; }
-    html.dark .text-ink-tertiary { color: var(--ink4) !important; }
-    html.dark .text-navy-900,
-    html.dark .text-navy-800,
-    html.dark .text-navy-700     { color: #c8d6f4 !important; }
-    html.dark .text-slate-900,
-    html.dark .text-slate-800,
-    html.dark .text-slate-700    { color: #c8d4ec !important; }
-    html.dark .text-slate-600    { color: #9aacc6 !important; }
-    html.dark .text-slate-500    { color: #6a7d9f !important; }
-    html.dark .text-slate-400    { color: #4a5b78 !important; }
-    html.dark .text-primary      { color: var(--pri) !important; }
-    html.dark .text-danger       { color: var(--danger) !important; }
-
-    /* Borders */
-    html.dark .border-hairline        { border-color: var(--hair)  !important; }
-    html.dark .border-hairline-strong { border-color: var(--hair2) !important; }
-    html.dark .border-slate-100,
-    html.dark .border-slate-200       { border-color: var(--hair)  !important; }
-    html.dark .border-slate-300       { border-color: var(--hair2) !important; }
-    html.dark .border-navy-100        { border-color: var(--hair)  !important; }
-
-    /* Hover surfaces */
-    html.dark .hover\:bg-surface-2:hover { background-color: var(--s2) !important; }
-    html.dark .hover\:border-hairline-strong:hover { border-color: var(--hair2) !important; }
-    html.dark .hover\:text-ink:hover     { color: var(--ink) !important; }
-
-    /* Panel shadows in dark */
-    html.dark .bg-white { box-shadow: 0 1px 4px rgba(0,0,0,.3) !important; }
-
-    /* Status / alert panels */
-    html.dark .bg-amber-50      { background-color: #1e1400 !important; }
-    html.dark .border-amber-200 { border-color: #3d2a00 !important; }
-    html.dark .text-amber-700,
-    html.dark .text-amber-800   { color: #fbbf24 !important; }
-    html.dark .bg-green-50      { background-color: #031408 !important; }
-    html.dark .border-green-200,
-    html.dark .border-green-300 { border-color: #14532d !important; }
-    html.dark .text-green-700,
-    html.dark .text-green-600,
-    html.dark .text-green-800   { color: #4ade80 !important; }
-    html.dark .bg-blue-50       { background-color: #020e1e !important; }
-    html.dark .border-blue-200  { border-color: #1e3a5f !important; }
-    html.dark .text-blue-700,
-    html.dark .text-blue-800    { color: #93c5fd !important; }
-    html.dark .bg-red-50        { background-color: #1a0505 !important; }
-    html.dark .border-red-300   { border-color: #7f1d1d !important; }
-    html.dark .text-red-700     { color: #fca5a5 !important; }
-
-    /* Primary backgrounds */
-    html.dark .bg-primary                    { background-color: #1d2e7a !important; }
-    html.dark .hover\:bg-primary-hover:hover { background-color: #253ca0 !important; }
-
-    /* Tailwind ring in dark (most-popular plan) */
-    html.dark .ring-primary { --tw-ring-color: var(--pri); }
-
-    /* ══════════════════════════════════════════════════════════════════
-       SERVICE TILE  (from Behance reference — category icon grid)
-       ══════════════════════════════════════════════════════════════════ */
-    .service-tile {
-      background: var(--s1);
-      border: 1.5px solid var(--hair);
-      border-radius: 1.125rem;
-      padding: 1.5rem 1rem 1.25rem;
-      text-align: center;
-      cursor: pointer;
-      transition: border-color .2s ease, transform .22s ease, box-shadow .22s ease;
-      display: flex; flex-direction: column; align-items: center; gap: .5rem;
-    }
-    .service-tile:hover {
-      border-color: var(--amber);
-      transform: translateY(-4px);
-      box-shadow: 0 16px 32px -10px rgba(245,158,11,.22);
-    }
-    .service-tile-icon {
-      width: 3.25rem; height: 3.25rem; border-radius: .875rem;
-      display: grid; place-items: center;
-      background: var(--s2); color: var(--pri);
-      transition: background .2s, color .2s;
-    }
-    .service-tile:hover .service-tile-icon {
-      background: var(--amber-lt); color: #92400e;
-    }
-    html.dark .service-tile { box-shadow: none; }
-    html.dark .service-tile:hover { box-shadow: 0 16px 32px -10px rgba(0,0,0,.5); }
-    html.dark .service-tile-icon { background: var(--s3); color: var(--pri); }
-    html.dark .service-tile:hover .service-tile-icon { background: #3d2a00; color: #fbbf24; }
-
-    /* ══════════════════════════════════════════════════════════════════
-       STATUS TRACK  (horizontal progress timeline — from Behance)
-       ══════════════════════════════════════════════════════════════════ */
-    .status-track {
-      display: flex; align-items: center; gap: 0;
-      font-size: .72rem; font-weight: 600;
-    }
-    .status-track-step {
-      display: flex; flex-direction: column; align-items: center; gap: 4px;
-      flex: 1; position: relative;
-    }
-    .status-track-dot {
-      width: 9px; height: 9px; border-radius: 50%;
-      background: var(--hair2); border: 2px solid var(--hair2);
-      z-index: 1; flex-shrink: 0;
-    }
-    .status-track-dot.done  { background: var(--amber); border-color: var(--amber); }
-    .status-track-dot.active { background: var(--pri); border-color: var(--pri); box-shadow: 0 0 0 3px rgba(22,35,91,.18); }
-    .status-track-label { color: var(--ink4); letter-spacing: .04em; text-transform: uppercase; font-size: .65rem; text-align: center; }
-    .status-track-label.done   { color: var(--amber); }
-    .status-track-label.active { color: var(--pri); font-weight: 700; }
-    html.dark .status-track-label.done  { color: #fbbf24; }
-    html.dark .status-track-label.active { color: var(--pri); }
-    .status-track-line {
-      height: 2px; flex: 1; background: var(--hair2);
-      margin-top: -17px; /* align with dot center */
-    }
-    .status-track-line.done { background: var(--amber); }
-    html.dark .status-track-line.done { background: #d97706; }
-
-    /* ══════════════════════════════════════════════════════════════════
-       FILTER CHIP  (ops console — active/inactive pill filters)
-       ══════════════════════════════════════════════════════════════════ */
-    .filter-chip {
-      display: inline-flex; align-items: center; gap: .35rem;
-      padding: .32rem .85rem; border-radius: 999px;
-      font-size: .8rem; font-weight: 600;
-      border: 1.5px solid var(--hair2);
-      background: var(--s1); color: var(--ink3);
-      cursor: pointer; white-space: nowrap;
-      transition: border-color .15s, background .15s, color .15s, transform .15s;
-      text-decoration: none;
-    }
-    .filter-chip:hover { border-color: var(--amber); color: var(--ink); }
-    .filter-chip.active {
-      border-color: var(--amber);
-      background: var(--amber-lt); color: #92400e;
-    }
-    html.dark .filter-chip { background: var(--s2); }
-    html.dark .filter-chip.active { background: #3d2a00; color: #fbbf24; border-color: #b45309; }
-
-    /* ══════════════════════════════════════════════════════════════════
-       PRIORITY CARD  (request/contract list cards — left-border colour)
-       ══════════════════════════════════════════════════════════════════ */
-    .priority-card {
-      background: var(--s1);
-      border: 1px solid var(--hair);
-      border-left: 4px solid var(--hair2);
-      border-radius: 0 .875rem .875rem 0;
-      transition: border-color .2s, transform .2s, box-shadow .2s;
-    }
-    .priority-card:hover {
-      border-color: var(--hair2);
-      border-left-color: inherit;
-      transform: translateX(2px);
-      box-shadow: 0 8px 24px -8px rgba(0,0,0,.1);
-    }
-    .priority-card.p-high   { border-left-color: #ef4444; }
-    .priority-card.p-medium { border-left-color: var(--amber); }
-    .priority-card.p-low    { border-left-color: var(--succ); }
-    .priority-card.p-info   { border-left-color: #3b82f6; }
-    html.dark .priority-card { background: var(--s1); }
-
-    /* ══════════════════════════════════════════════════════════════════
-       FORM QUESTION  (bold heading style — "What's the issue?")
-       ══════════════════════════════════════════════════════════════════ */
-    .form-question {
-      font-size: 1.6rem; font-weight: 800;
-      letter-spacing: -0.03em; color: var(--ink);
-      line-height: 1.2;
-    }
-    .form-question-sub {
-      font-size: .95rem; color: var(--ink3); margin-top: .35rem;
-    }
-
-    /* ══════════════════════════════════════════════════════════════════
-       THEME TOGGLE PILL
-       ══════════════════════════════════════════════════════════════════ */
-    .theme-pill {
-      background: var(--s1); color: var(--ink2);
-      border: 1px solid var(--hair2);
-      box-shadow: 0 4px 16px rgba(0,0,0,.12);
-      transition: border-color .15s, box-shadow .15s, transform .15s;
-    }
-    .theme-pill:hover {
-      border-color: var(--pri); color: var(--pri);
-      transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(0,0,0,.18);
-    }
-    html.dark .theme-pill {
-      box-shadow: 0 4px 16px rgba(0,0,0,.45);
-    }
-
-    /* ══════════════════════════════════════════════════════════════════
-       SCROLLBAR
-       ══════════════════════════════════════════════════════════════════ */
-    ::-webkit-scrollbar { width: 11px; height: 11px }
-    ::-webkit-scrollbar-track { background: var(--s2) }
-    ::-webkit-scrollbar-thumb {
-      background: #c3cdde; border-radius: 6px; border: 3px solid var(--s2);
-    }
-    html.dark ::-webkit-scrollbar-thumb { background: #2d3f66; }
-
-    /* ══════════════════════════════════════════════════════════════════
-       PINTEREST-STYLE MICRO-ANIMATIONS
-       ══════════════════════════════════════════════════════════════════ */
-    @media (prefers-reduced-motion: no-preference) {
-      .fade-up {
-        opacity: 0; transform: translateY(18px);
-        transition: opacity .55s ease, transform .55s ease;
-      }
-      .fade-up.visible { opacity: 1; transform: none; }
-    }
-    /* Stagger delays for grid children */
-    .stagger > *:nth-child(1) { transition-delay: 0ms; }
-    .stagger > *:nth-child(2) { transition-delay: 80ms; }
-    .stagger > *:nth-child(3) { transition-delay: 160ms; }
-    .stagger > *:nth-child(4) { transition-delay: 240ms; }
-
-    /* Notification bell dropdown — hide the default <summary> disclosure marker */
-    .nse-bell > summary { list-style: none; }
-    .nse-bell > summary::-webkit-details-marker { display: none; }
-    .nse-bell > summary::marker { content: ""; }
+    /* Legacy public helpers */
+    .hero-bg{background:radial-gradient(110% 120% at 85% -10%,#2a3d7a 0%,#16235b 42%,#0b1334 100%);}
+    .hero-grid{background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:46px 46px;}
+    .eyebrow{font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--pri);}
+    .fade-up{opacity:0;transform:translateY(20px);transition:opacity .55s ease,transform .55s ease;}
+    .fade-up.visible{opacity:1;transform:none;}
+    .stagger>*{animation:fadeUp .4s ease both;}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+    .service-tile{background:var(--s1);border:1px solid var(--hair);border-radius:1rem;padding:1.5rem;transition:border-color .2s,box-shadow .2s;}
+    .service-tile:hover{border-color:var(--amber);box-shadow:0 8px 24px -12px rgba(245,158,11,.3);}
+    .service-tile-icon{width:3rem;height:3rem;border-radius:.75rem;background:var(--s2);display:grid;place-items:center;color:var(--pri);}
+    .service-tile:hover .service-tile-icon{background:var(--amber-lt);color:var(--amber-h);}
+    .status-track{display:flex;align-items:center;}
+    .status-track-step{display:flex;flex-direction:column;align-items:center;flex:none;}
+    .status-track-dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--hair2);display:grid;place-items:center;}
+    .status-track-dot.done{background:var(--succ);border-color:var(--succ);}
+    .status-track-dot.active{background:var(--pri);border-color:var(--pri);}
+    .status-track-line{flex:1;height:2px;background:var(--hair2);}
+    .status-track-line.done{background:var(--succ);}
+    .priority-card{border-left:3px solid transparent;}
+    .p-high{border-color:var(--danger);}.p-medium{border-color:var(--amber);}.p-low{border-color:var(--succ);}
+    .form-question{font-size:1.125rem;font-weight:700;color:var(--ink);}
+    .theme-pill{background:var(--s1);border:1px solid var(--hair2);color:var(--ink2);border-radius:999px;}
+    .icon-chip{display:inline-grid;place-items:center;width:3rem;height:3rem;border-radius:.8rem;background:linear-gradient(150deg,#22326f,#16235b);color:#fff;}
+    .icon-chip-soft{display:inline-grid;place-items:center;width:2.75rem;height:2.75rem;border-radius:.7rem;background:var(--s2);color:var(--pri);border:1px solid var(--hair2);}
+    .num-badge{display:grid;place-items:center;width:3rem;height:3rem;border-radius:.85rem;background:linear-gradient(150deg,#22326f,#0f1942);color:#fff;font-weight:800;}
+    .nse-nav{background:rgba(246,245,242,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--hair);}
+    html.dark .nse-nav{background:rgba(13,17,23,.94);}
+    /* Bell popup */
+    .nse-bell>summary{list-style:none;}.nse-bell>summary::-webkit-details-marker{display:none;}
   </style>
+  {% block head %}{% endblock %}
 </head>
-<body class="bg-canvas text-ink min-h-screen flex flex-col">
+<body>
 
-  <!-- ── Nav ─────────────────────────────────────────────────────────────── -->
-  <header class="nse-nav backdrop-blur border-b border-hairline sticky top-0 z-40">
-    <nav class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-      <a href="{{ url_for('public.home') }}" class="flex items-center gap-2.5 min-w-0">
-        <img src="{{ url_for('static', filename='img/logo-emblem.png') }}"
-             alt="{{ COMPANY_NAME }}" class="w-9 h-9 flex-shrink-0">
-        <span class="font-bold leading-tight text-[15px] text-ink">
-          {{ COMPANY_NAME }}<br>
-          <span class="text-[10px] font-medium text-ink-subtle tracking-[0.08em] uppercase">
-            Enlightening Safety
-          </span>
-        </span>
+{% block body %}
+{# ── PUBLIC layout (default) ── #}
+<header class="nse-nav sticky top-0 z-40">
+  <div class="max-w-7xl mx-auto px-4">
+    <nav class="flex items-center justify-between h-14">
+      <a href="{{ url_for('public.home') }}" class="flex items-center gap-2.5 flex-shrink-0">
+        <img src="{{ url_for('static', filename='img/logo-emblem.png') }}" alt="{{ COMPANY_NAME }}" class="w-8 h-8">
+        <span class="font-extrabold text-primary text-[15px] leading-tight hidden sm:block">{{ COMPANY_NAME }}</span>
       </a>
-
-      <!-- Mobile: theme toggle + hamburger -->
       <div class="flex items-center gap-1 md:hidden">
-        <button onclick="toggleTheme()"
-          class="p-2 rounded-lg text-ink-subtle hover:bg-surface-2 transition"
-          aria-label="Toggle dark mode">
-          <!-- Moon (show in light mode) -->
-          <svg class="w-5 h-5 dark:hidden" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-          </svg>
-          <!-- Sun (show in dark mode) -->
-          <svg class="w-5 h-5 hidden dark:block" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="5"/>
-            <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-          </svg>
-        </button>
-        <button id="navToggle" class="p-2 text-ink-subtle" aria-label="Menu">
-          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 6h16M4 12h16M4 18h16"/>
-          </svg>
+        <button id="navToggle" class="p-2 text-ink-subtle">
+          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
       </div>
-
-      <!-- Desktop nav links -->
       <div id="navLinks" class="hidden md:flex items-center gap-0.5 text-sm">
-        <a href="{{ url_for('public.plans') }}"
-           class="px-3 py-2 rounded-md text-ink-subtle hover:text-ink hover:bg-surface-2 transition">
-          AMC Plans
-        </a>
-        <a href="{{ url_for('public.refill') }}"
-           class="px-3 py-2 rounded-md text-ink-subtle hover:text-ink hover:bg-surface-2 transition">
-          Refill
-        </a>
-        <a href="{{ url_for('public.noc') }}"
-           class="px-3 py-2 rounded-md text-ink-subtle hover:text-ink hover:bg-surface-2 transition">
-          NOC
-        </a>
-        <a href="{{ url_for('public.about') }}"
-           class="px-3 py-2 rounded-md text-ink-subtle hover:text-ink hover:bg-surface-2 transition">
-          About
-        </a>
-        <a href="{{ url_for('public.emergency') }}"
-           class="px-3 py-2 rounded-md text-danger font-medium hover:opacity-80 transition">
-          Emergency
-        </a>
-
-        <!-- Dark mode toggle (desktop) -->
-        <button onclick="toggleTheme()"
-          class="ml-1 p-2 rounded-lg text-ink-subtle hover:bg-surface-2 hover:text-ink transition"
-          aria-label="Toggle dark mode" title="Switch dark / light mode">
-          <svg class="w-[18px] h-[18px] dark:hidden" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-          </svg>
-          <svg class="w-[18px] h-[18px] hidden dark:block" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="5"/>
-            <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-          </svg>
+        <a href="{{ url_for('public.plans') }}" class="px-3 py-2 rounded-md text-ink-subtle hover:text-ink hover:bg-surface-2 transition">AMC Plans</a>
+        <a href="{{ url_for('public.refill') }}" class="px-3 py-2 rounded-md text-ink-subtle hover:text-ink hover:bg-surface-2 transition">Refill</a>
+        <a href="{{ url_for('public.noc') }}" class="px-3 py-2 rounded-md text-ink-subtle hover:text-ink hover:bg-surface-2 transition">NOC</a>
+        <a href="{{ url_for('public.about') }}" class="px-3 py-2 rounded-md text-ink-subtle hover:text-ink hover:bg-surface-2 transition">About</a>
+        <a href="{{ url_for('public.emergency') }}" class="px-3 py-2 rounded-md text-danger font-medium hover:opacity-80 transition">Emergency</a>
+        <button onclick="toggleTheme()" class="ml-1 p-2 rounded-lg text-ink-subtle hover:bg-surface-2 transition">
+          <svg class="w-[18px] h-[18px] dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="w-[18px] h-[18px] hidden dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
         </button>
-
         {% if current_user.is_authenticated %}
-          <!-- Notification bell + popup (native <details>; no JS needed) -->
           <details class="relative ml-1 nse-bell">
-            <summary class="list-none cursor-pointer p-2 rounded-lg text-ink-subtle hover:bg-surface-2 hover:text-ink transition relative grid place-items-center"
-                     aria-label="Notifications">
-              <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-              </svg>
-              {% if unread_notifications %}
-              <span class="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold grid place-items-center">{{ unread_notifications }}</span>
-              {% endif %}
+            <summary class="list-none cursor-pointer p-2 rounded-lg text-ink-subtle hover:bg-surface-2 transition flex items-center justify-center w-9 h-9 relative">
+              <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              {% if unread_notifications %}<span class="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold grid place-items-center">{{ unread_notifications }}</span>{% endif %}
             </summary>
-            <div class="absolute right-0 mt-2 w-80 rounded-xl shadow-xl z-50 overflow-hidden"
-                 style="background:var(--s1);border:1px solid var(--hair)">
-              <div class="flex items-center justify-between px-4 py-2.5" style="border-bottom:1px solid var(--hair)">
+            <div class="absolute right-0 mt-2 w-80 rounded-xl shadow-xl z-50 overflow-hidden" style="background:var(--s1);border:1px solid var(--hair)">
+              <div class="flex items-center justify-between px-4 py-2.5" style="border-bottom:1px solid var(--hair3)">
                 <span class="text-sm font-semibold text-ink">Notifications</span>
-                {% if unread_notifications %}
-                <a href="{{ url_for('portal.mark_read') }}" class="text-xs text-primary hover:underline">Mark all read</a>
-                {% endif %}
+                {% if unread_notifications %}<a href="{{ url_for('portal.mark_read') }}" class="text-xs text-primary hover:underline">Mark all read</a>{% endif %}
               </div>
-              <div class="max-h-80 overflow-y-auto">
+              <div class="max-h-72 overflow-y-auto">
                 {% for n in recent_notifications %}
-                <a href="{{ n.link or (url_for('admin.notifications') if current_user.is_staff else url_for('portal.notifications')) }}"
-                   class="block px-4 py-2.5 text-sm hover:bg-surface-2 transition {% if not n.read %}font-medium{% endif %}" style="border-bottom:1px solid var(--hair)">
-                  <div class="flex items-start gap-2">
-                    {% if not n.read %}<span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber flex-shrink-0"></span>{% else %}<span class="mt-1.5 w-1.5 h-1.5 flex-shrink-0"></span>{% endif %}
-                    <div class="min-w-0">
-                      <div class="text-ink truncate">{{ n.title }}</div>
-                      {% if n.body %}<div class="text-ink-subtle text-xs mt-0.5">{{ n.body }}</div>{% endif %}
-                      <div class="text-ink-tertiary text-[11px] mt-0.5">{{ n.created_at|datefmt }}</div>
-                    </div>
-                  </div>
+                <a href="{{ n.link or url_for('portal.notifications') }}" class="block px-4 py-2.5 text-sm hover:bg-surface-2 transition {% if not n.read %}font-semibold{% endif %}" style="border-bottom:1px solid var(--hair3);text-decoration:none;color:var(--ink)">
+                  <div class="truncate">{{ n.title }}</div>
+                  {% if n.body %}<div class="text-xs mt-0.5 truncate" style="color:var(--ink3)">{{ n.body }}</div>{% endif %}
+                  <div class="text-xs mt-0.5" style="color:var(--ink4)">{{ n.created_at|datefmt }}</div>
                 </a>
                 {% else %}
-                <div class="px-4 py-6 text-sm text-ink-subtle text-center">No notifications yet.</div>
+                <div class="px-4 py-6 text-sm text-center" style="color:var(--ink3)">No notifications yet.</div>
                 {% endfor %}
               </div>
-              <a href="{{ url_for('admin.notifications') if current_user.is_staff else url_for('portal.notifications') }}" class="block px-4 py-2.5 text-xs text-center text-primary hover:underline" style="border-top:1px solid var(--hair)">View all →</a>
+              <a href="{{ url_for('portal.notifications') }}" class="block px-4 py-2.5 text-xs text-center text-primary hover:underline" style="border-top:1px solid var(--hair3)">View all →</a>
             </div>
           </details>
           {% if current_user.is_staff %}
-            <a href="{{ url_for('admin.dashboard') }}"
-               class="ml-1 px-3 py-2 rounded-md bg-surface-2 border border-hairline hover:border-hairline-strong transition text-ink">
-              Ops Console
-            </a>
+          <a href="{{ url_for('admin.dashboard') }}" class="ml-1 px-3.5 py-2 rounded-md bg-surface-2 border border-hairline text-ink font-medium text-sm hover:border-hairline-strong transition">Ops Console</a>
           {% else %}
-            <a href="{{ url_for('portal.dashboard') }}"
-               class="ml-1 px-3.5 py-2 rounded-md bg-primary text-white font-medium hover:bg-primary-hover transition">
-              My Portal
-            </a>
+          <a href="{{ url_for('portal.dashboard') }}" class="ml-1 px-3.5 py-2 rounded-md bg-primary text-white font-semibold text-sm hover:bg-primary-hover transition">My Portal</a>
           {% endif %}
-          <a href="{{ url_for('auth.logout') }}"
-             class="px-3 py-2 rounded-md text-ink-subtle hover:text-ink transition">
-            Logout
-          </a>
+          <a href="{{ url_for('auth.logout') }}" class="px-3 py-2 rounded-md text-ink-subtle hover:text-ink text-sm transition">Logout</a>
         {% else %}
-          <a href="{{ url_for('auth.login') }}"
-             class="ml-1 px-3.5 py-2 rounded-md bg-primary text-white font-medium hover:bg-primary-hover transition">
-            Get started
-          </a>
+          <a href="{{ url_for('auth.login') }}" class="ml-1 px-3.5 py-2 rounded-md bg-primary text-white font-semibold text-sm hover:bg-primary-hover transition">Get started</a>
         {% endif %}
       </div>
     </nav>
-
-    <!-- Mobile menu -->
-    <div id="mobileLinks"
-         class="hidden md:hidden bg-canvas border-t border-hairline px-4 pb-4 pt-2 text-sm space-y-1">
-      <a href="{{ url_for('public.plans') }}"
-         class="block px-3 py-2 rounded-md text-ink-subtle hover:text-ink hover:bg-surface-2 transition">
-        AMC Plans &amp; Pricing
-      </a>
-      <a href="{{ url_for('public.apply') }}"
-         class="block px-3 py-2 rounded-md text-ink-subtle hover:text-ink hover:bg-surface-2 transition">
-        Apply for AMC
-      </a>
-      <a href="{{ url_for('public.refill') }}"
-         class="block px-3 py-2 rounded-md text-ink-subtle hover:text-ink hover:bg-surface-2 transition">
-        Book Refilling
-      </a>
-      <a href="{{ url_for('public.noc') }}"
-         class="block px-3 py-2 rounded-md text-ink-subtle hover:text-ink hover:bg-surface-2 transition">
-        NOC Request
-      </a>
-      <a href="{{ url_for('public.about') }}"
-         class="block px-3 py-2 rounded-md text-ink-subtle hover:text-ink hover:bg-surface-2 transition">
-        About Us
-      </a>
-      <a href="{{ url_for('public.emergency') }}"
-         class="block px-3 py-2 rounded-md text-danger font-medium">
-        Emergency Visit
-      </a>
+    <div id="mobileLinks" class="hidden md:hidden pb-4 pt-1 text-sm space-y-1">
+      <a href="{{ url_for('public.plans') }}" class="block px-3 py-2 rounded-md text-ink-subtle hover:text-ink hover:bg-surface-2 transition">AMC Plans</a>
+      <a href="{{ url_for('public.refill') }}" class="block px-3 py-2 rounded-md text-ink-subtle hover:text-ink hover:bg-surface-2 transition">Book Refilling</a>
+      <a href="{{ url_for('public.noc') }}" class="block px-3 py-2 rounded-md text-ink-subtle hover:text-ink hover:bg-surface-2 transition">Fire NOC</a>
+      <a href="{{ url_for('public.about') }}" class="block px-3 py-2 rounded-md text-ink-subtle hover:text-ink hover:bg-surface-2 transition">About</a>
       {% if current_user.is_authenticated %}
         {% if current_user.is_staff %}
-          <a href="{{ url_for('admin.dashboard') }}"
-             class="block px-3 py-2 rounded-md bg-surface-2 border border-hairline text-ink">
-            Ops Console
-          </a>
+        <a href="{{ url_for('admin.dashboard') }}" class="block px-3 py-2 rounded-md bg-surface-2 border border-hairline text-ink">Ops Console</a>
         {% else %}
-          <a href="{{ url_for('portal.dashboard') }}"
-             class="block px-3 py-2 rounded-md bg-primary text-white font-medium">
-            My Portal
-          </a>
+        <a href="{{ url_for('portal.dashboard') }}" class="block px-3 py-2 rounded-md bg-primary text-white font-medium">My Portal</a>
         {% endif %}
-        <a href="{{ url_for('auth.logout') }}"
-           class="block px-3 py-2 rounded-md text-ink-subtle hover:text-ink transition">
-          Logout
-        </a>
+        <a href="{{ url_for('auth.logout') }}" class="block px-3 py-2 rounded-md text-ink-subtle hover:text-ink transition">Logout</a>
       {% else %}
-        <a href="{{ url_for('auth.login') }}"
-           class="block px-3 py-2 rounded-md bg-primary text-white font-medium">
-          Get started
-        </a>
+        <a href="{{ url_for('auth.login') }}" class="block px-3 py-2 rounded-md bg-primary text-white font-medium">Get started</a>
       {% endif %}
     </div>
-  </header>
-
-  <!-- ── Flash messages ──────────────────────────────────────────────────── -->
-  <div class="max-w-6xl mx-auto px-4 w-full">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% set ns_flash = namespace(chime=false) %}
-        <div class="mt-4 space-y-2">
-        {% for category, msg in messages %}
-          {% set is_chime = category.endswith('_chime') %}
-          {% if is_chime %}{% set ns_flash.chime = true %}{% endif %}
-          {% set cat = category[:-6] if is_chime else category %}
-          {% set color = {
-            'success': 'bg-green-50 text-green-800 border-green-300',
-            'danger':  'bg-red-50 text-red-700 border-red-300',
-            'warning': 'bg-amber-50 text-amber-800 border-amber-300',
-            'info':    'bg-blue-50 text-blue-800 border-blue-200'
-          }.get(cat, 'bg-surface-1 text-ink-muted border-hairline') %}
-          <div class="border {{ color }} rounded-lg px-4 py-2.5 text-sm flex items-start gap-2">
-            <span>{{ msg }}</span>
-          </div>
-        {% endfor %}
-        </div>
-        {% if ns_flash.chime %}<div data-nse-chime="1" class="hidden"></div>{% endif %}
-      {% endif %}
-    {% endwith %}
   </div>
+</header>
 
-  <!-- ── Page content ────────────────────────────────────────────────────── -->
-  <main class="flex-1 w-full">
-    {% block content %}{% endblock %}
-  </main>
+<div class="max-w-6xl mx-auto px-4 w-full">
+  {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}
+  {% set ns_flash = namespace(chime=false) %}
+  <div class="mt-4 space-y-2">
+  {% for category, msg in messages %}
+  {% set cat = category.replace('_chime','') %}{% if '_chime' in category %}{% set ns_flash.chime = true %}{% endif %}
+  {% set fc = {'success':'#e7f4ec','warning':'#fbf0dc','danger':'#fdecea','error':'#fdecea','info':'#eef1fb'}.get(cat,'#f1f0ee') %}
+  {% set ft = {'success':'#17864a','warning':'#b45309','danger':'#d23f3f','error':'#d23f3f','info':'#2f6fed'}.get(cat,'#4a4b52') %}
+  <div {% if ns_flash.chime %}data-nse-chime{% endif %} style="background:{{ fc }};color:{{ ft }};border-radius:8px;padding:10px 14px;font-size:13.5px;font-weight:550;">{{ msg }}</div>
+  {% endfor %}</div>{% endif %}{% endwith %}
+</div>
 
-  <!-- ── Footer ─────────────────────────────────────────────────────────── -->
-  <footer class="bg-navy-900 text-white/60 mt-24">
-    <div class="max-w-6xl mx-auto px-4 pt-14 pb-8 grid md:grid-cols-4 gap-8 text-sm">
-      <!-- Brand -->
-      <div class="md:col-span-1">
-        <div class="flex items-center gap-2.5 mb-4">
-          <img src="{{ url_for('static', filename='img/logo-emblem.png') }}"
-               alt="{{ COMPANY_NAME }}" class="w-9 h-9">
-          <span class="font-bold text-white text-[15px] leading-tight">{{ COMPANY_NAME }}</span>
-        </div>
-        <p class="text-white/50 text-sm leading-relaxed">
-          Fast, reliable fire safety for Gujarat — annual maintenance, on-demand
-          extinguisher refilling, and 24×7 emergency response, all in one place.
-        </p>
-        <p class="text-white/35 text-xs mt-4 leading-relaxed">{{ COMPANY_ADDRESS }}</p>
+<main>{% block content %}{% endblock %}</main>
+
+<footer class="mt-20" style="background:linear-gradient(170deg,#12172f,#0d1228);">
+  <div class="max-w-7xl mx-auto px-4 py-12 grid md:grid-cols-4 gap-10 text-white/60 text-sm">
+    <div>
+      <div class="flex items-center gap-2.5 mb-4">
+        <img src="{{ url_for('static', filename='img/logo-emblem.png') }}" class="w-9 h-9">
+        <span class="font-bold text-white text-[15px]">{{ COMPANY_NAME }}</span>
       </div>
-      <!-- Services -->
-      <div>
-        <h4 class="text-white font-semibold mb-4 text-xs uppercase tracking-widest">Services</h4>
-        <ul class="space-y-2.5">
-          <li><a href="{{ url_for('public.plans') }}"  class="hover:text-white transition">AMC Plans &amp; Pricing</a></li>
-          <li><a href="{{ url_for('public.apply') }}"  class="hover:text-white transition">Apply for AMC</a></li>
-          <li><a href="{{ url_for('public.refill') }}" class="hover:text-white transition">Book Refilling</a></li>
-          <li><a href="{{ url_for('public.noc') }}"    class="hover:text-white transition">Fire NOC Assistance</a></li>
-        </ul>
-      </div>
-      <!-- Company -->
-      <div>
-        <h4 class="text-white font-semibold mb-4 text-xs uppercase tracking-widest">Company</h4>
-        <ul class="space-y-2.5">
-          <li><a href="{{ url_for('public.about') }}"   class="hover:text-white transition">About us</a></li>
-          <li><a href="{{ url_for('public.faq') }}"     class="hover:text-white transition">FAQ</a></li>
-          <li><a href="{{ url_for('public.enquiry') }}" class="hover:text-white transition">Send an enquiry</a></li>
-          <li><a href="{{ url_for('auth.login') }}"     class="hover:text-white transition">Customer portal</a></li>
-        </ul>
-      </div>
-      <!-- Contact -->
-      <div>
-        <h4 class="text-white font-semibold mb-4 text-xs uppercase tracking-widest">Contact</h4>
-        <p class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-danger flex-shrink-0"></span>
-          <span>Emergency 24×7:</span>
-        </p>
-        <a href="tel:{{ EMERGENCY_HOTLINE }}"
-           class="text-danger font-bold text-lg hover:opacity-80 transition block mt-1">
-          {{ EMERGENCY_HOTLINE }}
-        </a>
-        <p class="mt-4">Direct: <a href="tel:{{ COMPANY_PHONE }}"
-           class="hover:text-white transition">{{ COMPANY_PHONE }}</a></p>
-        <p class="mt-1.5"><a href="mailto:{{ COMPANY_EMAIL }}"
-           class="hover:text-white transition">{{ COMPANY_EMAIL }}</a></p>
-      </div>
+      <p class="leading-relaxed">Fast, reliable fire safety for Gujarat — AMC, on-demand refilling, and 24×7 emergency response.</p>
+      <p class="text-white/35 text-xs mt-4">{{ COMPANY_ADDRESS }}</p>
     </div>
-    <div class="border-t border-white/10 text-center text-xs text-white/25 py-5">
-      © {{ now.year }} {{ COMPANY_NAME }}. All rights reserved.
-      &nbsp;·&nbsp; NBC · BIS · IS · NFPA compliant
+    <div>
+      <h4 class="text-white font-semibold mb-4 text-xs uppercase tracking-widest">Services</h4>
+      <ul class="space-y-2.5">
+        <li><a href="{{ url_for('public.plans') }}" class="hover:text-white transition">AMC Plans &amp; Pricing</a></li>
+        <li><a href="{{ url_for('public.apply') }}" class="hover:text-white transition">Apply for AMC</a></li>
+        <li><a href="{{ url_for('public.refill') }}" class="hover:text-white transition">Book Refilling</a></li>
+        <li><a href="{{ url_for('public.noc') }}" class="hover:text-white transition">Fire NOC Assistance</a></li>
+      </ul>
     </div>
-  </footer>
-
-  <!-- ── Floating AI assistant ───────────────────────────────────────────── -->
-  {% include "_chat_widget.html" %}
-
-  <!-- ── Floating dark / light mode toggle (bottom-left) ────────────────── -->
-  <div class="fixed bottom-6 left-6 z-50">
-    <button onclick="toggleTheme()"
-      class="theme-pill flex items-center gap-2 text-sm font-medium px-3.5 py-2 rounded-full">
-      <!-- Moon icon — visible in light mode -->
-      <svg class="w-4 h-4 dark:hidden" viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-      </svg>
-      <span class="dark:hidden">Dark mode</span>
-      <!-- Sun icon — visible in dark mode -->
-      <svg class="w-4 h-4 hidden dark:block" viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="5"/>
-        <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-      </svg>
-      <span class="hidden dark:inline">Light mode</span>
-    </button>
+    <div>
+      <h4 class="text-white font-semibold mb-4 text-xs uppercase tracking-widest">Company</h4>
+      <ul class="space-y-2.5">
+        <li><a href="{{ url_for('public.about') }}" class="hover:text-white transition">About us</a></li>
+        <li><a href="{{ url_for('public.faq') }}" class="hover:text-white transition">FAQ</a></li>
+        <li><a href="{{ url_for('public.enquiry') }}" class="hover:text-white transition">Send an enquiry</a></li>
+        <li><a href="{{ url_for('auth.login') }}" class="hover:text-white transition">Customer portal</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4 class="text-white font-semibold mb-4 text-xs uppercase tracking-widest">Contact</h4>
+      <p class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span>Emergency 24×7:</p>
+      <a href="tel:{{ EMERGENCY_HOTLINE }}" class="text-red-400 font-bold text-lg hover:opacity-80 block mt-1">{{ EMERGENCY_HOTLINE }}</a>
+      <p class="mt-4">Direct: <a href="tel:{{ COMPANY_PHONE }}" class="hover:text-white transition">{{ COMPANY_PHONE }}</a></p>
+      <p class="mt-1.5"><a href="mailto:{{ COMPANY_EMAIL }}" class="hover:text-white transition">{{ COMPANY_EMAIL }}</a></p>
+    </div>
   </div>
+  <div class="border-t border-white/10 text-center text-xs text-white/25 py-5">
+    © {{ now.year }} {{ COMPANY_NAME }}. All rights reserved. · NBC · BIS · IS · NFPA compliant
+  </div>
+</footer>
 
-  <!-- ── Global JS ───────────────────────────────────────────────────────── -->
-  <script>
-    // ── Dark / light mode ────────────────────────────────────────────────
-    function toggleTheme() {
-      const isDark = document.documentElement.classList.toggle('dark');
-      localStorage.setItem('nse-theme', isDark ? 'dark' : 'light');
-    }
+{% include "_chat_widget.html" %}
 
-    // ── Nav hamburger ────────────────────────────────────────────────────
-    const navToggle = document.getElementById('navToggle');
-    if (navToggle) {
-      navToggle.addEventListener('click', () =>
-        document.getElementById('mobileLinks').classList.toggle('hidden'));
-    }
+<div class="fixed bottom-6 left-6 z-50">
+  <button onclick="toggleTheme()" class="theme-pill flex items-center gap-2 text-sm font-medium px-3.5 py-2 rounded-full">
+    <svg class="w-4 h-4 dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    <span class="dark:hidden">Dark</span>
+    <svg class="w-4 h-4 hidden dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    <span class="hidden dark:block">Light</span>
+  </button>
+</div>
+{% endblock body %}
 
-    // ── Scroll-reveal (Pinterest fade-up) ────────────────────────────────
-    if ('IntersectionObserver' in window) {
-      const io = new IntersectionObserver(entries => {
-        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
-      }, { threshold: 0.1 });
-      document.querySelectorAll('.fade-up').forEach(el => io.observe(el));
-    } else {
-      document.querySelectorAll('.fade-up').forEach(el => el.classList.add('visible'));
-    }
-
-    // ── Voice note widgets ────────────────────────────────────────────────
-    document.querySelectorAll('.voice-widget').forEach(widget => {
-      const btn     = widget.querySelector('.voice-btn');
-      const label   = widget.querySelector('.voice-label');
-      const micIcon = widget.querySelector('.voice-mic');
-      const status  = widget.querySelector('.voice-status');
-      const box     = widget.querySelector('.voice-transcript');
-      const hidden  = widget.querySelector('.voice-hidden-input');
-      const noSupp  = widget.querySelector('.voice-unsupported');
-
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) {
-        if (noSupp) noSupp.classList.remove('hidden');
-        if (btn) btn.classList.add('hidden');
-        return;
-      }
-
-      const rec = new SR();
-      rec.lang = 'en-IN';
-      rec.interimResults = true;
-      rec.continuous = false;
-      let running = false;
-      let finalText = '';
-
-      rec.onstart = () => {
-        running = true;
-        label.textContent = 'Tap to stop';
-        micIcon.style.stroke = '#dc2626';
-        status.textContent = 'Listening…';
-        status.classList.remove('hidden');
-        box.classList.remove('hidden');
-        box.textContent = 'Listening…';
-      };
-      rec.onresult = e => {
-        let interim = '';
-        finalText = '';
-        for (let i = 0; i < e.results.length; i++) {
-          if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
-          else interim += e.results[i][0].transcript;
-        }
-        box.textContent = (finalText + interim) || 'Listening…';
-      };
-      rec.onend = () => {
-        running = false;
-        label.textContent = 'Tap to speak';
-        micIcon.style.stroke = '';
-        status.classList.add('hidden');
-        if (finalText.trim()) {
-          const prev = hidden.value ? hidden.value + ' ' : '';
-          hidden.value = (prev + finalText).trim();
-          box.classList.remove('italic');
-          box.textContent = hidden.value;
-        } else {
-          box.classList.add('hidden');
-        }
-      };
-      rec.onerror = err => {
-        running = false;
-        label.textContent = 'Tap to speak';
-        micIcon.style.stroke = '';
-        status.textContent = err.error === 'not-allowed'
-          ? 'Microphone access denied.' : 'Error: ' + err.error;
-        status.classList.remove('hidden');
-        setTimeout(() => status.classList.add('hidden'), 4000);
-      };
-      btn.addEventListener('click', () => {
-        if (running) { rec.stop(); } else { finalText = ''; rec.start(); }
-      });
-    });
-
-    // ── Photo preview widgets ─────────────────────────────────────────────
-    document.querySelectorAll('.photo-input').forEach(input => {
-      input.addEventListener('change', () => {
-        const container = document.getElementById(input.dataset.preview);
-        if (!container) return;
-        container.innerHTML = '';
-        Array.from(input.files).forEach(file => {
-          if (!file.type.startsWith('image/')) return;
-          const img = document.createElement('img');
-          img.src = URL.createObjectURL(file);
-          img.className = 'w-20 h-20 object-cover rounded-lg border border-hairline';
-          container.appendChild(img);
-        });
-      });
-    });
-  </script>
-
-  <!-- ── Wave 6: success chime + star-rating helper ──────────────────────── -->
-  <script>
-  // Pleasant two-note chime synthesised with the Web Audio API (no asset file).
-  function nseChime() {
-    try {
-      var Ctx = window.AudioContext || window.webkitAudioContext;
-      if (!Ctx) return;
-      var ctx = new Ctx();
-      var notes = [[880, 0], [1318.5, 0.12]];  // A5 → E6
-      notes.forEach(function(n){
-        var o = ctx.createOscillator(), g = ctx.createGain();
-        o.type = 'sine'; o.frequency.value = n[0];
-        o.connect(g); g.connect(ctx.destination);
-        var t = ctx.currentTime + n[1];
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.exponentialRampToValueAtTime(0.3, t + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
-        o.start(t); o.stop(t + 0.55);
-      });
-    } catch (e) { /* audio not allowed — silently ignore */ }
-  }
-  // Play the chime when a flash message asked for it (category *_chime)
-  // OR when the page URL contains ?chime=1 (e.g. notification deep-link).
-  document.addEventListener('DOMContentLoaded', function(){
-    var hasFlashChime = !!document.querySelector('[data-nse-chime]');
-    var hasUrlChime   = new URLSearchParams(window.location.search).get('chime') === '1';
-    if (hasFlashChime || hasUrlChime) nseChime();
+<!-- Global scripts (always rendered) -->
+<script>
+  function toggleTheme(){const d=document.documentElement.classList.toggle('dark');localStorage.setItem('nse-theme',d?'dark':'light');}
+  const nt=document.getElementById('navToggle');if(nt)nt.addEventListener('click',()=>document.getElementById('mobileLinks').classList.toggle('hidden'));
+  if('IntersectionObserver' in window){const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');io.unobserve(e.target);}});},{threshold:.1});document.querySelectorAll('.fade-up').forEach(el=>io.observe(el));}else{document.querySelectorAll('.fade-up').forEach(el=>el.classList.add('visible'));}
+  document.querySelectorAll('.voice-widget').forEach(widget=>{
+    const btn=widget.querySelector('.voice-btn'),label=widget.querySelector('.voice-label'),micIcon=widget.querySelector('.voice-mic'),status=widget.querySelector('.voice-status'),box=widget.querySelector('.voice-transcript'),hidden=widget.querySelector('.voice-hidden-input'),noSupp=widget.querySelector('.voice-unsupported');
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){if(noSupp)noSupp.classList.remove('hidden');if(btn)btn.classList.add('hidden');return;}
+    const rec=new SR();rec.lang='en-IN';rec.interimResults=true;rec.continuous=false;let running=false,finalText='';
+    rec.onstart=()=>{running=true;label.textContent='Tap to stop';micIcon.style.stroke='#d23f3f';status.textContent='Listening…';status.classList.remove('hidden');box.classList.remove('hidden');box.textContent='Listening…';};
+    rec.onresult=e=>{let interim='';finalText='';for(let i=0;i<e.results.length;i++){if(e.results[i].isFinal)finalText+=e.results[i][0].transcript+' ';else interim+=e.results[i][0].transcript;}box.textContent=(finalText+interim)||'Listening…';};
+    rec.onend=()=>{running=false;label.textContent='Tap to speak';micIcon.style.stroke='';status.classList.add('hidden');if(finalText.trim()){const prev=hidden.value?hidden.value+' ':'';hidden.value=(prev+finalText).trim();box.classList.remove('italic');box.textContent=hidden.value;}else{box.classList.add('hidden');}};
+    rec.onerror=err=>{running=false;label.textContent='Tap to speak';micIcon.style.stroke='';status.textContent=err.error==='not-allowed'?'Microphone access denied.':'Error: '+err.error;status.classList.remove('hidden');setTimeout(()=>status.classList.add('hidden'),4000);};
+    btn.addEventListener('click',()=>{if(running){rec.stop();}else{finalText='';rec.start();}});
   });
-
-  // Star-rating widget (used by the post-visit rating popup).
-  function nseStar(el) {
-    var row = el.closest('.star-row');
-    var val = parseInt(el.getAttribute('data-val'), 10);
-    row.querySelectorAll('.star').forEach(function(s){
-      var v = parseInt(s.getAttribute('data-val'), 10);
-      s.classList.toggle('text-amber-400', v <= val);
-      s.classList.toggle('text-slate-300', v > val);
-    });
-    row.querySelector('input[type=hidden]').value = val;
-  }
-  </script>
-  {% block scripts %}{% endblock %}
+  document.querySelectorAll('.photo-input').forEach(input=>{input.addEventListener('change',()=>{const container=document.getElementById(input.dataset.preview);if(!container)return;container.innerHTML='';Array.from(input.files).forEach(file=>{if(!file.type.startsWith('image/'))return;const img=document.createElement('img');img.src=URL.createObjectURL(file);img.className='w-20 h-20 object-cover rounded-lg border border-hairline';container.appendChild(img);});});});
+  function nseChime(){try{var C=window.AudioContext||window.webkitAudioContext;if(!C)return;var c=new C(),notes=[[880,0],[1318.5,.12]];notes.forEach(function(n){var o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=n[0];o.connect(g);g.connect(c.destination);var t=c.currentTime+n[1];g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.3,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+.5);o.start(t);o.stop(t+.55);});}catch(e){}}
+  document.addEventListener('DOMContentLoaded',function(){if(!!document.querySelector('[data-nse-chime]')||new URLSearchParams(window.location.search).get('chime')==='1')nseChime();});
+  function nseStar(el){var row=el.closest('.star-row'),val=parseInt(el.getAttribute('data-val'),10);row.querySelectorAll('.star').forEach(function(s){var v=parseInt(s.getAttribute('data-val'),10);s.classList.toggle('text-amber-400',v<=val);s.classList.toggle('text-slate-300',v>val);});row.querySelector('input[type=hidden]').value=val;}
+</script>
+{% block scripts %}{% endblock %}
 </body>
 </html>

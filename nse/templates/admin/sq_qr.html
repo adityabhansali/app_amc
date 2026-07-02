@@ -1,0 +1,38 @@
+{% extends "base_ops.html" %}
+{% block title %}QR — {{ sq.reference }}{% endblock %}
+{% block content %}
+<section class="max-w-md mx-auto px-4 py-10 text-center">
+  <a href="{{ url_for('sq.detail_quotation', sq_id=sq.id) }}" class="text-sm text-ink-subtle hover:text-ink no-print">← {{ sq.reference }}</a>
+
+  <div class="card p-8 mt-3">
+    <div class="text-xs uppercase tracking-widest text-ink-subtle font-semibold">{{ COMPANY_NAME }}</div>
+    <h1 class="text-xl font-extrabold text-ink mt-1">Scan to view your quotation</h1>
+    <p class="text-sm text-ink-subtle mt-1 mb-6">{{ sq.reference }} · {{ sq.customer_name }} · {{ sq.grand_total|rupees }}</p>
+
+    <div class="mx-auto w-fit p-4 bg-white rounded-2xl border border-hairline shadow-sm">
+      {% if share_qr %}
+      <img src="{{ share_qr }}" alt="QR code for {{ sq.reference }}" width="280" height="280" style="display:block">
+      {% else %}
+      <p class="text-sm text-red-600 p-4 max-w-[220px]">Could not generate a QR image. Share the link below instead.</p>
+      {% endif %}
+    </div>
+
+    <p class="mt-5 text-xs text-ink-tertiary font-mono break-all px-2">{{ share_link }}</p>
+
+    <div class="mt-6 pt-5 border-t border-hairline text-sm text-ink-subtle no-print">
+      <p>Hand this screen to the client to scan, or print this page and leave it at the property. No login or app download needed — they'll see the quote and can pay directly.</p>
+    </div>
+
+    <div class="flex flex-wrap gap-3 justify-center mt-6 no-print">
+      <button onclick="window.print()" class="btn btn-primary text-sm px-5">Print this page</button>
+      <a href="{{ share_link }}" target="_blank" rel="noopener" class="btn btn-ghost text-sm px-5">Open link</a>
+    </div>
+  </div>
+</section>
+<style>
+  @media print {
+    .no-print, header, nav, aside { display: none !important; }
+    body { background: #fff !important; }
+  }
+</style>
+{% endblock %}

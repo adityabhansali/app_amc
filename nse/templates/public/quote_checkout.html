@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+  <title>Pay online — {{ COMPANY_NAME }}</title>
+  <link rel="icon" href="{{ url_for('static', filename='img/logo-emblem.png') }}">
+  <style>
+    :root{ --navy:#16235b; --amber:#f59e0b; --ink:#1f2433; --muted:#5b6175; --line:#e7e3dc; --canvas:#faf8f5; }
+    *{ box-sizing:border-box; }
+    body{ margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+          background:var(--canvas); color:var(--ink); font-size:16px; line-height:1.5; }
+    .wrap{ max-width:480px; margin:0 auto; padding:0 16px 40px; }
+    .top{ background:var(--navy); color:#fff; padding:14px 16px; text-align:center; }
+    .top img{ height:36px; margin-bottom:5px; }
+    .top .co{ font-size:14px; font-weight:700; }
+    .card{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:22px;
+           margin-top:14px; text-align:center; box-shadow:0 2px 8px rgba(20,30,60,.05); }
+    .amt{ font-size:26px; font-weight:800; color:var(--navy); margin:4px 0 2px; }
+    .ref{ color:var(--muted); font-size:13px; }
+    .btn{ display:block; width:100%; border:none; cursor:pointer; border-radius:10px;
+          padding:14px; font-size:17px; font-weight:700; margin-top:16px; text-decoration:none; text-align:center; }
+    .btn-amber{ background:var(--amber); color:#3a2600; }
+    .back{ display:inline-block; margin-top:16px; color:var(--muted); text-decoration:none; font-size:14px; }
+    .foot{ text-align:center; color:var(--muted); font-size:13px; margin-top:22px; }
+    .note{ color:var(--muted); font-size:14px; margin-top:12px; }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <img src="{{ url_for('static', filename='img/logo-emblem.png') }}" alt="">
+    <div class="co">{{ COMPANY_NAME }}</div>
+  </div>
+  <div class="wrap">
+    <div class="card">
+      <div class="ref">Quotation {{ sq.reference }}</div>
+      <div class="amt">{{ sq.grand_total|rupees }}</div>
+      <div class="note">Pay securely by UPI, card, or net-banking.</div>
+      <button class="btn btn-amber" id="payBtn">Pay {{ sq.grand_total|rupees }} now</button>
+      <a class="back" href="{{ url_for('public.public_quote', token=sq.public_token) }}">← Choose a different payment method</a>
+    </div>
+    <div class="foot">{{ COMPANY_NAME }} · {{ COMPANY_PHONE }}</div>
+  </div>
+
+  <form id="verifyForm" method="post" action="{{ url_for('public.public_quote_pay_online_verify', token=sq.public_token) }}" style="display:none">
+    <input type="hidden" name="razorpay_order_id" id="f_order">
+    <input type="hidden" name="razorpay_payment_id" id="f_payment">
+    <input type="hidden" name="razorpay_signature" id="f_sig">
+  </form>
+
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script>
+  var options = {
+    key: "{{ key_id }}",
+    amount: "{{ order.amount }}",
+    currency: "INR",
+    name: "{{ COMPANY_NAME }}",
+    description: "{{ sq.reference }}",
+    order_id: "{{ order.id }}",
+    prefill: { name: "{{ sq.customer_name }}", contact: "{{ sq.customer_phone }}", email: "{{ sq.customer_email or '' }}" },
+    theme: { color: "#16235b" },
+    handler: function (r) {
+      document.getElementById('f_order').value = r.razorpay_order_id;
+      document.getElementById('f_payment').value = r.razorpay_payment_id;
+      document.getElementById('f_sig').value = r.razorpay_signature;
+      document.getElementById('verifyForm').submit();
+    }
+  };
+  var rzp = new Razorpay(options);
+  document.getElementById('payBtn').onclick = function(){ rzp.open(); };
+  </script>
+</body>
+</html>

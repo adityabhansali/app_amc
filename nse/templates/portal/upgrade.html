@@ -1,0 +1,40 @@
+{% extends "base_portal.html" %}
+{% block title %}Upgrade Plan — {{ COMPANY_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <a href="{{ url_for('portal.contract', contract_id=c.id) }}" class="text-sm text-ink-subtle hover:text-ink">← Back to {{ c.reference }}</a>
+  <h1 class="text-2xl font-extrabold text-ink mt-2 mb-1">Upgrade your AMC plan</h1>
+  <p class="text-ink-subtle text-sm mb-6">You're currently on <b>{{ c.plan.name if c.plan else 'a custom plan' }}</b> ({{ current_price|rupees }}/yr). Choose a higher plan — we'll prepare a prorated quote for the difference over your remaining contract period.</p>
+
+  {% if higher %}
+  <form method="post" class="space-y-3">
+    {% for p in higher %}
+    <label class="card p-4 flex items-start gap-3 cursor-pointer hover:border-primary transition">
+      <input type="radio" name="plan_id" value="{{ p.id }}" class="mt-1" {{ 'checked' if loop.first }}>
+      <div class="flex-1">
+        <div class="flex items-center justify-between">
+          <span class="font-bold text-ink">{{ p.name }}</span>
+          <span class="font-extrabold" style="color:var(--amber)">{{ p.price|rupees }}<span class="text-xs text-ink-subtle font-normal">/yr</span></span>
+        </div>
+        <div class="text-xs text-ink-subtle mt-0.5">{{ p.visits_per_year }} visits/year · {{ p.response_time }} response</div>
+        {% if p.feature_list %}
+        <ul class="text-xs text-ink-muted mt-2 space-y-0.5">
+          {% for f in p.feature_list[:3] %}<li>• {{ f }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+        <div class="text-xs text-green-700 font-medium mt-2">+{{ (p.price - current_price)|rupees }}/yr more than your current plan</div>
+      </div>
+    </label>
+    {% endfor %}
+    <div class="flex justify-end pt-2">
+      <button class="btn btn-primary px-5 py-2.5">Request upgrade quote</button>
+    </div>
+  </form>
+  {% else %}
+  <div class="card p-8 text-center text-ink-subtle">
+    <p class="font-medium text-ink">You're on our top plan.</p>
+    <p class="text-sm mt-1">There's no higher tier to upgrade to. Contact us for a custom arrangement.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

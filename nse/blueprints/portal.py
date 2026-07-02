@@ -10,8 +10,9 @@ from sqlalchemy import or_
 from ..extensions import db
 from ..models import (Contract, Visit, Quotation, ServiceRequest, Payment,
                       Notification, RefillOrder, ServiceQuotation,
-                      CustomerJourneyEvent, VisitFeedback, Equipment,
-                      HealthCheckReport, Referral)
+                      ServiceQuotationItem, CustomerJourneyEvent, VisitFeedback,
+                      Equipment, HealthCheckReport, Referral, SupportTicket,
+                      TicketAttachment, AMCPlan, VisitDefect, Installment)
 from ..utils import (customer_required, notify, notify_staff, WAIVER_TEXT,
                      AMC_AGREEMENT_CLAUSES, AMC_AGREEMENT_VERSION, save_upload)
 from ..email_service import (send_quote_accepted_alert, send_negotiation_alert)
@@ -628,3 +629,257 @@ def amc_certificate(contract_id):
         as_attachment=as_attachment,
         download_name=f"NSE-Certificate-{c.reference}.pdf",
     )
+
+
+# --------------------------------------------------------------------------- #
+# Support Tickets / Complaints
+# --------------------------------------------------------------------------- #
+
+@portal_bp.route("/tickets")
+@login_required
+@customer_required
+def tickets():
+    """List all support tickets raised by this customer."""
+    my_tickets = SupportTicket.query.filter_by(customer_id=current_user.id)\
+        .order_by(SupportTicket.created_at.desc()).all()
+    # Contracts for the "raise complaint" dropdown
+    my_contracts = Contract.query.filter_by(customer_id=current_user.id)\
+        .filter(Contract.status.in_(["active", "pending"])).all()
+    return render_template("portal/tickets.html",
+                           tickets=my_tickets, contracts=my_contracts)
+
+
+@portal_bp.route("/tickets/raise", methods=["POST"])
+@login_required
+@customer_required
+def raise_ticket():
+    """Create a new support ticket (called from a modal form on any portal page)."""
+    title       = request.form.get("title", "").strip()
+    description = request.form.get("description", "").strip()
+    voice_note  = request.form.get("voice_note", "").strip()
+    contract_id = request.form.get("contract_id") or None
+    visit_id    = request.form.get("visit_id") or None
+    priority    = request.form.get("priority", "normal")
+
+    if not title or not description:
+        flash("Please fill in the title and description.", "warning")
+        return redirect(request.referrer or url_for("portal.tickets"))
+
+    # Ownership check
+    if contract_id:
+        c = db.session.get(Contract, int(contract_id))
+        if not c or c.customer_id != current_user.id:
+            contract_id = None
+    if visit_id:
+        v = db.session.get(Visit, int(visit_id))
+        if not v or (v.contract and v.contract.customer_id != current_user.id):
+            visit_id = None
+
+    ticket = SupportTicket(
+        customer_id=current_user.id,
+        contract_id=int(contract_id) if contract_id else None,
+        visit_id=int(visit_id) if visit_id else None,
+        title=title,
+        description=description,
+        voice_note=voice_note or None,
+        priority=priority,
+    )
+    db.session.add(ticket)
+    db.session.flush()   # get ticket.id for attachments
+
+    # Photo / video attachments
+    files = request.files.getlist("attachments")
+    for f in files:
+        if f and f.filename:
+            ext = f.filename.rsplit(".", 1)[-1].lower()
+            atype = "video" if ext in ("mp4", "mov", "avi", "webm") else "photo"
+            path = save_upload(f, subdir="tickets")
+            db.session.add(TicketAttachment(
+                ticket_id=ticket.id, file_path=path, attachment_type=atype))
+
+    db.session.commit()
+
+    # Notify all staff
+    notify_staff(
+        f"New complaint: {ticket.reference}",
+        f"{current_user.name} raised '{title}'.",
+        link=url_for("admin.ticket_detail", ticket_id=ticket.id),
+    )
+
+    flash(f"Complaint {ticket.reference} submitted. Our team will respond within 24 hours.", "success")
+    return redirect(url_for("portal.ticket_detail", ticket_id=ticket.id))
+
+
+@portal_bp.route("/tickets/<int:ticket_id>")
+@login_required
+@customer_required
+def ticket_detail(ticket_id):
+    t = SupportTicket.query.filter_by(id=ticket_id,
+                                      customer_id=current_user.id).first_or_404()
+    return render_template("portal/ticket_detail.html", ticket=t)
+
+
+@portal_bp.route("/tickets/<int:ticket_id>/retrigger", methods=["POST"])
+@login_required
+@customer_required
+def retrigger_ticket(ticket_id):
+    """Re-trigger an unresolved ticket as a reminder to staff (>24h no reply)."""
+    t = SupportTicket.query.filter_by(id=ticket_id,
+                                      customer_id=current_user.id).first_or_404()
+    if not t.can_retrigger:
+        flash("Ticket cannot be re-triggered yet — please wait 24 hours or until staff reply.", "info")
+        return redirect(url_for("portal.ticket_detail", ticket_id=t.id))
+
+    from datetime import datetime
+    t.retrigger_count = (t.retrigger_count or 0) + 1
+    t.retriggered_at = datetime.utcnow()
+    db.session.commit()
+
+    notify_staff(
+        f"Complaint reminder: {t.reference}",
+        f"{current_user.name} re-triggered '{t.title}' — still awaiting acknowledgement.",
+        link=url_for("admin.ticket_detail", ticket_id=t.id),
+    )
+    flash("Reminder sent to the team. We will respond shortly.", "success_chime")
+    return redirect(url_for("portal.ticket_detail", ticket_id=t.id))
+
+
+# =========================================================================== #
+# Wave 11 — customer-initiated renewal, plan upgrade, defect acknowledgement
+# =========================================================================== #
+@portal_bp.route("/contract/<int:contract_id>/renew", methods=["POST"])
+@login_required
+@customer_required
+def request_renewal(contract_id):
+    """Customer asks to renew — notifies staff to raise a renewal quote."""
+    c = _own_contract(contract_id)
+    db.session.add(CustomerJourneyEvent(
+        customer_id=current_user.id, event_type="quote_requested",
+        description=f"Requested renewal of {c.reference}",
+        ref_type="contract", ref_id=c.id))
+    db.session.commit()
+    notify_staff(f"Renewal requested — {c.reference}",
+                 f"{current_user.name} wants to renew {c.reference}. Raise a renewal quote.",
+                 link=url_for("admin.contract", contract_id=c.id))
+    flash("Thanks! We'll prepare your renewal quotation and share it here shortly.",
+          "success_chime")
+    return redirect(url_for("portal.contract", contract_id=c.id))
+
+
+@portal_bp.route("/contract/<int:contract_id>/upgrade", methods=["GET", "POST"])
+@login_required
+@customer_required
+def upgrade_plan(contract_id):
+    """Mid-contract plan upgrade — auto-creates a prorated ServiceQuotation for
+    the difference between the current and the chosen higher plan."""
+    c = _own_contract(contract_id)
+    plans = AMCPlan.query.filter_by(active=True).order_by(AMCPlan.price).all()
+    current_price = (c.plan.price if c.plan else c.price or 0)
+    higher = [p for p in plans if p.price > current_price]
+
+    if request.method == "POST":
+        target = db.session.get(AMCPlan, int(request.form.get("plan_id"))) if request.form.get("plan_id") else None
+        if not target or target.price <= current_price:
+            flash("Choose a higher plan to upgrade to.", "warning")
+            return redirect(url_for("portal.upgrade_plan", contract_id=c.id))
+        # Prorate the difference over the remaining contract months.
+        remaining_days = max(0, (c.end_date - datetime.utcnow().date()).days) if c.end_date else 365
+        frac = min(1.0, max(0.0, remaining_days / 365.0))
+        diff = int(round((target.price - current_price) * frac))
+        sq = ServiceQuotation(
+            service_type="amc", customer_name=current_user.name,
+            customer_phone=current_user.phone, customer_email=current_user.email,
+            project_name=c.site_name, customer_address=c.site_address,
+            status="sent", sent_at=datetime.utcnow(),
+            contract_id=c.id, customer_id=current_user.id,
+            gst_percent=18.0, valid_days=15,
+            notes=f"Mid-term upgrade of {c.reference}: "
+                  f"{(c.plan.name if c.plan else 'current plan')} → {target.name}. "
+                  f"Prorated for {remaining_days} days remaining.")
+        sq.generate_number()
+        db.session.add(sq)
+        db.session.flush()
+        db.session.add(ServiceQuotationItem(
+            quotation_id=sq.id, category="AMC Upgrade",
+            description=f"Upgrade to {target.name} (prorated difference, "
+                        f"{remaining_days} days remaining)",
+            unit="Job", quantity=1.0, rate=float(diff), sort_order=1))
+        db.session.add(CustomerJourneyEvent(
+            customer_id=current_user.id, event_type="quote_sent",
+            description=f"Upgrade quote {sq.quotation_number} raised: {target.name}",
+            ref_type="service_quotation", ref_id=sq.id))
+        db.session.commit()
+        notify_staff(f"Upgrade requested — {c.reference}",
+                     f"{current_user.name} wants to upgrade to {target.name} "
+                     f"(prorated ₹{diff:,.0f}).",
+                     link=url_for("sq.detail_quotation", sq_id=sq.id))
+        flash(f"Upgrade quote {sq.reference} prepared — review and accept it below.",
+              "success_chime")
+        return redirect(url_for("portal.service_quotation", sq_id=sq.id))
+
+    return render_template("portal/upgrade.html", c=c, higher=higher,
+                           current_price=current_price)
+
+
+@portal_bp.route("/defect/<int:defect_id>/acknowledge", methods=["POST"])
+@login_required
+@customer_required
+def acknowledge_defect(defect_id):
+    d = db.session.get(VisitDefect, defect_id) or abort(404)
+    if not d.contract or d.contract.customer_id != current_user.id:
+        abort(404)
+    if d.status == "open":
+        d.status = "acknowledged"
+        d.acknowledged_at = datetime.utcnow()
+        db.session.commit()
+        notify_staff(f"Defect {d.reference} acknowledged",
+                     f"{current_user.name} acknowledged: {d.equipment_name}.",
+                     link=url_for("admin.contract", contract_id=d.contract_id))
+    flash("Thank you — we've noted your acknowledgement of this fault.", "success")
+    return redirect(url_for("portal.contract", contract_id=d.contract_id))
+
+
+@portal_bp.route("/service-quotation/<int:sq_id>/pay-online")
+@login_required
+@customer_required
+def service_quotation_pay_online(sq_id):
+    """Logged-in customer pays a quotation online via Razorpay (if configured)."""
+    from .. import payments
+    sq = db.session.get(ServiceQuotation, sq_id) or abort(404)
+    if sq.customer_id != current_user.id and sq.customer_phone != current_user.phone:
+        abort(404)
+    if not payments.enabled():
+        flash("Online payment is not enabled yet — please use UPI or contact us.", "info")
+        return redirect(url_for("portal.service_quotation", sq_id=sq.id))
+    order = payments.create_order(sq.grand_total, receipt=sq.reference,
+                                  notes={"quotation": sq.reference})
+    if not order:
+        flash("Online payment is temporarily unavailable.", "warning")
+        return redirect(url_for("portal.service_quotation", sq_id=sq.id))
+    sq.gateway_order_id = order["id"]
+    db.session.commit()
+    return render_template("portal/checkout.html", sq=sq, order=order,
+                           key_id=payments.key_id())
+
+
+@portal_bp.route("/service-quotation/<int:sq_id>/pay-online/verify", methods=["POST"])
+@login_required
+@customer_required
+def service_quotation_pay_online_verify(sq_id):
+    from .. import payments
+    sq = db.session.get(ServiceQuotation, sq_id) or abort(404)
+    if sq.customer_id != current_user.id and sq.customer_phone != current_user.phone:
+        abort(404)
+    order_id = request.form.get("razorpay_order_id")
+    payment_id = request.form.get("razorpay_payment_id")
+    signature = request.form.get("razorpay_signature")
+    if payments.verify_payment_signature(order_id, payment_id, signature):
+        payments.mark_quote_paid(sq, payment_id=payment_id, method="online")
+        notify_staff(f"Online payment received — {sq.reference}",
+                     f"{sq.customer_name} paid ₹{sq.grand_total:,.0f} online.",
+                     link=url_for("sq.detail_quotation", sq_id=sq.id))
+        flash("Payment successful — thank you!", "success_chime")
+    else:
+        flash("We could not verify the payment. If money was deducted it will be reconciled.",
+              "warning")
+    return redirect(url_for("portal.service_quotation", sq_id=sq.id))

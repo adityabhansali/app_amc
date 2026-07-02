@@ -1,0 +1,92 @@
+{% extends "base_ops.html" %}
+{% block title %}Complaints & Tickets — Ops Console{% endblock %}
+{% block content %}
+<section class="max-w-5xl mx-auto px-4 py-10">
+  <div class="flex items-center justify-between flex-wrap gap-3 mb-6">
+    <div>
+      <h1 class="text-2xl font-extrabold text-ink">Complaints &amp; Tickets</h1>
+      <p class="text-ink-subtle text-sm mt-1">
+        {{ open_count }} open {{ 'ticket' if open_count == 1 else 'tickets' }} requiring attention.
+      </p>
+    </div>
+  </div>
+
+  <!-- Status filter chips -->
+  <div class="flex flex-wrap gap-2 mb-5">
+    {% for label, val in [('All', ''), ('Open', 'open'), ('Acknowledged', 'acknowledged'), ('Resolved', 'resolved'), ('Closed', 'closed')] %}
+    <a href="{{ url_for('admin.tickets', status=val) }}"
+       class="filter-chip {{ 'active' if status_filter == val }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  {% if tickets %}
+  <div class="card overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-50 text-xs uppercase text-ink-subtle border-b border-hairline">
+        <tr>
+          <th class="px-4 py-2.5 text-left">Ref</th>
+          <th class="px-4 py-2.5 text-left">Customer</th>
+          <th class="px-4 py-2.5 text-left">Subject</th>
+          <th class="px-4 py-2.5 text-center">Priority</th>
+          <th class="px-4 py-2.5 text-center">Status</th>
+          <th class="px-4 py-2.5 text-center">Raised</th>
+          <th class="px-4 py-2.5 text-right">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tickets %}
+        <tr class="border-t border-hairline hover:bg-slate-50 {{ 'bg-red-50' if t.is_overdue }}">
+          <td class="px-4 py-3">
+            <a href="{{ url_for('admin.ticket_detail', ticket_id=t.id) }}"
+               class="font-semibold text-primary">{{ t.reference }}</a>
+            {% if t.is_overdue %}
+            <span class="ml-1 text-xs text-red-600 font-medium">24h+</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-ink">
+            {{ t.customer.name if t.customer else '—' }}
+            <span class="block text-xs text-ink-subtle">
+              {{ (t.customer.phone if t.customer else '') or '' }}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-ink max-w-xs truncate">{{ t.title }}</td>
+          <td class="px-4 py-3 text-center">
+            {% if t.priority == 'high' %}
+            <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700">High</span>
+            {% elif t.priority == 'low' %}
+            <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">Low</span>
+            {% else %}
+            <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">Normal</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-center">
+            <span class="px-2.5 py-1 rounded-full text-xs font-semibold {{ t.status_color }}">
+              {{ t.status_label }}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-center text-ink-subtle text-xs">
+            {{ t.created_at.strftime('%d %b %Y') }}<br>
+            {% if t.retrigger_count %}
+            <span class="text-amber-600">Re-triggered {{ t.retrigger_count }}x</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-right">
+            <a href="{{ url_for('admin.ticket_detail', ticket_id=t.id) }}"
+               class="btn btn-ghost text-xs px-2 py-1">View</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card p-12 text-center text-ink-subtle">
+    <svg class="w-10 h-10 mx-auto mb-3 opacity-30" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="1.5">
+      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <p class="font-medium text-ink">No tickets {{ 'with this status' if status_filter else 'yet' }}.</p>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

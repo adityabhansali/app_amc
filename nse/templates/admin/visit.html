@@ -1,10 +1,38 @@
-{% extends "base.html" %}
+{% extends "base_ops.html" %}
 {% from "_macros.html" import status_badge %}
 {% block title %}{{ v.label }} — {{ v.contract.reference }} — Ops{% endblock %}
 {% block content %}
 <section class="max-w-3xl mx-auto px-4 py-10">
   <a href="{{ url_for('admin.contract', contract_id=v.contract_id) }}" class="text-sm text-slate-500 hover:text-navy-700">← {{ v.contract.reference }}</a>
   <h1 class="text-2xl font-extrabold text-navy-800 mt-2">{{ v.label }} {{ status_badge(v.status) }}</h1>
+
+  {% if not is_future %}
+  <!-- ── Wave 11: on-site check-in / check-out ─────────────────────────────── -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 mt-4 flex flex-wrap items-center gap-3">
+    <div class="flex-1 min-w-[180px]">
+      <div class="text-xs uppercase tracking-wide text-slate-400 font-semibold">On-site status</div>
+      {% if v.checkin_at and v.checkout_at %}
+        <div class="text-sm text-green-700 font-semibold">Completed on site · {{ v.onsite_duration_label }}</div>
+        <div class="text-xs text-slate-500">In {{ v.checkin_at.strftime('%d %b %H:%M') }} · Out {{ v.checkout_at.strftime('%H:%M') }}</div>
+      {% elif v.checkin_at %}
+        <div class="text-sm text-amber-700 font-semibold">Checked in at {{ v.checkin_at.strftime('%d %b %H:%M') }}</div>
+        {% if v.checkin_note %}<div class="text-xs text-slate-500">{{ v.checkin_note }}</div>{% endif %}
+      {% else %}
+        <div class="text-sm text-slate-500">Not checked in yet</div>
+      {% endif %}
+    </div>
+    {% if not v.checkin_at %}
+    <form method="post" action="{{ url_for('admin.visit_checkin', visit_id=v.id) }}" class="flex items-center gap-2">
+      <input type="text" name="checkin_note" placeholder="Location / note (optional)" class="px-3 py-2 rounded-lg border border-slate-300 text-sm w-52">
+      <button class="bg-navy-800 text-white font-semibold px-4 py-2 rounded-xl hover:bg-navy-700 text-sm">Check in</button>
+    </form>
+    {% elif not v.checkout_at %}
+    <form method="post" action="{{ url_for('admin.visit_checkout', visit_id=v.id) }}">
+      <button class="bg-green-600 text-white font-semibold px-4 py-2 rounded-xl hover:bg-green-700 text-sm">Check out</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
 
   {% if is_future %}
   <!-- ── Future-date lock banner ─────────────────────────────────────────── -->
@@ -245,6 +273,47 @@
       {% endfor %}
     </div>
     {% else %}<p class="text-slate-500 text-sm">No material quotations raised for this visit yet.</p>{% endif %}
+  </div>
+
+  <!-- ── Wave 11: Defect reports ─────────────────────────────────────────── -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mt-5">
+    <h2 class="font-bold text-navy-800 mb-1">Defect Reports</h2>
+    <p class="text-xs text-slate-500 mb-3">Flag faulty equipment with a photo and severity. The client is notified to review and acknowledge.</p>
+    {% if v.defects %}
+    <div class="space-y-2 mb-4">
+      {% for d in v.defects %}
+      <div class="flex items-center gap-3 border border-slate-200 rounded-lg p-2.5">
+        {% if d.photo_path %}<img src="{{ d.photo_path|upload_url }}" class="w-12 h-12 rounded object-cover flex-none" alt="">{% endif %}
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-semibold text-navy-800">{{ d.equipment_name }}
+            <span class="text-xs px-1.5 py-0.5 rounded-full font-semibold
+              {{ 'bg-red-50 text-red-700' if d.severity=='high' else 'bg-amber-50 text-amber-800' if d.severity=='medium' else 'bg-blue-50 text-blue-700' }}">{{ d.severity_label }}</span>
+          </div>
+          <div class="text-xs text-slate-500">{{ d.reference }}{% if d.location %} · {{ d.location }}{% endif %} · {{ d.status|title }}</div>
+        </div>
+        <form method="post" action="{{ url_for('admin.defect_status', defect_id=d.id) }}" class="flex-none">
+          <select name="status" onchange="this.form.submit()" class="text-xs px-2 py-1 rounded border border-slate-300">
+            {% for s in ['open','acknowledged','quoted','resolved'] %}<option value="{{ s }}" {{ 'selected' if d.status==s }}>{{ s|title }}</option>{% endfor %}
+          </select>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if not is_future %}
+    <form method="post" action="{{ url_for('admin.visit_defect_add', visit_id=v.id) }}" enctype="multipart/form-data" class="grid sm:grid-cols-2 gap-2 border-t border-slate-100 pt-3">
+      <input type="text" name="equipment_name" placeholder="Faulty equipment *" required class="px-3 py-2 rounded-lg border border-slate-300 text-sm">
+      <input type="text" name="location" placeholder="Location (e.g. 3rd floor)" class="px-3 py-2 rounded-lg border border-slate-300 text-sm">
+      <select name="severity" class="px-3 py-2 rounded-lg border border-slate-300 text-sm">
+        <option value="low">Low severity</option>
+        <option value="medium" selected>Medium severity</option>
+        <option value="high">High severity</option>
+      </select>
+      <input type="file" name="defect_photo" accept="image/*" class="text-sm">
+      <textarea name="description" rows="2" placeholder="What is wrong?" class="px-3 py-2 rounded-lg border border-slate-300 text-sm sm:col-span-2"></textarea>
+      <div class="sm:col-span-2"><button class="bg-red-600 text-white font-semibold px-4 py-2 rounded-xl hover:bg-red-700 text-sm">Log defect</button></div>
+    </form>
+    {% endif %}
   </div>
 
   {% endif %}{# end not is_future #}

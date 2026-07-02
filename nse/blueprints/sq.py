@@ -17,7 +17,7 @@ from ..extensions import db
 from ..models import (ServiceQuotation, ServiceQuotationItem,
                       CustomerJourneyEvent, User, Contract,
                       RefillOrder, ServiceRequest, InventoryItem)
-from ..utils import staff_required, notify, whatsapp_url, public_url
+from ..utils import staff_required, notify, whatsapp_url, public_url, qr_data_uri
 from ..pdf_generator import generate_quotation_pdf
 from ..email_service import (send_quotation_email, send_quote_accepted_alert,
                               send_negotiation_alert)
@@ -81,6 +81,19 @@ def new_quotation():
     sr       = db.session.get(ServiceRequest, request.args.get("sr_id", type=int))
     ro       = db.session.get(RefillOrder,    request.args.get("ro_id", type=int))
 
+    # Pre-fill from a site survey (?from_survey=X) — client details only,
+    # NO items auto-added. Engineer fills items manually.
+    from_survey_id = request.args.get("from_survey", type=int)
+    prefill = {}
+    if from_survey_id:
+        prefill = {
+            "customer_name":    request.args.get("prefill_name", ""),
+            "customer_phone":   request.args.get("prefill_phone", ""),
+            "customer_email":   request.args.get("prefill_email", ""),
+            "project_name":     request.args.get("prefill_project", ""),
+            "customer_address": request.args.get("prefill_address", ""),
+        }
+
     if request.method == "POST":
         f = request.form
         sq = ServiceQuotation(
@@ -99,6 +112,9 @@ def new_quotation():
             created_by_id    = current_user.id,
             status           = "draft",
         )
+        # Link survey if this quote came from one
+        survey_id_hidden = f.get("from_survey_id", type=int)
+
         # Link to customer User by phone (primary login method) or email
         cu = None
         if sq.customer_phone:
@@ -112,16 +128,16 @@ def new_quotation():
         db.session.flush()
 
         # Parse line items (dynamic rows)
-        descs     = f.getlist("item_desc")
-        cats      = f.getlist("item_category")
-        units     = f.getlist("item_unit")
-        qtys      = f.getlist("item_qty")
-        rates     = f.getlist("item_rate")
+        descs = f.getlist("item_desc")
+        cats  = f.getlist("item_category")
+        units = f.getlist("item_unit")
+        qtys  = f.getlist("item_qty")
+        rates = f.getlist("item_rate")
 
         for i, desc in enumerate(descs):
             if not desc.strip():
                 continue
-            item = ServiceQuotationItem(
+            db.session.add(ServiceQuotationItem(
                 quotation_id = sq.id,
                 category     = cats[i] if i < len(cats) else "General",
                 description  = desc.strip(),
@@ -129,11 +145,17 @@ def new_quotation():
                 quantity     = float(qtys[i] or 1) if i < len(qtys) else 1,
                 rate         = float(rates[i] or 0) if i < len(rates) else 0,
                 sort_order   = i,
-            )
-            db.session.add(item)
+            ))
+
+        # Link back to the survey that originated this quote
+        if survey_id_hidden:
+            from ..models import SystemCheckList as SCL
+            sv = db.session.get(SCL, survey_id_hidden)
+            if sv:
+                sv.service_quotation_id = sq.id
 
         _log_event(sq.customer_id, "quote_requested",
-                   f"Quotation {sq.reference} created (draft)",
+                   f"Quotation {sq.reference} created as draft by {current_user.name}",
                    "service_quotation", sq.id)
         db.session.commit()
         flash(f"Quotation {sq.reference} created.", "success")
@@ -143,7 +165,8 @@ def new_quotation():
         .order_by(InventoryItem.category, InventoryItem.name).all()
     return render_template("admin/sq_new.html",
                            contract=contract, sr=sr, ro=ro,
-                           inventory=inventory)
+                           inventory=inventory, prefill=prefill,
+                           from_survey_id=from_survey_id)
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -159,8 +182,12 @@ def detail_quotation(sq_id):
     if request.method == "POST":
         action = request.form.get("action", "save")
 
-        if action == "save" and sq.is_editable:
-            f = sq
+        if action == "save":
+            # Always editable by staff — no status restriction.
+            # Log a revision entry in the activity history.
+            old_total = sq.grand_total
+            old_status = sq.status
+
             sq.customer_name    = request.form.get("customer_name", sq.customer_name).strip()
             sq.customer_phone   = request.form.get("customer_phone", sq.customer_phone or "").strip()
             sq.customer_email   = request.form.get("customer_email", sq.customer_email or "").strip()
@@ -193,6 +220,16 @@ def detail_quotation(sq_id):
                     rate         = float(rates[i] or 0) if i < len(rates) else 0,
                     sort_order   = i,
                 ))
+            db.session.flush()
+
+            # Log every edit as a revision in the activity history
+            new_total = sq.grand_total
+            change = ""
+            if abs(new_total - old_total) > 0.01:
+                change = f" — total changed from ₹{old_total:,.0f} to ₹{new_total:,.0f}"
+            _log_event(sq.customer_id, "quote_sent",
+                       f"Quotation {sq.reference} revised by {current_user.name}{change}",
+                       "service_quotation", sq.id)
             db.session.commit()
             flash("Quotation updated.", "success")
 
@@ -270,9 +307,87 @@ def detail_quotation(sq_id):
         f"Tap to view and pay easily (no login needed): {share_link}"
     )
     whatsapp_share = whatsapp_url(sq.customer_phone, wa_message)
+    share_qr = qr_data_uri(share_link)
 
     return render_template("admin/sq_detail.html", sq=sq, journey=journey,
-                           share_link=share_link, whatsapp_share=whatsapp_share)
+                           share_link=share_link, whatsapp_share=whatsapp_share,
+                           share_qr=share_qr)
+
+
+@sq_bp.route("/<int:sq_id>/qr")
+@login_required
+@staff_required
+def quotation_qr(sq_id):
+    """Full-screen, print-friendly QR code for handing the tablet to a client
+    on-site or printing and leaving it at the property (society notice board,
+    reception desk, etc.) — scan to open the no-login quotation link."""
+    sq = db.session.get(ServiceQuotation, sq_id) or abort(404)
+    sq.ensure_token()
+    db.session.commit()
+    share_link = public_url("public.public_quote", token=sq.public_token)
+    share_qr = qr_data_uri(share_link, box_size=10)
+    return render_template("admin/sq_qr.html", sq=sq, share_link=share_link,
+                           share_qr=share_qr)
+
+
+# ─────────────────────────────────────────────────────────────────
+# Edit / Revise — always editable by staff, full form, logs history
+# ─────────────────────────────────────────────────────────────────
+
+@sq_bp.route("/<int:sq_id>/edit", methods=["GET", "POST"])
+@login_required
+@staff_required
+def edit_quotation(sq_id):
+    sq = db.session.get(ServiceQuotation, sq_id) or abort(404)
+
+    if request.method == "POST":
+        old_total = sq.grand_total
+        f = request.form
+        sq.customer_name    = f.get("customer_name", sq.customer_name).strip()
+        sq.customer_phone   = f.get("customer_phone", sq.customer_phone or "").strip()
+        sq.customer_email   = f.get("customer_email", sq.customer_email or "").strip()
+        sq.project_name     = f.get("project_name", sq.project_name or "").strip()
+        sq.customer_address = f.get("customer_address", sq.customer_address or "").strip()
+        sq.gst_percent      = float(f.get("gst_percent") or sq.gst_percent)
+        sq.valid_days       = int(f.get("valid_days") or sq.valid_days)
+        sq.notes            = f.get("notes", sq.notes or "").strip()
+
+        for item in sq.items:
+            db.session.delete(item)
+        db.session.flush()
+
+        descs = f.getlist("item_desc")
+        cats  = f.getlist("item_category")
+        units = f.getlist("item_unit")
+        qtys  = f.getlist("item_qty")
+        rates = f.getlist("item_rate")
+
+        for i, desc in enumerate(descs):
+            if not desc.strip():
+                continue
+            db.session.add(ServiceQuotationItem(
+                quotation_id = sq.id,
+                category     = cats[i] if i < len(cats) else "General",
+                description  = desc.strip(),
+                unit         = units[i] if i < len(units) else "Job",
+                quantity     = float(qtys[i] or 1) if i < len(qtys) else 1,
+                rate         = float(rates[i] or 0) if i < len(rates) else 0,
+                sort_order   = i,
+            ))
+        db.session.flush()
+
+        new_total = sq.grand_total
+        change = f" — total ₹{old_total:,.0f} → ₹{new_total:,.0f}" if abs(new_total - old_total) > 0.01 else ""
+        _log_event(sq.customer_id, "quote_sent",
+                   f"Quotation {sq.reference} revised by {current_user.name}{change}",
+                   "service_quotation", sq.id)
+        db.session.commit()
+        flash(f"Quotation {sq.reference} updated. Review and re-send if needed.", "success")
+        return redirect(url_for("sq.detail_quotation", sq_id=sq.id))
+
+    inventory = InventoryItem.query.filter_by(active=True)\
+        .order_by(InventoryItem.category, InventoryItem.name).all()
+    return render_template("admin/sq_edit.html", sq=sq, inventory=inventory)
 
 
 # ─────────────────────────────────────────────────────────────────

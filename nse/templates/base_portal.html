@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block body %}
+<style>
+  .nse-portal-nav{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:10px 28px;background:rgba(246,245,242,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--hair);}
+  .pnav{display:inline-flex;align-items:center;padding:7px 12px;border-radius:8px;font-size:13.5px;font-weight:500;color:var(--ink3);transition:color .1s;text-decoration:none;}
+  .pnav:hover{color:var(--ink);}
+  .pnav.active{font-weight:650;color:var(--ink);background:#fff;border:1px solid var(--hair2);}
+  .nse-portal-content{max-width:1040px;margin:0 auto;padding:26px 28px 60px;}
+  .nse-bell>summary{list-style:none;}.nse-bell>summary::-webkit-details-marker{display:none;}
+</style>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;background:var(--canvas);">
+  <!-- Top nav -->
+  <nav class="nse-portal-nav">
+    <div style="display:flex;align-items:center;gap:26px;">
+      <a href="{{ url_for('portal.dashboard') }}" style="display:flex;align-items:center;gap:9px;text-decoration:none;">
+        <div style="width:32px;height:32px;border-radius:8px;background:#072076;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+          <img src="{{ url_for('static', filename='img/logo-emblem.png') }}" style="width:26px;height:26px;object-fit:contain;">
+        </div>
+        <div style="line-height:1.12;">
+          <div style="font-size:13px;font-weight:650;color:#072076;">Northern Star</div>
+          <div style="font-size:10px;font-weight:600;color:var(--ink3);letter-spacing:.02em;">Customer Portal</div>
+        </div>
+      </a>
+      <div style="display:flex;gap:2px;">
+        {% set _pe = request.endpoint %}
+        <a href="{{ url_for('portal.dashboard') }}" class="pnav {{ 'active' if _pe == 'portal.dashboard' }}">Dashboard</a>
+        <a href="{{ url_for('portal.dashboard') }}" class="pnav {{ 'active' if _pe in ('portal.contract','portal.visit','portal.equipment_detail') }}">My Contracts</a>
+        <a href="{{ url_for('portal.journey') }}" class="pnav {{ 'active' if _pe == 'portal.journey' }}">Journey</a>
+        <a href="{{ url_for('portal.tickets') }}" class="pnav {{ 'active' if _pe in ('portal.tickets','portal.ticket_detail') }}">Complaints</a>
+        <a href="{{ url_for('portal.profile') }}" class="pnav {{ 'active' if _pe == 'portal.profile' }}">Profile</a>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <!-- Bell -->
+      <details class="nse-bell" style="position:relative;">
+        <summary style="list-style:none;cursor:pointer;width:34px;height:34px;border-radius:8px;background:#fff;border:1px solid var(--hair2);display:flex;align-items:center;justify-content:center;position:relative;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4a4b52" stroke-width="1.9"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+          {% if unread_notifications %}<span style="position:absolute;top:5px;right:6px;width:8px;height:8px;background:#072076;border-radius:50%;border:1.5px solid #fff;"></span>{% endif %}
+        </summary>
+        <div style="position:absolute;right:0;top:calc(100% + 6px);width:300px;background:#fff;border:1px solid var(--hair);border-radius:12px;box-shadow:0 8px 24px -8px rgba(16,24,40,.12);z-index:50;overflow:hidden;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--hair3);">
+            <span style="font-size:13px;font-weight:600;">Notifications</span>
+            {% if unread_notifications %}<a href="{{ url_for('portal.mark_read') }}" style="font-size:11.5px;color:var(--pri);">Mark all read</a>{% endif %}
+          </div>
+          <div style="max-height:300px;overflow-y:auto;">
+            {% for n in recent_notifications %}
+            <a href="{{ n.link or url_for('portal.notifications') }}" style="display:block;padding:10px 14px;font-size:12.5px;border-bottom:1px solid var(--hair3);text-decoration:none;color:var(--ink);{% if not n.read %}font-weight:600;{% endif %}">
+              <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ n.title }}</div>
+              {% if n.body %}<div style="color:var(--ink3);font-size:11.5px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ n.body[:80] }}</div>{% endif %}
+              <div style="color:var(--ink4);font-size:11px;margin-top:2px;">{{ n.created_at|datefmt }}</div>
+            </a>
+            {% else %}
+            <div style="padding:20px;text-align:center;color:var(--ink3);font-size:13px;">No notifications.</div>
+            {% endfor %}
+          </div>
+          <a href="{{ url_for('portal.notifications') }}" style="display:block;padding:10px;text-align:center;font-size:12px;color:var(--pri);border-top:1px solid var(--hair3);text-decoration:none;">View all →</a>
+        </div>
+      </details>
+      <!-- User avatar -->
+      {% if current_user.is_authenticated %}
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#2a336b,#1f2650);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:650;font-size:11px;">
+          {{ current_user.name[:2]|upper }}
+        </div>
+        <div style="line-height:1.15;">
+          <div style="font-size:12px;font-weight:600;color:var(--ink);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ current_user.name }}</div>
+          <div style="font-size:10px;color:var(--ink3);">{{ current_user.city or 'Surat' }}</div>
+        </div>
+      </div>
+      <a href="{{ url_for('auth.logout') }}" style="font-size:12px;color:var(--ink3);text-decoration:none;padding:6px 10px;border-radius:7px;border:1px solid var(--hair2);">Logout</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <!-- Flash messages -->
+  <div style="max-width:1040px;margin:0 auto;width:100%;padding:0 28px;">
+    {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}
+    {% set ns_flash = namespace(chime=false) %}
+    <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">
+    {% for category, msg in messages %}
+    {% set cat = category.replace('_chime','') %}{% if '_chime' in category %}{% set ns_flash.chime = true %}{% endif %}
+    {% set fc = {'success':'#e7f4ec','warning':'#fbf0dc','danger':'#fdecea','error':'#fdecea','info':'#eef1fb'}.get(cat,'#f1f0ee') %}
+    {% set ft = {'success':'#17864a','warning':'#b45309','danger':'#d23f3f','error':'#d23f3f','info':'#2f6fed'}.get(cat,'#4a4b52') %}
+    <div {% if ns_flash.chime %}data-nse-chime{% endif %} style="background:{{ fc }};color:{{ ft }};border-radius:8px;padding:10px 14px;font-size:13px;font-weight:550;">{{ msg }}</div>
+    {% endfor %}</div>{% endif %}{% endwith %}
+  </div>
+
+  <!-- Page content -->
+  <main style="flex:1;">
+    <div class="nse-portal-content">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+</div>
+
+{% include "_chat_widget.html" %}
+
+{% block scripts %}{% endblock %}
+{% endblock body %}

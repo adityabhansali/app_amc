@@ -10,38 +10,38 @@
            --line:#e7e3dc; --canvas:#faf8f5; --green:#16a34a; }
     *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
     body{ margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-          background:var(--canvas); color:var(--ink); font-size:19px; line-height:1.5; }
-    .wrap{ max-width:560px; margin:0 auto; padding:0 18px 56px; }
-    .top{ background:var(--navy); color:#fff; padding:22px 18px; text-align:center; }
-    .top img{ height:52px; display:block; margin:0 auto 8px; }
-    .top .co{ font-size:18px; font-weight:700; letter-spacing:.3px; }
-    .top .tag{ font-size:14px; opacity:.85; margin-top:2px; }
-    .card{ background:#fff; border:1px solid var(--line); border-radius:18px;
-           padding:22px; margin-top:18px; box-shadow:0 2px 10px rgba(20,30,60,.05); }
-    h1{ font-size:24px; margin:18px 0 4px; }
-    .sub{ color:var(--muted); font-size:17px; margin:0; }
+          background:var(--canvas); color:var(--ink); font-size:15px; line-height:1.5; }
+    .wrap{ max-width:480px; margin:0 auto; padding:0 16px 40px; }
+    .top{ background:var(--navy); color:#fff; padding:14px 16px; text-align:center; }
+    .top img{ height:38px; display:block; margin:0 auto 6px; }
+    .top .co{ font-size:15px; font-weight:700; letter-spacing:.3px; }
+    .top .tag{ font-size:12px; opacity:.85; margin-top:2px; }
+    .card{ background:#fff; border:1px solid var(--line); border-radius:14px;
+           padding:16px; margin-top:14px; box-shadow:0 2px 8px rgba(20,30,60,.05); }
+    h1{ font-size:18px; margin:14px 0 3px; }
+    .sub{ color:var(--muted); font-size:14px; margin:0; }
     .ref{ display:inline-block; background:#eef1f8; color:var(--navy); font-weight:700;
-          padding:6px 12px; border-radius:999px; font-size:15px; margin-top:10px; }
-    .items{ width:100%; border-collapse:collapse; margin-top:6px; }
-    .items td{ padding:11px 0; border-bottom:1px solid var(--line); vertical-align:top; }
+          padding:4px 10px; border-radius:999px; font-size:13px; margin-top:8px; }
+    .items{ width:100%; border-collapse:collapse; margin-top:4px; }
+    .items td{ padding:8px 0; border-bottom:1px solid var(--line); vertical-align:top; font-size:14px; }
     .items td.amt{ text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
-    .items .qty{ color:var(--muted); font-size:15px; }
-    .totrow td{ border:none; padding:6px 0; color:var(--muted); }
-    .totrow.grand td{ font-size:23px; font-weight:800; color:var(--navy); padding-top:12px; }
-    .pay-h{ text-align:center; font-size:22px; font-weight:800; margin:30px 0 4px; }
-    .pay-s{ text-align:center; color:var(--muted); margin:0 0 18px; }
-    .btn{ display:flex; align-items:center; gap:14px; width:100%; border:none; cursor:pointer;
-          border-radius:16px; padding:20px 20px; font-size:21px; font-weight:700; margin-bottom:14px;
+    .items .qty{ color:var(--muted); font-size:12px; }
+    .totrow td{ border:none; padding:4px 0; color:var(--muted); font-size:13px; }
+    .totrow.grand td{ font-size:17px; font-weight:800; color:var(--navy); padding-top:8px; }
+    .pay-h{ text-align:center; font-size:15px; font-weight:800; margin:20px 0 3px; }
+    .pay-s{ text-align:center; color:var(--muted); font-size:13px; margin:0 0 12px; }
+    .btn{ display:flex; align-items:center; gap:10px; width:100%; border:none; cursor:pointer;
+          border-radius:10px; padding:12px 14px; font-size:15px; font-weight:600; margin-bottom:10px;
           text-align:left; text-decoration:none; }
-    .btn .ic{ width:30px; height:30px; flex:none; }
+    .btn .ic{ width:20px; height:20px; flex:none; }
     .btn-upi{ background:var(--amber); color:#3a2600; }
-    .btn-cash{ background:#fff; color:var(--ink); border:2px solid var(--line); }
-    .btn-cheque{ background:#fff; color:var(--ink); border:2px solid var(--line); }
-    .btn small{ display:block; font-size:15px; font-weight:500; opacity:.8; }
-    .help{ text-align:center; margin-top:26px; }
-    .help a{ color:var(--navy); font-weight:700; text-decoration:none; font-size:18px;
-             display:inline-block; padding:12px 18px; border:2px solid var(--line);
-             border-radius:14px; margin:6px; background:#fff; }
+    .btn-cash{ background:#fff; color:var(--ink); border:1.5px solid var(--line); }
+    .btn-cheque{ background:#fff; color:var(--ink); border:1.5px solid var(--line); }
+    .btn small{ display:block; font-size:12px; font-weight:400; opacity:.75; }
+    .help{ text-align:center; margin-top:18px; }
+    .help a{ color:var(--navy); font-weight:600; text-decoration:none; font-size:14px;
+             display:inline-block; padding:8px 14px; border:1.5px solid var(--line);
+             border-radius:10px; margin:4px; background:#fff; }
     .foot{ text-align:center; color:var(--muted); font-size:14px; margin-top:30px; line-height:1.7; }
     .paid{ background:#e8f7ee; border:1px solid #b6e3c6; color:#176c39; border-radius:14px;
            padding:16px; text-align:center; font-weight:700; font-size:18px; margin-top:18px; }
@@ -81,6 +81,13 @@
     {% else %}
       <div class="pay-h">How would you like to pay?</div>
       <p class="pay-s">Choose any one option below.</p>
+
+      {% if RAZORPAY_ENABLED %}
+      <a class="btn" style="background:#16235b;color:#fff;text-decoration:none" href="{{ url_for('public.public_quote_pay_online', token=sq.public_token) }}">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+        <span>Pay online — Card / UPI / Net-banking<small style="opacity:.8">Secure instant payment</small></span>
+      </a>
+      {% endif %}
 
       <form method="post" action="{{ url_for('public.public_quote_pay', token=sq.public_token) }}">
         <input type="hidden" name="method" value="upi">

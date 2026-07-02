@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base_ops.html" %}
 {% from "_macros.html" import status_badge, refill_badge %}
 {% block title %}{{ c.reference }} — Ops Console{% endblock %}
 {% block content %}
@@ -114,6 +114,91 @@
     <button class="bg-navy-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-navy-700">Update payment</button>
     <span class="text-sm text-slate-500 ml-auto">{{ c.start_date|datefmt }} → {{ c.end_date|datefmt }}</span>
   </form>
+
+  <!-- ── Wave 11: Safety score + renewal + instalments ─────────────────────── -->
+  {% set grade = c.safety_grade %}
+  <div class="grid sm:grid-cols-2 gap-4 mt-5">
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 flex items-center gap-4">
+      <div class="w-16 h-16 rounded-2xl grid place-items-center font-extrabold text-white text-2xl flex-none"
+           style="background:{{ {'green':'#17864a','blue':'#2f6fed','amber':'#b45309','red':'#d23f3f'}[grade[1]] }}">{{ grade[0] }}</div>
+      <div>
+        <div class="text-xs uppercase tracking-wide text-slate-400 font-semibold">Fire Safety Score</div>
+        <div class="text-2xl font-extrabold text-navy-800">{{ c.safety_score }}<span class="text-sm text-slate-400 font-normal">/100</span></div>
+        {% if c.open_defects %}<div class="text-xs text-red-600 mt-0.5">{{ c.open_defects|length }} open defect(s)</div>{% endif %}
+      </div>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-200 p-4">
+      <div class="text-xs uppercase tracking-wide text-slate-400 font-semibold">Contract period</div>
+      {% set dte = c.days_to_expiry %}
+      <div class="text-sm text-navy-800 font-semibold mt-1">
+        {% if dte is not none %}{% if dte < 0 %}Expired {{ -dte }} days ago{% else %}{{ dte }} days remaining{% endif %}{% else %}—{% endif %}
+      </div>
+      {% if c.renewal_window %}
+      <form method="post" action="{{ url_for('admin.renew_contract', contract_id=c.id) }}" class="mt-2">
+        <button class="bg-amber-500 text-amber-950 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-amber-400">Create renewal quote</button>
+      </form>
+      {% elif c.is_renewed %}
+      <div class="text-xs text-green-700 mt-1">Renewal already created ({{ c.renewals[0].reference }}).</div>
+      {% else %}
+      <form method="post" action="{{ url_for('admin.renew_contract', contract_id=c.id) }}" class="mt-2">
+        <button class="text-primary text-sm hover:underline">Renew early →</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Defects on this contract -->
+  {% if c.open_defects %}
+  <div class="bg-white rounded-2xl border border-red-200 p-4 mt-4">
+    <h2 class="font-bold text-red-700 mb-2">Open defects</h2>
+    <div class="space-y-1.5">
+      {% for d in c.open_defects %}
+      <div class="flex items-center justify-between text-sm border-b border-slate-100 pb-1.5">
+        <span class="text-navy-800">{{ d.equipment_name }} <span class="text-xs text-slate-400">{{ d.reference }} · {{ d.severity_label }}</span></span>
+        <span class="text-xs text-slate-500">{{ d.status|title }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Instalment plan -->
+  <div class="bg-white rounded-2xl border border-slate-200 p-4 mt-4">
+    <h2 class="font-bold text-navy-800 mb-1">Instalment / EMI plan</h2>
+    {% if c.installment_plan %}
+    <div class="space-y-1.5 mb-3">
+      {% for it in c.installment_plan %}
+      <div class="flex items-center justify-between text-sm border-b border-slate-100 pb-1.5">
+        <span class="text-navy-800">{{ it.label }} · <span class="text-slate-500">{{ it.due_date|datefmt }}</span>
+          {% if it.is_overdue %}<span class="text-xs text-red-600 font-semibold">overdue</span>{% endif %}</span>
+        <span class="flex items-center gap-2">
+          <span class="font-semibold">{{ it.amount|rupees }}</span>
+          <form method="post" action="{{ url_for('admin.installment_pay', inst_id=it.id) }}">
+            <button class="text-xs px-2 py-1 rounded-full font-semibold {{ 'bg-green-50 text-green-700' if it.paid else 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">{{ 'Paid ✓' if it.paid else 'Mark paid' }}</button>
+          </form>
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-xs text-slate-500 mb-3">Split the annual fee into instalments for this client.</p>
+    {% endif %}
+    <form method="post" action="{{ url_for('admin.contract_installments', contract_id=c.id) }}" class="flex flex-wrap items-end gap-2 border-t border-slate-100 pt-3">
+      <label class="text-xs text-slate-500">Parts
+        <select name="count" class="block mt-0.5 px-2 py-1.5 rounded border border-slate-300 text-sm">
+          {% for n in [2,3,4,6,12] %}<option value="{{ n }}" {{ 'selected' if n==4 }}>{{ n }}</option>{% endfor %}
+        </select></label>
+      <label class="text-xs text-slate-500">Frequency
+        <select name="frequency" class="block mt-0.5 px-2 py-1.5 rounded border border-slate-300 text-sm">
+          <option value="monthly">Monthly</option>
+          <option value="quarterly" selected>Quarterly</option>
+          <option value="half">Half-yearly</option>
+        </select></label>
+      <label class="text-xs text-slate-500">First due
+        <input type="date" name="first_due" class="block mt-0.5 px-2 py-1.5 rounded border border-slate-300 text-sm"></label>
+      <button class="bg-navy-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-navy-700">{{ 'Rebuild' if c.installment_plan else 'Create' }} plan</button>
+    </form>
+  </div>
 
   <!-- Visits -->
   <div class="flex items-center justify-between mt-8 mb-3">

@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base_ops.html" %}
 {% block title %}{{ s.reference if s else 'New' }} — Site Checking List{% endblock %}
 {% block content %}
 <section class="max-w-6xl mx-auto px-4 py-8">
@@ -105,11 +105,20 @@
     <!-- Actions -->
     <div class="flex flex-wrap gap-3">
       <button type="submit" class="btn btn-primary">Save survey</button>
-      <button type="submit" name="save_and_quote" value="1" class="btn btn-ghost">Save &amp; create quotation</button>
-      {% if s and s.service_quotation_id %}
-      <a href="{{ url_for('sq.detail_quotation', sq_id=s.service_quotation_id) }}" class="btn btn-ghost">View linked quotation</a>
-      {% endif %}
     </div>
+
+    {% if s %}
+    <div class="card p-5 border-l-4 border-primary">
+      <h3 class="font-bold text-ink mb-1">Next step — Create quotation</h3>
+      <p class="text-sm text-ink-subtle mb-3">Save the survey first, then click below to open the quotation form with this client's details pre-filled. You add the items and rates yourself.</p>
+      <div class="flex flex-wrap gap-3">
+        <a href="{{ url_for('admin.survey_to_quote', survey_id=s.id) }}" class="btn btn-primary text-sm">Create quotation from this survey</a>
+        {% if s.service_quotation_id %}
+        <a href="{{ url_for('sq.detail_quotation', sq_id=s.service_quotation_id) }}" class="btn btn-ghost text-sm">View linked quotation</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
   </form>
 </section>
 

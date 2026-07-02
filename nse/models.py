@@ -48,6 +48,53 @@ class User(UserMixin, db.Model):
     def is_admin(self):
         return self.role == "admin"
 
+    # ----- Wave 11: Customer Health Score (0-100, retention risk) -----------
+    @property
+    def health_score(self):
+        """Loyalty / retention score across all of the customer's contracts:
+        payments, visit reliability, feedback given, agreement, referrals."""
+        contracts = [c for c in self.contracts if c.status in ("active", "expired")]
+        if not contracts:
+            return None
+        score = 0
+        # Payments on time — 30 pts
+        paid = sum(1 for c in contracts if c.payment_status == "paid")
+        score += 30 * (paid / len(contracts))
+        # Visit reliability (few cancellations) — 20 pts
+        all_visits = [v for c in contracts for v in c.visits]
+        if all_visits:
+            cancelled = sum(1 for v in all_visits if v.status == "cancelled")
+            score += 20 * (1 - min(1.0, cancelled / len(all_visits)))
+        else:
+            score += 20
+        # Feedback engagement — 20 pts
+        completed = [v for v in all_visits if v.status == "completed"]
+        if completed:
+            rated = sum(1 for v in completed if v.feedback and v.feedback.is_submitted)
+            score += 20 * (rated / len(completed))
+        else:
+            score += 10
+        # Agreement accepted — 15 pts
+        if any(c.agreement_accepted for c in contracts):
+            score += 15
+        # Referrals made — 15 pts (any referral = full marks)
+        refs = [r for c in contracts for r in getattr(c, "referrals", [])]
+        score += 15 if refs else 0
+        return max(0, min(100, round(score)))
+
+    @property
+    def health_band(self):
+        s = self.health_score
+        if s is None:
+            return ("New", "slate")
+        if s >= 75:
+            return ("Loyal", "green")
+        if s >= 50:
+            return ("Stable", "blue")
+        if s >= 30:
+            return ("At risk", "amber")
+        return ("Churn risk", "red")
+
     def __repr__(self):
         return f"<User {self.id} {self.role} {self.name}>"
 
@@ -86,6 +133,7 @@ class AMCPlan(db.Model):
     price = db.Column(db.Integer, nullable=False)        # rupees per year
     visits_per_year = db.Column(db.Integer, nullable=False, default=4)
     response_time = db.Column(db.String(60), default="48 hours")
+    sla_hours = db.Column(db.Integer, default=48)   # Wave 11 — emergency response SLA (hrs)
     description = db.Column(db.Text)
     features = db.Column(db.Text)  # one feature per line
     active = db.Column(db.Boolean, default=True)
@@ -133,7 +181,12 @@ class Contract(db.Model):
     certificate_issued = db.Column(db.Boolean, default=False)
     certificate_issued_at = db.Column(db.DateTime)
 
+    # Wave 11 — renewal / clone lineage (points at the prior year's contract)
+    renewed_from_id = db.Column(db.Integer, db.ForeignKey("contracts.id"), nullable=True)
+
     plan = db.relationship("AMCPlan")
+    renewed_from = db.relationship("Contract", remote_side=[id],
+                                   backref="renewals", foreign_keys=[renewed_from_id])
     visits = db.relationship("Visit", backref="contract", lazy=True,
                              cascade="all, delete-orphan", order_by="Visit.visit_number")
     equipment = db.relationship("Equipment", backref="contract", lazy=True,
@@ -232,6 +285,107 @@ class Contract(db.Model):
         """All material quotations raised against this contract's visits."""
         return [q for q in self.quotations if q.visit_id]
 
+    # ----- Wave 11: renewal lifecycle ---------------------------------------
+    @property
+    def days_to_expiry(self):
+        """Days until the contract ends (negative = already expired). None if no end date."""
+        if not self.end_date:
+            return None
+        return (self.end_date - date.today()).days
+
+    @property
+    def is_renewed(self):
+        """True when a follow-on contract already renews this one."""
+        return bool(getattr(self, "renewals", None))
+
+    @property
+    def renewal_window(self):
+        """Which renewal-reminder band the contract falls in (or None).
+        Only active, not-yet-renewed contracts qualify."""
+        if self.status != "active" or self.is_renewed:
+            return None
+        d = self.days_to_expiry
+        if d is None:
+            return None
+        if d < 0:
+            return "expired"
+        if d <= 30:
+            return "30"
+        if d <= 60:
+            return "60"
+        if d <= 90:
+            return "90"
+        return None
+
+    @property
+    def anniversary_years(self):
+        """Whole years elapsed since the contract start date (0 if <1yr / no date)."""
+        if not self.start_date:
+            return 0
+        today = date.today()
+        yrs = today.year - self.start_date.year
+        if (today.month, today.day) < (self.start_date.month, self.start_date.day):
+            yrs -= 1
+        return max(0, yrs)
+
+    # ----- Wave 11: Property Fire Safety Score (0-100) ----------------------
+    @property
+    def safety_score(self):
+        """A 0-100 compliance score for this property, weighting visit
+        compliance, equipment health, open defects, certificate & agreement."""
+        score = 0
+        # Visit compliance — 35 pts
+        total = self.total_visits or len(self.visits) or 0
+        if total:
+            score += 35 * min(1.0, self.completed_visits / total)
+        else:
+            score += 35
+        # Equipment health — 25 pts (penalise overdue/due-soon)
+        eq = list(self.equipment)
+        if eq:
+            ok = sum(1 for e in eq if e.refill_status in ("ok", "unknown"))
+            score += 25 * (ok / len(eq))
+        else:
+            score += 25
+        # Open defects — 20 pts (any open high-severity defect hurts most)
+        defects = [d for v in self.visits for d in getattr(v, "defects", [])
+                   if d.status not in ("resolved",)]
+        if not defects:
+            score += 20
+        else:
+            highs = sum(1 for d in defects if d.severity == "high")
+            score += max(0, 20 - highs * 8 - (len(defects) - highs) * 3)
+        # Certificate issued — 10 pts
+        if self.certificate_issued:
+            score += 10
+        elif self.completed_visits >= 2:
+            score += 5
+        # Agreement accepted — 10 pts
+        if self.agreement_accepted:
+            score += 10
+        return max(0, min(100, round(score)))
+
+    @property
+    def safety_grade(self):
+        s = self.safety_score
+        if s >= 85:
+            return ("A", "green")
+        if s >= 70:
+            return ("B", "blue")
+        if s >= 50:
+            return ("C", "amber")
+        return ("D", "red")
+
+    @property
+    def open_defects(self):
+        return [d for v in self.visits for d in getattr(v, "defects", [])
+                if d.status not in ("resolved",)]
+
+    @property
+    def installment_plan(self):
+        """Ordered instalments for this contract (empty when paid in full)."""
+        return sorted(getattr(self, "installments", []), key=lambda i: i.sequence)
+
 
 class Visit(db.Model):
     __tablename__ = "visits"
@@ -250,6 +404,13 @@ class Visit(db.Model):
     customer_approved = db.Column(db.Boolean, default=False)
     approved_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # Technician day-plan confirmation (None=pending, True=accepted, False=rejected)
+    technician_confirmed = db.Column(db.Boolean, nullable=True)
+    technician_note = db.Column(db.Text)
+    # Wave 11 — on-site check-in / check-out (proof of visit, SLA timing)
+    checkin_at   = db.Column(db.DateTime, nullable=True)
+    checkout_at  = db.Column(db.DateTime, nullable=True)
+    checkin_note = db.Column(db.String(255))   # optional geo string / free note
 
     technician = db.relationship("User", foreign_keys=[technician_id])
     photos = db.relationship("VisitPhoto", backref="visit", lazy=True,
@@ -261,6 +422,13 @@ class Visit(db.Model):
     @property
     def label(self):
         return f"Visit {self.visit_number}"
+
+    @property
+    def days_until(self):
+        """Days remaining until scheduled date (negative = overdue). None if no date."""
+        if self.scheduled_date and self.status in ("scheduled", "in_progress"):
+            return (self.scheduled_date - date.today()).days
+        return None
 
     @property
     def material_quote(self):
@@ -281,6 +449,29 @@ class Visit(db.Model):
         ok = sum(1 for i in items if i.status == "ok")
         issues = sum(1 for i in items if i.status == "issue")
         return {"total": len(items), "ok": ok, "issues": issues}
+
+    @property
+    def is_checked_in(self):
+        return self.checkin_at is not None and self.checkout_at is None
+
+    @property
+    def onsite_minutes(self):
+        """Minutes between check-in and check-out (None if not both recorded)."""
+        if self.checkin_at and self.checkout_at:
+            return int((self.checkout_at - self.checkin_at).total_seconds() // 60)
+        return None
+
+    @property
+    def onsite_duration_label(self):
+        m = self.onsite_minutes
+        if m is None:
+            return None
+        h, mm = divmod(m, 60)
+        return (f"{h}h {mm}m" if h else f"{mm}m")
+
+    @property
+    def open_defects(self):
+        return [d for d in getattr(self, "defects", []) if d.status != "resolved"]
 
 
 class VisitChecklistItem(db.Model):
@@ -521,6 +712,9 @@ class ServiceRequest(db.Model):
     payment_mode = db.Column(db.String(20), default="cash")  # cash/online
     amount = db.Column(db.Integer, default=0)
     payment_status = db.Column(db.String(20), default="pending")
+    # Wave 11 — SLA response tracking
+    sla_due_at        = db.Column(db.DateTime, nullable=True)   # deadline to respond
+    first_response_at = db.Column(db.DateTime, nullable=True)   # when staff acted
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     technician = db.relationship("User", foreign_keys=[assigned_technician_id])
@@ -529,6 +723,31 @@ class ServiceRequest(db.Model):
     def reference(self):
         prefix = "NOC" if self.request_type == "noc" else "EMG"
         return f"{prefix}-{self.id:05d}"
+
+    # ----- Wave 11: SLA status --------------------------------------------
+    @property
+    def sla_status(self):
+        """met / breached / at_risk / pending / none — based on sla_due_at vs
+        first_response_at (or now). 'none' when no SLA deadline is set."""
+        if not self.sla_due_at:
+            return "none"
+        if self.first_response_at:
+            return "met" if self.first_response_at <= self.sla_due_at else "breached"
+        now = datetime.utcnow()
+        if now > self.sla_due_at:
+            return "breached"
+        # within 25% of the window remaining → at risk
+        remaining = (self.sla_due_at - now).total_seconds()
+        if remaining <= 3600:  # under an hour left
+            return "at_risk"
+        return "pending"
+
+    @property
+    def sla_label(self):
+        return {
+            "met": "SLA met", "breached": "SLA breached", "at_risk": "SLA at risk",
+            "pending": "Within SLA", "none": "",
+        }.get(self.sla_status, "")
 
 
 # --------------------------------------------------------------------------- #
@@ -686,6 +905,9 @@ class ServiceQuotation(db.Model):
     payment_method    = db.Column(db.String(20))
     payment_reference = db.Column(db.String(120))
     payment_marked_at = db.Column(db.DateTime, nullable=True)
+    # Wave 11 — payment-gateway (Razorpay) order/payment ids, gateway-ready
+    gateway_order_id   = db.Column(db.String(120), nullable=True)
+    gateway_payment_id = db.Column(db.String(120), nullable=True)
 
     # Financial
     gst_percent = db.Column(db.Float, default=18.0)
@@ -1216,3 +1438,240 @@ class SystemCheckList(db.Model):
             if total:
                 out[item] = int(total) if total == int(total) else total
         return out
+
+
+# --------------------------------------------------------------------------- #
+# Support Tickets / Complaints
+# --------------------------------------------------------------------------- #
+class SupportTicket(db.Model):
+    """Customer complaint or support request linked to a contract or visit."""
+    __tablename__ = "support_tickets"
+
+    id               = db.Column(db.Integer, primary_key=True)
+    customer_id      = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    contract_id      = db.Column(db.Integer, db.ForeignKey("contracts.id"), nullable=True)
+    visit_id         = db.Column(db.Integer, db.ForeignKey("visits.id"), nullable=True)
+
+    title            = db.Column(db.String(200), nullable=False)
+    description      = db.Column(db.Text, nullable=False)
+    voice_note       = db.Column(db.Text)   # speech-to-text transcript
+
+    status           = db.Column(db.String(20), default="open")
+    # open → acknowledged (staff replied within 24h) → resolved → closed
+    priority         = db.Column(db.String(20), default="normal")  # low/normal/high
+
+    # Staff response fields
+    staff_reply      = db.Column(db.Text)
+    replied_by_id    = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    replied_at       = db.Column(db.DateTime)
+    resolved_at      = db.Column(db.DateTime)
+    resolved_by_id   = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
+    # Re-trigger tracking (client can nudge again if ignored >24h)
+    retriggered_at   = db.Column(db.DateTime)
+    retrigger_count  = db.Column(db.Integer, default=0)
+
+    created_at       = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at       = db.Column(db.DateTime, default=datetime.utcnow,
+                                  onupdate=datetime.utcnow)
+
+    customer     = db.relationship("User", foreign_keys=[customer_id],
+                                   backref="support_tickets")
+    replied_by   = db.relationship("User", foreign_keys=[replied_by_id])
+    resolved_by  = db.relationship("User", foreign_keys=[resolved_by_id])
+    contract     = db.relationship("Contract", foreign_keys=[contract_id],
+                                   backref="support_tickets")
+    visit        = db.relationship("Visit", foreign_keys=[visit_id],
+                                   backref="support_tickets")
+    attachments  = db.relationship("TicketAttachment", backref="ticket", lazy=True,
+                                    cascade="all, delete-orphan")
+
+    @property
+    def reference(self):
+        return f"TKT-{self.id:04d}"
+
+    STATUS_COLORS = {
+        "open":           "bg-red-50 text-red-800",
+        "acknowledged":   "bg-amber-50 text-amber-800",
+        "resolved":       "bg-green-50 text-green-800",
+        "closed":         "bg-slate-100 text-slate-600",
+    }
+
+    @property
+    def status_label(self):
+        return self.status.replace("_", " ").title()
+
+    @property
+    def status_color(self):
+        return self.STATUS_COLORS.get(self.status, "bg-slate-100 text-slate-700")
+
+    @property
+    def is_overdue(self):
+        """Open/acknowledged and no reply for >24 hours."""
+        if self.status in ("resolved", "closed"):
+            return False
+        if self.replied_at:
+            return False
+        age = datetime.utcnow() - self.created_at
+        return age.total_seconds() > 86400
+
+    @property
+    def can_retrigger(self):
+        """Client can re-trigger if open/acknowledged and no reply for >24h."""
+        return self.is_overdue
+
+
+class TicketAttachment(db.Model):
+    """Photos or videos attached to a support ticket."""
+    __tablename__ = "ticket_attachments"
+
+    id              = db.Column(db.Integer, primary_key=True)
+    ticket_id       = db.Column(db.Integer, db.ForeignKey("support_tickets.id"),
+                                 nullable=False)
+    file_path       = db.Column(db.String(255), nullable=False)
+    attachment_type = db.Column(db.String(20), default="photo")  # photo / video
+    created_at      = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class VisitReminderLog(db.Model):
+    """Tracks which visit reminders have been sent to avoid duplicates."""
+    __tablename__ = "visit_reminder_logs"
+
+    id            = db.Column(db.Integer, primary_key=True)
+    visit_id      = db.Column(db.Integer, db.ForeignKey("visits.id"), nullable=False)
+    reminder_type = db.Column(db.String(20), nullable=False)  # 1month/1week/1day
+    sent_to       = db.Column(db.String(20), nullable=False)  # customer/technician
+    sent_at       = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint("visit_id", "reminder_type", "sent_to",
+                            name="uq_visit_reminder"),
+    )
+
+
+# --------------------------------------------------------------------------- #
+# Wave 11 — Photo-based visit defect reports
+# A technician flags a specific piece of equipment as defective during a visit,
+# with a severity and photo. Surfaces to the customer for acknowledgement and
+# can be turned into a material quotation.
+# --------------------------------------------------------------------------- #
+class VisitDefect(db.Model):
+    __tablename__ = "visit_defects"
+
+    id           = db.Column(db.Integer, primary_key=True)
+    visit_id     = db.Column(db.Integer, db.ForeignKey("visits.id"), nullable=False)
+    contract_id  = db.Column(db.Integer, db.ForeignKey("contracts.id"), nullable=True)
+    equipment_name = db.Column(db.String(160), nullable=False)   # what is faulty
+    location     = db.Column(db.String(160))
+    severity     = db.Column(db.String(20), default="medium")    # low/medium/high
+    description  = db.Column(db.Text)
+    photo_path   = db.Column(db.String(255))
+    # open → acknowledged (client saw it) → quoted → resolved
+    status       = db.Column(db.String(20), default="open")
+    acknowledged_at = db.Column(db.DateTime)
+    reported_by_id  = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    created_at   = db.Column(db.DateTime, default=datetime.utcnow)
+
+    visit       = db.relationship("Visit", backref="defects", foreign_keys=[visit_id])
+    contract    = db.relationship("Contract", foreign_keys=[contract_id])
+    reported_by = db.relationship("User", foreign_keys=[reported_by_id])
+
+    @property
+    def reference(self):
+        return f"DEF-{self.id:04d}"
+
+    SEVERITY_META = {
+        "high":   ("High",   "red"),
+        "medium": ("Medium", "amber"),
+        "low":    ("Low",    "blue"),
+    }
+
+    @property
+    def severity_label(self):
+        return self.SEVERITY_META.get(self.severity, ("Medium", "amber"))[0]
+
+    @property
+    def severity_color(self):
+        return self.SEVERITY_META.get(self.severity, ("Medium", "amber"))[1]
+
+
+# --------------------------------------------------------------------------- #
+# Wave 11 — Bulk WhatsApp / SMS broadcast (saved log of a broadcast a staffer
+# composed; recipients are resolved from a saved filter at render time, then the
+# staffer taps each wa.me link to send — free, no API).
+# --------------------------------------------------------------------------- #
+class Broadcast(db.Model):
+    __tablename__ = "broadcasts"
+
+    id             = db.Column(db.Integer, primary_key=True)
+    title          = db.Column(db.String(160))
+    message        = db.Column(db.Text, nullable=False)
+    audience       = db.Column(db.String(30), default="all")   # all/active/expiring/area/plan
+    audience_value = db.Column(db.String(120))                 # e.g. area name / plan id
+    recipient_count = db.Column(db.Integer, default=0)
+    created_by_id  = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    created_at     = db.Column(db.DateTime, default=datetime.utcnow)
+
+    created_by = db.relationship("User", foreign_keys=[created_by_id])
+
+    AUDIENCE_LABELS = {
+        "all":      "All customers",
+        "active":   "Active AMC customers",
+        "expiring": "Contracts expiring soon",
+        "area":     "By area",
+        "plan":     "By plan tier",
+    }
+
+    @property
+    def audience_label(self):
+        base = self.AUDIENCE_LABELS.get(self.audience, self.audience)
+        return f"{base}: {self.audience_value}" if self.audience_value else base
+
+
+# --------------------------------------------------------------------------- #
+# Wave 11 — Instalment / EMI schedule for a large AMC contract
+# --------------------------------------------------------------------------- #
+class Installment(db.Model):
+    __tablename__ = "installments"
+
+    id          = db.Column(db.Integer, primary_key=True)
+    contract_id = db.Column(db.Integer, db.ForeignKey("contracts.id"), nullable=False)
+    sequence    = db.Column(db.Integer, default=1)       # 1..N
+    label       = db.Column(db.String(60))               # e.g. "Q1", "Instalment 1"
+    amount      = db.Column(db.Integer, default=0)
+    due_date    = db.Column(db.Date)
+    paid        = db.Column(db.Boolean, default=False)
+    paid_date   = db.Column(db.Date)
+    payment_mode = db.Column(db.String(20))
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+
+    contract = db.relationship("Contract", backref="installments",
+                               foreign_keys=[contract_id])
+
+    @property
+    def is_overdue(self):
+        return (not self.paid) and self.due_date is not None and self.due_date < date.today()
+
+    @property
+    def days_to_due(self):
+        if not self.due_date:
+            return None
+        return (self.due_date - date.today()).days
+
+
+# --------------------------------------------------------------------------- #
+# Wave 11 — Milestone / reminder dedup log (renewal reminders, anniversaries).
+# Guards against re-notifying the same milestone. Keyed like VisitReminderLog.
+# --------------------------------------------------------------------------- #
+class MilestoneLog(db.Model):
+    __tablename__ = "milestone_logs"
+
+    id             = db.Column(db.Integer, primary_key=True)
+    contract_id    = db.Column(db.Integer, db.ForeignKey("contracts.id"), nullable=False)
+    milestone_type = db.Column(db.String(40), nullable=False)  # renewal_90/60/30, anniversary_1..
+    sent_at        = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint("contract_id", "milestone_type",
+                            name="uq_milestone"),
+    )

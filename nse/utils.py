@@ -302,19 +302,28 @@ def upi_link(vpa, payee_name, amount, note=""):
     return "upi://pay?" + urllib.parse.urlencode(params)
 
 
-def upi_qr_data_uri(vpa, payee_name, amount, note=""):
-    """Return (upi_link, data_uri_png) for a UPI QR, or (link, None) on failure."""
-    link = upi_link(vpa, payee_name, amount, note)
+def qr_data_uri(data, fill="#16235b", box_size=8):
+    """Generic base64 PNG QR code for any string (URL, deep link, plain text).
+    Returns a data: URI ready to drop straight into an <img src="">, or None on
+    failure (qrcode not installed, encoding error, etc. — callers should treat
+    a None return as 'skip the image, keep the text link'). Used for the
+    UPI payment QR, the /qr device-pairing page, and quotation share links."""
     try:
         import io, base64, qrcode
-        qr = qrcode.QRCode(version=None, box_size=8, border=2,
+        qr = qrcode.QRCode(version=None, box_size=box_size, border=2,
                            error_correction=qrcode.constants.ERROR_CORRECT_M)
-        qr.add_data(link)
+        qr.add_data(data)
         qr.make(fit=True)
-        img = qr.make_image(fill_color="#16235b", back_color="white")
+        img = qr.make_image(fill_color=fill, back_color="white")
         buf = io.BytesIO()
         img.save(buf, format="PNG")
         b64 = base64.b64encode(buf.getvalue()).decode()
-        return link, f"data:image/png;base64,{b64}"
+        return f"data:image/png;base64,{b64}"
     except Exception:
-        return link, None
+        return None
+
+
+def upi_qr_data_uri(vpa, payee_name, amount, note=""):
+    """Return (upi_link, data_uri_png) for a UPI QR, or (link, None) on failure."""
+    link = upi_link(vpa, payee_name, amount, note)
+    return link, qr_data_uri(link)

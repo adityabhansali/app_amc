@@ -1,0 +1,113 @@
+{% extends "base_portal.html" %}
+{% block title %}My Complaints — Portal{% endblock %}
+{% block content %}
+<section class="max-w-3xl mx-auto px-4 py-10">
+  <div class="flex items-center justify-between flex-wrap gap-3 mb-6">
+    <div>
+      <h1 class="text-2xl font-extrabold text-ink">My Complaints</h1>
+      <p class="text-ink-subtle text-sm mt-1">Raise and track issues related to your contract or visits.</p>
+    </div>
+    <button onclick="document.getElementById('raiseModal').classList.remove('hidden')"
+            class="btn btn-primary text-sm">Raise a complaint</button>
+  </div>
+
+  {% if tickets %}
+  <div class="space-y-3">
+    {% for t in tickets %}
+    <a href="{{ url_for('portal.ticket_detail', ticket_id=t.id) }}"
+       class="card p-4 flex items-start gap-4 hover:shadow-md transition-shadow">
+      <!-- Status dot -->
+      <span class="w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0
+        {{ 'bg-red-500' if t.status=='open' else
+           'bg-amber-400' if t.status=='acknowledged' else
+           'bg-green-500' if t.status=='resolved' else 'bg-slate-300' }}"></span>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="font-semibold text-sm text-ink">{{ t.reference }}</span>
+          <span class="text-xs px-2 py-0.5 rounded-full {{ t.status_color }}">{{ t.status_label }}</span>
+          {% if t.is_overdue %}
+          <span class="text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-700 font-medium">No reply 24h+</span>
+          {% endif %}
+        </div>
+        <p class="text-sm text-ink mt-0.5 font-medium">{{ t.title }}</p>
+        <p class="text-xs text-ink-subtle mt-0.5">{{ t.created_at.strftime('%d %b %Y') }}
+          {% if t.contract %} · {{ t.contract.reference }}{% endif %}</p>
+      </div>
+      <svg class="w-4 h-4 text-ink-subtle flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card p-12 text-center text-ink-subtle">
+    <svg class="w-12 h-12 mx-auto mb-3 text-ink-subtle opacity-40" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="1.5"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    <p class="font-medium text-ink">No complaints raised</p>
+    <p class="text-sm mt-1">If you face any issue with a visit or your contract, raise a complaint here.</p>
+  </div>
+  {% endif %}
+</section>
+
+<!-- Raise Complaint Modal -->
+<div id="raiseModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4"
+     style="background:rgba(0,0,0,0.5)">
+  <div class="bg-white dark:bg-[var(--s1)] rounded-2xl shadow-2xl w-full max-w-lg">
+    <div class="flex items-center justify-between px-6 pt-5 pb-3 border-b border-hairline">
+      <h2 class="font-bold text-ink">Raise a complaint</h2>
+      <button onclick="document.getElementById('raiseModal').classList.add('hidden')"
+              class="text-ink-subtle hover:text-ink text-xl leading-none">&times;</button>
+    </div>
+    <form method="post" action="{{ url_for('portal.raise_ticket') }}"
+          enctype="multipart/form-data" class="p-6 space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-ink-muted mb-1">Subject / title <span class="text-danger">*</span></label>
+        <input name="title" required placeholder="e.g. Technician did not arrive on scheduled date"
+               class="w-full px-3 py-2.5 rounded-lg border border-hairline text-sm">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-ink-muted mb-1">Describe the issue <span class="text-danger">*</span></label>
+        <textarea name="description" required rows="4"
+                  placeholder="Please describe what happened in detail…"
+                  class="w-full px-3 py-2.5 rounded-lg border border-hairline text-sm"></textarea>
+      </div>
+      {% if contracts %}
+      <div>
+        <label class="block text-sm font-medium text-ink-muted mb-1">Related contract (optional)</label>
+        <select name="contract_id" class="w-full px-3 py-2.5 rounded-lg border border-hairline text-sm">
+          <option value="">— not specific to a contract —</option>
+          {% for c in contracts %}
+          <option value="{{ c.id }}">{{ c.reference }} — {{ c.site_name or c.applicant_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      <div>
+        <label class="block text-sm font-medium text-ink-muted mb-1">Priority</label>
+        <select name="priority" class="w-full px-3 py-2.5 rounded-lg border border-hairline text-sm">
+          <option value="normal">Normal</option>
+          <option value="high">High — urgent issue</option>
+          <option value="low">Low — general feedback</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-ink-muted mb-1">Photos or videos (optional)</label>
+        <input type="file" name="attachments" multiple accept="image/*,video/*"
+               class="block w-full text-sm text-ink-subtle file:mr-3 file:py-1.5 file:px-3
+                      file:rounded-lg file:border-0 file:text-sm file:font-medium
+                      file:bg-amber-50 file:text-amber-800 hover:file:bg-amber-100">
+        <p class="text-xs text-ink-subtle mt-1">Upload photos or short video clips as evidence.</p>
+      </div>
+      <!-- Voice note widget -->
+      {% from "_macros.html" import voice_note_widget %}
+      {{ voice_note_widget("voice_note", "Record a voice note (optional)") }}
+
+      <div class="flex gap-3 pt-2">
+        <button type="submit" class="btn btn-primary text-sm flex-1">Submit complaint</button>
+        <button type="button"
+                onclick="document.getElementById('raiseModal').classList.add('hidden')"
+                class="btn btn-ghost text-sm">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
