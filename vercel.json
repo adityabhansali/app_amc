@@ -1,9 +1,4 @@
 {
-  "functions": {
-    "api/index.py": {
-      "excludeFiles": "nse/static/video/**"
-    }
-  },
   "routes": [
     { "src": "/(.*)", "dest": "api/index.py" }
   ]
