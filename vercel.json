@@ -1,16 +1,9 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python",
-      "config": {
-        "includeFiles": [
-          "nse/**"
-        ]
-      }
+  "functions": {
+    "api/index.py": {
+      "excludeFiles": "nse/static/video/**"
     }
-  ],
+  },
   "routes": [
     { "src": "/(.*)", "dest": "api/index.py" }
   ]
