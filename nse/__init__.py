@@ -10,11 +10,17 @@ from .utils import rupees, upload_url
 
 def create_app(config_class=Config):
     import os
-    _pkg = os.path.dirname(os.path.abspath(__file__))
-    # On Vercel, build.py copies templates → api/templates/ so @vercel/python bundles them
-    _api_tpl = os.path.join(_pkg, '..', 'api', 'templates')
-    _tpl = _api_tpl if os.path.isdir(_api_tpl) else os.path.join(_pkg, 'templates')
-    app = Flask(__name__, template_folder=_tpl)
+    app = Flask(__name__)
+
+    # Vercel: @vercel/python only bundles .py files.  nse/_compiled.py (generated
+    # by compile_templates.py) embeds all .html templates as a Python dict, so
+    # it IS traced and bundled.  Use DictLoader when available.
+    try:
+        from jinja2 import DictLoader
+        from ._compiled import TEMPLATES
+        app.jinja_loader = DictLoader(TEMPLATES)
+    except ImportError:
+        pass  # local dev — default FileSystemLoader from Flask(__name__) is fine
     app.config.from_object(config_class)
     app.config.setdefault("SERVER_PORT", int(os.getenv("PORT", "5055")))
 
