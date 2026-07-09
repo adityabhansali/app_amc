@@ -6,9 +6,7 @@
       "use": "@vercel/python",
       "config": {
         "includeFiles": [
-          "nse/templates/**",
-          "nse/static/**",
-          "nse/**/*.py"
+          "nse/**"
         ]
       }
     }
