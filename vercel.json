@@ -4,7 +4,13 @@
     {
       "src": "api/index.py",
       "use": "@vercel/python",
-      "config": { "includeFiles": "nse/**" }
+      "config": {
+        "includeFiles": [
+          "nse/templates/**",
+          "nse/static/**",
+          "nse/**/*.py"
+        ]
+      }
     }
   ],
   "routes": [
