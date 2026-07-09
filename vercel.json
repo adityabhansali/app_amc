@@ -2,10 +2,7 @@
   "builds": [
     {
       "src": "api/index.py",
-      "use": "@vercel/python",
-      "config": {
-        "includeFiles": ["nse/templates/**"]
-      }
+      "use": "@vercel/python"
     }
   ],
   "routes": [
