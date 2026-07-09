@@ -17,6 +17,8 @@ nse/static/uploads/*
 # Vercel
 .vercel/
 build/
+api/templates/
+public/static/
 
 # Logs
 *.log

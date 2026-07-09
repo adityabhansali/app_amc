@@ -10,7 +10,11 @@ from .utils import rupees, upload_url
 
 def create_app(config_class=Config):
     import os
-    app = Flask(__name__)
+    _pkg = os.path.dirname(os.path.abspath(__file__))
+    # On Vercel, build.py copies templates → api/templates/ so @vercel/python bundles them
+    _api_tpl = os.path.join(_pkg, '..', 'api', 'templates')
+    _tpl = _api_tpl if os.path.isdir(_api_tpl) else os.path.join(_pkg, 'templates')
+    app = Flask(__name__, template_folder=_tpl)
     app.config.from_object(config_class)
     app.config.setdefault("SERVER_PORT", int(os.getenv("PORT", "5055")))
 
