@@ -9,8 +9,27 @@ import sys
 
 # Ensure the project root is importable so `import nse` resolves when this file
 # is executed from the api/ directory inside the Vercel build.
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
 
-from nse import create_app
+try:
+    from nse import create_app
+    app = create_app()
+except Exception as exc:
+    # Catch startup errors so Vercel returns a readable 500 instead of a
+    # silent 404.  Once stable, remove this and use `from nse import create_app;
+    # app = create_app()` directly.
+    from flask import Flask, Response
 
-app = create_app()
+    _err = Flask(__name__)
+
+    @_err.route("/", defaults={"path": ""}, methods=["GET", "POST"])
+    @_err.route("/<path:path>")
+    def _fallback(path):
+        return Response(
+            f"<h2>NSE App startup error</h2><pre>{exc}</pre>",
+            status=500,
+            mimetype="text/html",
+        )
+
+    app = _err
